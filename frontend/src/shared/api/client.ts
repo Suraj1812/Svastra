@@ -45,3 +45,27 @@ export function postJson<T>(path: string, payload: unknown): Promise<T> {
     body: JSON.stringify(payload),
   });
 }
+
+export function sessionHeaders(sessionToken: string) {
+  return {
+    "X-Session-Token": sessionToken,
+  };
+}
+
+export function getJsonWithSession<T>(path: string, sessionToken: string): Promise<T> {
+  return apiRequest<T>(path, {
+    headers: sessionHeaders(sessionToken),
+  });
+}
+
+export function postJsonWithSession<T>(
+  path: string,
+  payload: unknown,
+  sessionToken: string,
+): Promise<T> {
+  return apiRequest<T>(path, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: sessionHeaders(sessionToken),
+  });
+}

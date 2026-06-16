@@ -15,6 +15,7 @@ from app.consent.consent_service import (
 )
 from app.core.responses import success_response
 from app.database import get_db
+from app.rbac.permission_validator import authorize_request
 from app.schemas.consent import ConsentAcceptanceRequest, ConsentDecisionRequest
 
 
@@ -66,6 +67,7 @@ def accept_platform_consent(
 
 @router.get("/requests")
 def pending_consent_requests(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    authorize_request(current_user, "MANAGE_CONSENT")
     requests = get_pending_consent_requests(db, patient_id=current_user.id)
     return success_response({"requests": requests})
 
@@ -76,6 +78,7 @@ def grant_request(
     payload: ConsentDecisionRequest,
     current_user=Depends(get_current_user),
 ):
+    authorize_request(current_user, "MANAGE_CONSENT")
     try:
         result = grant_consent_request(request_id=request_id, otp=payload.otp, actor_user=current_user)
     except ValueError as error:
@@ -89,6 +92,7 @@ def reject_request(
     payload: ConsentDecisionRequest,
     current_user=Depends(get_current_user),
 ):
+    authorize_request(current_user, "MANAGE_CONSENT")
     try:
         result = reject_consent_request(request_id=request_id, otp=payload.otp, actor_user=current_user)
     except ValueError as error:

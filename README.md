@@ -1,7 +1,7 @@
 # SVASTRA+ Authentication MVP
 
-End-to-end Week 3 Monday MVP implementation for authentication, OTP verification,
-registration, session creation, role routing, and unified platform consent.
+End-to-end Week 3 MVP implementation for authentication, OTP verification,
+registration, session creation, role routing, RBAC, and consent foundations.
 
 ## Backend
 
@@ -44,5 +44,14 @@ application version, and request IP address when available.
 ## Consent APIs
 
 - `GET /consent/current`
+- `GET /me/consent-status`
+- `POST /consent/platform/accept`
+- `GET /consent/requests`
+- `POST /consent/request/{id}/grant`
+- `POST /consent/request/{id}/reject`
 - `POST /consent/patients/{patient_id}/accept`
 - `GET /consent/patients/{patient_id}/status`
+
+## RBAC APIs
+
+- `GET /me/permissions`

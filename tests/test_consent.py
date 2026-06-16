@@ -57,6 +57,23 @@ def _register_patient(client, mobile_number="9876543292"):
     return response.json()["data"]
 
 
+def _register_provider(client, mobile_number="9876543294"):
+    client.post("/auth/otp/send", json={"mobile_number": mobile_number})
+    client.post("/auth/otp/verify", json={"mobile_number": mobile_number, "otp": "123456"})
+    response = client.post(
+        "/auth/register/provider",
+        json={
+            "full_name": "Dr Meera",
+            "mobile_number": mobile_number,
+            "professional_category": "Physician",
+            "registration_number": "REG-123",
+            "terms_accepted": True,
+        },
+    )
+    assert response.status_code == 201
+    return response.json()["data"]
+
+
 def test_platform_consent_status_and_accept_endpoint(client):
     registered = _register_patient(client)
     headers = {"X-Session-Token": registered["session"]["session_token"]}
@@ -75,6 +92,27 @@ def test_platform_consent_status_and_accept_endpoint(client):
     )
     assert accept_response.status_code == 201
     assert accept_response.json()["data"]["consent_version"] == "v1"
+
+
+def test_patient_consent_endpoints_reject_non_patient_sessions(client):
+    registered = _register_provider(client)
+    headers = {"X-Session-Token": registered["session"]["session_token"]}
+
+    status_response = client.get("/me/consent-status", headers=headers)
+    assert status_response.status_code == 403
+    assert status_response.json()["error"]["code"] == "FORBIDDEN"
+
+    requests_response = client.get("/consent/requests", headers=headers)
+    assert requests_response.status_code == 403
+    assert requests_response.json()["error"]["code"] == "FORBIDDEN"
+
+    grant_response = client.post(
+        "/consent/request/demo-request/grant",
+        json={"otp": "123456"},
+        headers=headers,
+    )
+    assert grant_response.status_code == 403
+    assert grant_response.json()["error"]["code"] == "FORBIDDEN"
 
 
 def test_relationship_consent_request_placeholders_require_otp(client):
