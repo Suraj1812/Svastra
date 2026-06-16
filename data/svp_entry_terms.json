@@ -1,0 +1,132 @@
+[
+  {
+    "conceptId": "303071001",
+    "term": "Family member",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "427568008",
+    "term": "Neighbour",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "158998005",
+    "term": "Private nurse",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "308225000",
+    "term": "Maid",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "106538001",
+    "term": "Driver",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "159725002",
+    "term": "Servant",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "113163005",
+    "term": "Friend",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "32570881000036107",
+    "term": "Colleague",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "48385004",
+    "term": "Acquaintance",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "133932002",
+    "term": "Caregiver",
+    "tag": "relationship"
+  },
+  {
+    "conceptId": "309343006",
+    "term": "Physician",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "90655003",
+    "term": "Geriatrics specialist",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "309367003",
+    "term": "Obstetrician and gynaecologist",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "82296001",
+    "term": "Paediatrician",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "304292004",
+    "term": "Surgeon",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "106289002",
+    "term": "Dentist",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "106292003",
+    "term": "Nurse",
+    "tag": "occupation"
+  },
+  {
+    "conceptId": "297487008",
+    "term": "English",
+    "tag": "language"
+  },
+  {
+    "conceptId": "161143006",
+    "term": "Hindi",
+    "tag": "language"
+  },
+  {
+    "conceptId": "161141008",
+    "term": "Bengali",
+    "tag": "language"
+  },
+  {
+    "conceptId": "248152002",
+    "term": "Female",
+    "tag": "gender"
+  },
+  {
+    "conceptId": "32570681000036106",
+    "term": "Indeterminate sex",
+    "tag": "gender"
+  },
+  {
+    "conceptId": "32570691000036108",
+    "term": "Intersex",
+    "tag": "gender"
+  },
+  {
+    "conceptId": "248153007",
+    "term": "Male",
+    "tag": "gender"
+  },
+  {
+    "conceptId": "407374003",
+    "term": "Transsexual",
+    "tag": "gender"
+  },
+  {
+    "conceptId": "394743007",
+    "term": "Gender unknown",
+    "tag": "gender"
+  }
+]
