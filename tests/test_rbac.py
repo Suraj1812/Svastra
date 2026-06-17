@@ -8,9 +8,13 @@ from app.auth import auth_service, otp_provider
 from app.database import Base, get_db
 from app.main import app
 from app.models import audit, consent, rbac, session, user  # noqa: F401
+from app.reference_terms import get_reference_term
 from app.rbac.permission_validator import check_permission
 from app.rbac.rbac_service import get_role_permissions
 from app.schemas.registration import ProviderRegistration
+
+
+OCCUPATION_PHYSICIAN = get_reference_term("occupation", "Physician")
 
 
 @pytest.fixture()
@@ -49,7 +53,7 @@ def _register_provider(client, mobile_number="9876543291"):
         json={
             "full_name": "Dr Meera",
             "mobile_number": mobile_number,
-            "professional_category": "Physician",
+            "professional_category": OCCUPATION_PHYSICIAN,
             "registration_number": "REG-123",
             "terms_accepted": True,
         },

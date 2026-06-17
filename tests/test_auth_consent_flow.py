@@ -10,11 +10,19 @@ from app.auth.session_manager import logout, validate_session
 from app.consent.consent_service import get_patient_consent_status
 from app.database import Base
 from app.models import consent, session, user  # noqa: F401
+from app.reference_terms import decode_reference_term, get_reference_term
 from app.schemas.registration import (
     CaregiverRegistration,
     PatientRegistration,
     ProviderRegistration,
 )
+
+
+GENDER_FEMALE = get_reference_term("gender", "Female")
+LANGUAGE_ENGLISH = get_reference_term("language", "English")
+LANGUAGE_HINDI = get_reference_term("language", "Hindi")
+OCCUPATION_PHYSICIAN = get_reference_term("occupation", "Physician")
+RELATIONSHIP_FAMILY = get_reference_term("relationship", "Family member")
 
 
 @pytest.fixture()
@@ -47,8 +55,8 @@ def test_patient_registration_requires_and_records_unified_consent(db_session):
             full_name="Asha Patient",
             mobile_number="9876543210",
             date_of_birth=date(1992, 5, 17),
-            gender="Female",
-            preferred_language="English",
+            gender=GENDER_FEMALE,
+            preferred_language=LANGUAGE_ENGLISH,
             terms_accepted=True,
             unified_consent_accepted=False,
         )
@@ -60,8 +68,8 @@ def test_patient_registration_requires_and_records_unified_consent(db_session):
             full_name="Asha Patient",
             mobile_number="9876543210",
             date_of_birth=date(1992, 5, 17),
-            gender="Female",
-            preferred_language="English",
+            gender=GENDER_FEMALE,
+            preferred_language=LANGUAGE_ENGLISH,
             terms_accepted=True,
             unified_consent_accepted=True,
         ),
@@ -69,6 +77,7 @@ def test_patient_registration_requires_and_records_unified_consent(db_session):
     )
 
     assert result["user"].role == "patient"
+    assert decode_reference_term(result["user"].gender, "gender") == GENDER_FEMALE
     assert result["dashboard_route"] == "/dashboards/rogi"
     assert result["consent"].patient_id == result["user"].id
     assert result["consent"].ip_address == "127.0.0.1"
@@ -85,7 +94,7 @@ def test_provider_and_caregiver_registration_create_sessions(db_session):
         ProviderRegistration(
             full_name="Dr Meera",
             mobile_number="9876543211",
-            professional_category="Physician",
+            professional_category=OCCUPATION_PHYSICIAN,
             registration_number="REG-123",
             terms_accepted=True,
         ),
@@ -101,8 +110,8 @@ def test_provider_and_caregiver_registration_create_sessions(db_session):
         CaregiverRegistration(
             full_name="Ravi Caregiver",
             mobile_number="9876543212",
-            relationship_to_patient="Family member",
-            preferred_language="Hindi",
+            relationship_to_patient=RELATIONSHIP_FAMILY,
+            preferred_language=LANGUAGE_HINDI,
             terms_accepted=True,
         ),
     )
@@ -119,7 +128,7 @@ def test_login_requires_fresh_otp_and_logout_invalidates_session(db_session):
         ProviderRegistration(
             full_name="Dr Arjun",
             mobile_number="9876543213",
-            professional_category="Physician",
+            professional_category=OCCUPATION_PHYSICIAN,
             registration_number="REG-456",
             terms_accepted=True,
         ),

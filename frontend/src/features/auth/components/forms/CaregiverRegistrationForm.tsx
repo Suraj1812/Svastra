@@ -16,7 +16,11 @@ import { Controller, useForm } from "react-hook-form";
 
 import { SubmitButton } from "../../../../shared/components/SubmitButton";
 import { fieldHelperText } from "../../../../shared/components/formHelpers";
-import { languages, relationships } from "../../../../shared/config/registrationOptions";
+import {
+  findReferenceTerm,
+  languages,
+  relationships,
+} from "../../../../shared/config/registrationOptions";
 import {
   caregiverSchema,
   type CaregiverValues,
@@ -45,8 +49,8 @@ export function CaregiverRegistrationForm({
     defaultValues: {
       full_name: "",
       mobile_number: mobile,
-      relationship_to_patient: "",
-      preferred_language: "",
+      relationship_to_patient: undefined,
+      preferred_language: undefined,
       terms_accepted: false,
     },
   });
@@ -85,12 +89,15 @@ export function CaregiverRegistrationForm({
                 error={Boolean(errors.relationship_to_patient)}
                 helperText={fieldHelperText(errors.relationship_to_patient?.message)}
                 {...field}
-                value={field.value || ""}
+                value={field.value?.conceptId || ""}
+                onChange={(event) =>
+                  field.onChange(findReferenceTerm(relationships, event.target.value) || undefined)
+                }
               >
                 <option value="" aria-label="Select relationship to patient" />
                 {relationships.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                  <option key={option.conceptId} value={option.conceptId}>
+                    {option.term}
                   </option>
                 ))}
               </TextField>
@@ -109,12 +116,15 @@ export function CaregiverRegistrationForm({
                 error={Boolean(errors.preferred_language)}
                 helperText={fieldHelperText(errors.preferred_language?.message)}
                 {...field}
-                value={field.value || ""}
+                value={field.value?.conceptId || ""}
+                onChange={(event) =>
+                  field.onChange(findReferenceTerm(languages, event.target.value) || undefined)
+                }
               >
                 <option value="" aria-label="Select preferred language" />
                 {languages.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                  <option key={option.conceptId} value={option.conceptId}>
+                    {option.term}
                   </option>
                 ))}
               </TextField>

@@ -16,7 +16,7 @@ import { Controller, useForm } from "react-hook-form";
 
 import { SubmitButton } from "../../../../shared/components/SubmitButton";
 import { fieldHelperText } from "../../../../shared/components/formHelpers";
-import { occupations } from "../../../../shared/config/registrationOptions";
+import { findReferenceTerm, occupations } from "../../../../shared/config/registrationOptions";
 import {
   providerSchema,
   type ProviderValues,
@@ -46,7 +46,7 @@ export function ProviderRegistrationForm({
       full_name: "",
       mobile_number: mobile,
       email_address: "",
-      professional_category: "",
+      professional_category: undefined,
       registration_number: "",
       hpid_number: "",
       terms_accepted: false,
@@ -96,12 +96,15 @@ export function ProviderRegistrationForm({
                 error={Boolean(errors.professional_category)}
                 helperText={fieldHelperText(errors.professional_category?.message)}
                 {...field}
-                value={field.value || ""}
+                value={field.value?.conceptId || ""}
+                onChange={(event) =>
+                  field.onChange(findReferenceTerm(occupations, event.target.value) || undefined)
+                }
               >
                 <option value="" aria-label="Select professional category" />
                 {occupations.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                  <option key={option.conceptId} value={option.conceptId}>
+                    {option.term}
                   </option>
                 ))}
               </TextField>

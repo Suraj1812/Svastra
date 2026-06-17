@@ -1,39 +1,17 @@
-import json
 from datetime import date
-from functools import lru_cache
-from typing import Dict, List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.config import settings
+from app.reference_terms import validate_reference_term
 
 
-@lru_cache(maxsize=1)
-def _reference_terms() -> Dict[str, List[str]]:
-    if not settings.reference_terms_path.exists():
-        return {}
+class ReferenceTerm(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    with settings.reference_terms_path.open(encoding="utf-8") as terms_file:
-        data = json.load(terms_file)
-
-    if isinstance(data, dict):
-        return {tag: [str(value) for value in values] for tag, values in data.items()}
-
-    terms = {}
-    for item in data:
-        tag = item.get("tag")
-        value = item.get("term") or item.get("value")
-        if tag and value:
-            terms.setdefault(tag, []).append(str(value))
-
-    return terms
-
-
-def _validate_reference_value(tag: str, value: str):
-    allowed_values = _reference_terms().get(tag, [])
-    if allowed_values and value not in allowed_values:
-        raise ValueError(f"Allowed {tag} values: {', '.join(allowed_values)}")
-    return value
+    conceptId: str = Field(..., min_length=1)
+    term: str = Field(..., min_length=1)
+    tag: str = Field(..., min_length=1)
 
 
 def _validate_mobile_number(value: str):
@@ -65,20 +43,20 @@ class RegistrationBase(BaseModel):
 
 class ProviderRegistration(RegistrationBase):
     email_address: Optional[EmailStr] = None
-    professional_category: str = Field(..., min_length=1)
+    professional_category: ReferenceTerm
     registration_number: str = Field(..., min_length=1)
     hpid_number: Optional[str] = None
 
     @field_validator("professional_category")
     @classmethod
     def validate_professional_category(cls, value):
-        return _validate_reference_value("occupation", value)
+        return ReferenceTerm(**validate_reference_term("occupation", value))
 
 
 class PatientRegistration(RegistrationBase):
     date_of_birth: date
-    gender: str = Field(..., min_length=1)
-    preferred_language: str = Field(..., min_length=1)
+    gender: ReferenceTerm
+    preferred_language: ReferenceTerm
     abha_number: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_mobile: Optional[str] = None
@@ -87,12 +65,12 @@ class PatientRegistration(RegistrationBase):
     @field_validator("gender")
     @classmethod
     def validate_gender(cls, value):
-        return _validate_reference_value("gender", value)
+        return ReferenceTerm(**validate_reference_term("gender", value))
 
     @field_validator("preferred_language")
     @classmethod
     def validate_preferred_language(cls, value):
-        return _validate_reference_value("language", value)
+        return ReferenceTerm(**validate_reference_term("language", value))
 
     @field_validator("emergency_contact_mobile")
     @classmethod
@@ -110,15 +88,15 @@ class PatientRegistration(RegistrationBase):
 
 
 class CaregiverRegistration(RegistrationBase):
-    relationship_to_patient: str = Field(..., min_length=1)
-    preferred_language: str = Field(..., min_length=1)
+    relationship_to_patient: ReferenceTerm
+    preferred_language: ReferenceTerm
 
     @field_validator("relationship_to_patient")
     @classmethod
     def validate_relationship_to_patient(cls, value):
-        return _validate_reference_value("relationship", value)
+        return ReferenceTerm(**validate_reference_term("relationship", value))
 
     @field_validator("preferred_language")
     @classmethod
     def validate_preferred_language(cls, value):
-        return _validate_reference_value("language", value)
+        return ReferenceTerm(**validate_reference_term("language", value))

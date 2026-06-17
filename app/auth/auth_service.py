@@ -4,6 +4,7 @@ from app.auth import otp_provider
 from app.auth.session_manager import create_session
 from app.consent.consent_service import record_consent_acceptance
 from app.models.user import User
+from app.reference_terms import encode_reference_term
 
 
 class RegistrationError(ValueError):
@@ -54,7 +55,7 @@ def register_provider(db: Session, registration):
         full_name=registration.full_name,
         mobile_number=registration.mobile_number,
         email_address=registration.email_address,
-        professional_category=registration.professional_category,
+        professional_category=encode_reference_term(registration.professional_category),
         registration_number=registration.registration_number,
         hpid_number=registration.hpid_number,
         terms_accepted=registration.terms_accepted,
@@ -80,8 +81,8 @@ def register_patient(db: Session, registration, ip_address: str = None):
         full_name=registration.full_name,
         mobile_number=registration.mobile_number,
         date_of_birth=registration.date_of_birth,
-        gender=registration.gender,
-        preferred_language=registration.preferred_language,
+        gender=encode_reference_term(registration.gender),
+        preferred_language=encode_reference_term(registration.preferred_language),
         abha_number=registration.abha_number,
         emergency_contact_name=registration.emergency_contact_name,
         emergency_contact_mobile=registration.emergency_contact_mobile,
@@ -106,8 +107,8 @@ def register_caregiver(db: Session, registration):
         role="caregiver",
         full_name=registration.full_name,
         mobile_number=registration.mobile_number,
-        relationship_to_patient=registration.relationship_to_patient,
-        preferred_language=registration.preferred_language,
+        relationship_to_patient=encode_reference_term(registration.relationship_to_patient),
+        preferred_language=encode_reference_term(registration.preferred_language),
         terms_accepted=registration.terms_accepted,
     )
     db.add(user)

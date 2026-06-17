@@ -1,4 +1,14 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -35,6 +45,52 @@ class PlatformConsent(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     patient = relationship("User", back_populates="platform_consents")
+
+
+class RelationshipConsent(Base):
+    __tablename__ = "relationship_consents"
+    __table_args__ = (
+        CheckConstraint(
+            "consent_type in ('provider_access', 'caregiver_access')",
+            name="ck_relationship_consents_type",
+        ),
+        CheckConstraint(
+            "status in ('PENDING', 'ACTIVE', 'REJECTED', 'REVOKED', 'EXPIRED')",
+            name="ck_relationship_consents_status",
+        ),
+        CheckConstraint("length(alias) <= 60", name="ck_relationship_consents_alias_length"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    patient_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    requestor_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    requestor_role = Column(String(32), nullable=False, index=True)
+    consent_type = Column(String(64), nullable=False, index=True)
+    alias = Column(String(60), nullable=False)
+    status = Column(String(32), nullable=False, default="PENDING", index=True)
+    requested_at = Column(DateTime, nullable=False, server_default=func.now())
+    granted_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    expired_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    patient = relationship("User", foreign_keys=[patient_id], back_populates="patient_consents")
+    requestor = relationship("User", foreign_keys=[requestor_id], back_populates="requested_consents")
+
+
+class ConsentCEPEvent(Base):
+    __tablename__ = "consent_cep_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_name = Column(String(100), nullable=False, index=True)
+    consent_id = Column(Integer, ForeignKey("relationship_consents.id"), nullable=False, index=True)
+    payload_json = Column(Text, nullable=False)
+    published_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+
+    consent = relationship("RelationshipConsent")
 
 
 class ConsentAcceptance(Base):

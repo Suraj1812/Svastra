@@ -19,6 +19,10 @@ export type UserSummary = {
   role: Role;
   full_name: string;
   mobile_number: string;
+  professional_category?: ReferenceTerm | null;
+  gender?: ReferenceTerm | null;
+  preferred_language?: ReferenceTerm | null;
+  relationship_to_patient?: ReferenceTerm | null;
 };
 
 export type SessionSummary = {
@@ -74,15 +78,56 @@ export type ConsentStatusResult = {
   app_version?: string | null;
 };
 
-export type ConsentRequestSummary = {
-  id: string;
+export type ConsentType = "provider_access" | "caregiver_access";
+export type ConsentState = "PENDING" | "ACTIVE" | "REJECTED" | "REVOKED" | "EXPIRED";
+
+export type RelationshipConsentSummary = {
+  id: number;
+  alias: string;
+  registered_full_name: string;
   requestor_name: string;
   requestor_role: string;
-  consent_type: "provider_access" | "caregiver_access";
+  role: string;
+  consent_type: ConsentType;
   request_date: string;
-  status: "PENDING" | "GRANTED" | "REJECTED" | "REVOKED" | "EXPIRED";
+  granted_date: string | null;
+  decision_date: string | null;
+  revoked_date: string | null;
+  rejected_date: string | null;
+  expired_date: string | null;
+  status: ConsentState;
+  relevant_dates: {
+    requested_at: string;
+    granted_at: string | null;
+    rejected_at: string | null;
+    revoked_at: string | null;
+    expired_at: string | null;
+  };
+  mobile_number?: string;
 };
+
+export type ConsentRequestSummary = RelationshipConsentSummary;
 
 export type ConsentRequestsResult = {
   requests: ConsentRequestSummary[];
+};
+
+export type ConsentListResult = {
+  consents: RelationshipConsentSummary[];
+};
+
+export type ConsentOtpResult = {
+  consent_id: number;
+  action: "grant" | "reject" | "revoke";
+  otp_sent?: boolean;
+  otp_verified?: boolean;
+  mobile_number?: string;
+};
+
+export type ReferenceTermTag = "relationship" | "occupation" | "language" | "gender";
+
+export type ReferenceTerm = {
+  conceptId: string;
+  term: string;
+  tag: ReferenceTermTag;
 };

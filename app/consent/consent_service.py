@@ -4,12 +4,18 @@ from sqlalchemy.orm import Session
 
 from app.auth import otp_provider
 from app.config import settings
-from app.models.consent import ConsentVersion, PlatformConsent
+from app.consent.consent_audit import record_consent_event
+from app.models.consent import ConsentVersion, PlatformConsent, RelationshipConsent
 from app.models.user import User
 
 
 SUPPORTED_RELATIONSHIP_CONSENT_TYPES = ("provider_access", "caregiver_access")
-SUPPORTED_RELATIONSHIP_STATES = ("PENDING", "GRANTED", "REJECTED", "REVOKED", "EXPIRED")
+SUPPORTED_RELATIONSHIP_STATES = ("PENDING", "ACTIVE", "REJECTED", "REVOKED", "EXPIRED")
+INACTIVE_RELATIONSHIP_STATES = ("REJECTED", "REVOKED", "EXPIRED")
+REQUESTOR_ROLE_BY_CONSENT_TYPE = {
+    "provider_access": "provider",
+    "caregiver_access": "caregiver",
+}
 
 
 def _ensure_default_consent_version(db: Session):
@@ -123,39 +129,228 @@ def validate_consent_request(consent_type: str, status_value: str = "PENDING"):
     return True
 
 
-def create_consent_request(*_, consent_type: str, **__):
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _clean_alias(alias: str, default_alias: str):
+    cleaned = (alias or default_alias or "").strip()
+    if not cleaned:
+        raise ValueError("Alias is required")
+    if len(cleaned) > 60:
+        raise ValueError("Alias must be 60 characters or fewer")
+    return cleaned
+
+
+def _get_relationship_consent(db: Session, consent_id: int):
+    consent = db.query(RelationshipConsent).filter(RelationshipConsent.id == consent_id).first()
+    if consent is None:
+        raise ValueError("Consent request not found")
+    return consent
+
+
+def _ensure_patient_authority(consent: RelationshipConsent, actor_user: User):
+    if actor_user.role != "patient" or consent.patient_id != actor_user.id:
+        raise PermissionError("Patient authority is required for this consent")
+
+
+def _ensure_requestor_matches_consent_type(actor_user: User, consent_type: str):
+    expected_role = REQUESTOR_ROLE_BY_CONSENT_TYPE.get(consent_type)
+    if actor_user.role != expected_role:
+        raise ValueError(f"{expected_role} role is required for {consent_type}")
+
+
+def create_consent_request(
+    db: Session,
+    *,
+    patient_id: int,
+    requestor_user: User,
+    consent_type: str,
+    alias: str = None,
+    ip_address: str = None,
+):
     validate_consent_request(consent_type)
-    return {
-        "id": None,
-        "consent_type": consent_type,
-        "status": "PENDING",
-        "implementation_status": "stubbed_for_wednesday",
-    }
+    _ensure_requestor_matches_consent_type(requestor_user, consent_type)
+
+    patient = db.query(User).filter(User.id == patient_id, User.role == "patient").first()
+    if patient is None:
+        raise ValueError("A registered patient is required")
+    if patient.id == requestor_user.id:
+        raise ValueError("Patients cannot request relationship consent from themselves")
+
+    existing = (
+        db.query(RelationshipConsent)
+        .filter(
+            RelationshipConsent.patient_id == patient.id,
+            RelationshipConsent.requestor_id == requestor_user.id,
+            RelationshipConsent.consent_type == consent_type,
+            RelationshipConsent.status.in_(("PENDING", "ACTIVE")),
+        )
+        .first()
+    )
+    if existing is not None:
+        raise ValueError("An active or pending consent already exists")
+
+    consent = RelationshipConsent(
+        patient_id=patient.id,
+        requestor_id=requestor_user.id,
+        requestor_role=requestor_user.role,
+        consent_type=consent_type,
+        alias=_clean_alias(alias, requestor_user.full_name),
+        status="PENDING",
+    )
+    db.add(consent)
+    db.commit()
+    db.refresh(consent)
+    record_consent_event(
+        db,
+        "consent.request",
+        consent,
+        actor_user=requestor_user,
+        ip_address=ip_address,
+    )
+    return consent
 
 
-def get_pending_consent_requests(*_, **__):
-    return []
+def get_relationship_consent(db: Session, *, consent_id: int):
+    return _get_relationship_consent(db, consent_id)
 
 
-def _validate_relationship_decision_otp(otp: str):
-    if otp != otp_provider.MOCK_OTP:
+def get_active_consents(db: Session, *, patient_id: int):
+    return (
+        db.query(RelationshipConsent)
+        .filter(RelationshipConsent.patient_id == patient_id, RelationshipConsent.status == "ACTIVE")
+        .order_by(RelationshipConsent.granted_at.desc(), RelationshipConsent.requested_at.desc())
+        .all()
+    )
+
+
+def get_pending_consents(db: Session, *, patient_id: int):
+    return (
+        db.query(RelationshipConsent)
+        .filter(RelationshipConsent.patient_id == patient_id, RelationshipConsent.status == "PENDING")
+        .order_by(RelationshipConsent.requested_at.desc())
+        .all()
+    )
+
+
+def get_inactive_consents(db: Session, *, patient_id: int):
+    return (
+        db.query(RelationshipConsent)
+        .filter(
+            RelationshipConsent.patient_id == patient_id,
+            RelationshipConsent.status.in_(INACTIVE_RELATIONSHIP_STATES),
+        )
+        .order_by(
+            RelationshipConsent.revoked_at.desc(),
+            RelationshipConsent.rejected_at.desc(),
+            RelationshipConsent.expired_at.desc(),
+            RelationshipConsent.requested_at.desc(),
+        )
+        .all()
+    )
+
+
+def get_pending_consent_requests(db: Session, *, patient_id: int):
+    return get_pending_consents(db, patient_id=patient_id)
+
+
+def send_consent_otp(actor_user: User):
+    if actor_user.role != "patient":
+        raise PermissionError("Consent OTP can only be sent to patients")
+    return otp_provider.send_otp(actor_user.mobile_number)
+
+
+def verify_consent_otp(actor_user: User, otp: str, *, consume: bool = False):
+    if actor_user.role != "patient":
+        raise PermissionError("Consent OTP can only be verified by patients")
+    if not otp_provider.verify_otp(actor_user.mobile_number, otp):
         raise ValueError("OTP verification is required before consent decision")
+    if consume:
+        otp_provider.consume_mobile_verification(actor_user.mobile_number)
     return True
 
 
-def grant_consent_request(*_, request_id: str, otp: str, **__):
-    _validate_relationship_decision_otp(otp)
-    return {
-        "request_id": request_id,
-        "status": "GRANTED",
-        "implementation_status": "placeholder_for_wednesday",
-    }
+def _verify_decision_otp(actor_user: User, otp: str):
+    verify_consent_otp(actor_user, otp, consume=True)
 
 
-def reject_consent_request(*_, request_id: str, otp: str, **__):
-    _validate_relationship_decision_otp(otp)
-    return {
-        "request_id": request_id,
-        "status": "REJECTED",
-        "implementation_status": "placeholder_for_wednesday",
-    }
+def grant_consent(
+    db: Session,
+    *,
+    consent_id: int,
+    actor_user: User,
+    otp: str,
+    ip_address: str = None,
+):
+    consent = _get_relationship_consent(db, consent_id)
+    _ensure_patient_authority(consent, actor_user)
+    if consent.status != "PENDING":
+        raise ValueError("Only pending consent can be granted")
+    _verify_decision_otp(actor_user, otp)
+
+    consent.status = "ACTIVE"
+    consent.granted_at = _now()
+    db.commit()
+    db.refresh(consent)
+    record_consent_event(db, "consent.grant", consent, actor_user=actor_user, ip_address=ip_address)
+    return consent
+
+
+def reject_consent(
+    db: Session,
+    *,
+    consent_id: int,
+    actor_user: User,
+    otp: str,
+    ip_address: str = None,
+):
+    consent = _get_relationship_consent(db, consent_id)
+    _ensure_patient_authority(consent, actor_user)
+    if consent.status != "PENDING":
+        raise ValueError("Only pending consent can be rejected")
+    _verify_decision_otp(actor_user, otp)
+
+    consent.status = "REJECTED"
+    consent.rejected_at = _now()
+    db.commit()
+    db.refresh(consent)
+    record_consent_event(db, "consent.reject", consent, actor_user=actor_user, ip_address=ip_address)
+    return consent
+
+
+def revoke_consent(
+    db: Session,
+    *,
+    consent_id: int,
+    actor_user: User,
+    otp: str,
+    ip_address: str = None,
+):
+    consent = _get_relationship_consent(db, consent_id)
+    _ensure_patient_authority(consent, actor_user)
+    if consent.status != "ACTIVE":
+        raise ValueError("Only active consent can be revoked")
+    _verify_decision_otp(actor_user, otp)
+
+    consent.status = "REVOKED"
+    consent.revoked_at = _now()
+    db.commit()
+    db.refresh(consent)
+    record_consent_event(db, "consent.revoke", consent, actor_user=actor_user, ip_address=ip_address)
+    return consent
+
+
+def update_consent_alias(
+    db: Session,
+    *,
+    consent_id: int,
+    actor_user: User,
+    alias: str,
+):
+    consent = _get_relationship_consent(db, consent_id)
+    _ensure_patient_authority(consent, actor_user)
+    consent.alias = _clean_alias(alias, consent.requestor.full_name)
+    db.commit()
+    db.refresh(consent)
+    return consent

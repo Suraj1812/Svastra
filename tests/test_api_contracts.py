@@ -8,6 +8,14 @@ from app.auth import otp_provider
 from app.database import Base, get_db
 from app.main import app
 from app.models import audit, consent, session, user  # noqa: F401
+from app.reference_terms import get_reference_term
+
+
+GENDER_FEMALE = get_reference_term("gender", "Female")
+LANGUAGE_ENGLISH = get_reference_term("language", "English")
+LANGUAGE_HINDI = get_reference_term("language", "Hindi")
+OCCUPATION_PHYSICIAN = get_reference_term("occupation", "Physician")
+RELATIONSHIP_FAMILY = get_reference_term("relationship", "Family member")
 
 
 @pytest.fixture()
@@ -56,8 +64,8 @@ def test_patient_api_flow_enforces_consent_and_sessions(client):
             "full_name": "Asha Patient",
             "mobile_number": "9876543200",
             "date_of_birth": "1992-05-17",
-            "gender": "Female",
-            "preferred_language": "English",
+            "gender": GENDER_FEMALE,
+            "preferred_language": LANGUAGE_ENGLISH,
             "terms_accepted": True,
             "unified_consent_accepted": False,
         },
@@ -72,8 +80,8 @@ def test_patient_api_flow_enforces_consent_and_sessions(client):
             "full_name": "Asha Patient",
             "mobile_number": "9876543200",
             "date_of_birth": "1992-05-17",
-            "gender": "Female",
-            "preferred_language": "English",
+            "gender": GENDER_FEMALE,
+            "preferred_language": LANGUAGE_ENGLISH,
             "terms_accepted": True,
             "unified_consent_accepted": True,
         },
@@ -81,6 +89,8 @@ def test_patient_api_flow_enforces_consent_and_sessions(client):
     assert registered_response.status_code == 201
     registered = registered_response.json()["data"]
     assert registered["user"]["role"] == "patient"
+    assert registered["user"]["gender"] == GENDER_FEMALE
+    assert registered["user"]["preferred_language"] == LANGUAGE_ENGLISH
     assert registered["dashboard_route"] == "/dashboards/rogi"
     assert registered["consent"]["patient_id"] == registered["user"]["id"]
 
@@ -132,7 +142,7 @@ def test_provider_and_caregiver_api_flows_route_to_expected_dashboards(client):
         json={
             "full_name": "Dr Meera",
             "mobile_number": "9876543205",
-            "professional_category": "Physician",
+            "professional_category": OCCUPATION_PHYSICIAN,
             "registration_number": "REG-123",
             "terms_accepted": True,
         },
@@ -140,6 +150,7 @@ def test_provider_and_caregiver_api_flows_route_to_expected_dashboards(client):
 
     assert provider_response.status_code == 201
     provider = provider_response.json()["data"]
+    assert provider["user"]["professional_category"] == OCCUPATION_PHYSICIAN
     assert provider["dashboard_route"] == "/dashboards/mantrana"
 
     client.post("/auth/otp/send", json={"mobile_number": "9876543206"})
@@ -149,12 +160,14 @@ def test_provider_and_caregiver_api_flows_route_to_expected_dashboards(client):
         json={
             "full_name": "Ravi Caregiver",
             "mobile_number": "9876543206",
-            "relationship_to_patient": "Family member",
-            "preferred_language": "Hindi",
+            "relationship_to_patient": RELATIONSHIP_FAMILY,
+            "preferred_language": LANGUAGE_HINDI,
             "terms_accepted": True,
         },
     )
 
     assert caregiver_response.status_code == 201
     caregiver = caregiver_response.json()["data"]
+    assert caregiver["user"]["relationship_to_patient"] == RELATIONSHIP_FAMILY
+    assert caregiver["user"]["preferred_language"] == LANGUAGE_HINDI
     assert caregiver["dashboard_route"] == "/dashboards/sahay"

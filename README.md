@@ -46,9 +46,18 @@ application version, and request IP address when available.
 - `GET /consent/current`
 - `GET /me/consent-status`
 - `POST /consent/platform/accept`
+- `GET /consent/active`
+- `GET /consent/pending`
+- `GET /consent/inactive`
 - `GET /consent/requests`
+- `GET /consent/{id}`
+- `POST /consent/request`
 - `POST /consent/request/{id}/grant`
 - `POST /consent/request/{id}/reject`
+- `POST /consent/request/{id}/revoke`
+- `POST /consent/send-otp`
+- `POST /consent/verify-otp`
+- `PUT /consent/{id}/alias`
 - `POST /consent/patients/{patient_id}/accept`
 - `GET /consent/patients/{patient_id}/status`
 

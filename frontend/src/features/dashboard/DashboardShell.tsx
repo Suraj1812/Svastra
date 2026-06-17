@@ -25,10 +25,11 @@ import { getJsonWithSession } from "../../shared/api/client";
 import { dashboardItems, roleDashboardLabels } from "../../shared/config/registrationOptions";
 import type {
   AuthResult,
+  ConsentListResult,
   ConsentRequestsResult,
-  ConsentRequestSummary,
   ConsentStatusResult,
   PermissionsResult,
+  RelationshipConsentSummary,
   Role,
 } from "../../shared/types/auth";
 import { ConsentWorkspace } from "./components/ConsentWorkspace";
@@ -49,7 +50,7 @@ const iconByItem: Record<string, ReactElement> = {
   Profile: <PersonIcon />,
   Tasks: <AssignmentTurnedInIcon />,
   Messages: <NotificationsActiveIcon />,
-  Consent: <PrivacyTipIcon />,
+  "Consent Admin": <PrivacyTipIcon />,
   "Patient Status": <HealthAndSafetyIcon />,
   Notifications: <NotificationsActiveIcon />,
 };
@@ -64,7 +65,7 @@ const permissionByItem: Partial<Record<Role, Partial<Record<string, string>>>> =
   patient: {
     Tasks: "VIEW_TASKS",
     Timeline: "VIEW_TIMELINE",
-    Consent: "MANAGE_CONSENT",
+    "Consent Admin": "MANAGE_CONSENT",
   },
   caregiver: {
     "Patient Status": "VIEW_PATIENT_STATUS",
@@ -79,7 +80,9 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
   const [permissions, setPermissions] = useState<string[]>([]);
   const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [consentStatus, setConsentStatus] = useState<ConsentStatusResult | null>(null);
-  const [consentRequests, setConsentRequests] = useState<ConsentRequestSummary[]>([]);
+  const [activeConsents, setActiveConsents] = useState<RelationshipConsentSummary[]>([]);
+  const [pendingConsents, setPendingConsents] = useState<RelationshipConsentSummary[]>([]);
+  const [inactiveConsents, setInactiveConsents] = useState<RelationshipConsentSummary[]>([]);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const items = dashboardItems[auth.user.role as Role];
@@ -106,16 +109,22 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
         setPermissions(permissionsResult.permissions.map((permission) => permission.code));
 
         if (auth.user.role === "patient") {
-          const [statusResult, requestsResult] = await Promise.all([
+          const [statusResult, activeResult, pendingResult, inactiveResult] = await Promise.all([
             getJsonWithSession<ConsentStatusResult>("/me/consent-status", sessionToken),
-            getJsonWithSession<ConsentRequestsResult>("/consent/requests", sessionToken),
+            getJsonWithSession<ConsentListResult>("/consent/active", sessionToken),
+            getJsonWithSession<ConsentRequestsResult>("/consent/pending", sessionToken),
+            getJsonWithSession<ConsentListResult>("/consent/inactive", sessionToken),
           ]);
           if (!active) return;
           setConsentStatus(statusResult);
-          setConsentRequests(requestsResult.requests);
+          setActiveConsents(activeResult.consents);
+          setPendingConsents(pendingResult.requests);
+          setInactiveConsents(inactiveResult.consents);
         } else {
           setConsentStatus(null);
-          setConsentRequests([]);
+          setActiveConsents([]);
+          setPendingConsents([]);
+          setInactiveConsents([]);
         }
       } catch (error) {
         if (active) {
@@ -238,10 +247,12 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
             </Grid>
           ) : !hasSectionPermission ? (
             <PermissionDenied />
-          ) : selectedItem === "Consent" && auth.user.role === "patient" ? (
+          ) : selectedItem === "Consent Admin" && auth.user.role === "patient" ? (
             <ConsentWorkspace
               consentStatus={consentStatus}
-              requests={consentRequests}
+              activeConsents={activeConsents}
+              pendingRequests={pendingConsents}
+              inactiveConsents={inactiveConsents}
               sessionToken={auth.session.session_token}
               onRefresh={() => setRefreshKey((current) => current + 1)}
             />

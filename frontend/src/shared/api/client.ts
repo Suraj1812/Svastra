@@ -69,3 +69,15 @@ export function postJsonWithSession<T>(
     headers: sessionHeaders(sessionToken),
   });
 }
+
+export function putJsonWithSession<T>(
+  path: string,
+  payload: unknown,
+  sessionToken: string,
+): Promise<T> {
+  return apiRequest<T>(path, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    headers: sessionHeaders(sessionToken),
+  });
+}

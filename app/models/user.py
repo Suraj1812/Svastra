@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -31,18 +31,18 @@ class User(Base):
     mobile_number = Column(String(32), nullable=False, unique=True, index=True)
     email_address = Column(String(255), nullable=True)
 
-    professional_category = Column(String(100), nullable=True)
+    professional_category = Column(Text, nullable=True)
     registration_number = Column(String(100), nullable=True)
     hpid_number = Column(String(100), nullable=True)
 
     date_of_birth = Column(Date, nullable=True)
-    gender = Column(String(64), nullable=True)
-    preferred_language = Column(String(64), nullable=True)
+    gender = Column(Text, nullable=True)
+    preferred_language = Column(Text, nullable=True)
     abha_number = Column(String(100), nullable=True)
     emergency_contact_name = Column(String(255), nullable=True)
     emergency_contact_mobile = Column(String(32), nullable=True)
 
-    relationship_to_patient = Column(String(100), nullable=True)
+    relationship_to_patient = Column(Text, nullable=True)
     terms_accepted = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True)
 
@@ -58,5 +58,17 @@ class User(Base):
     platform_consents = relationship(
         "PlatformConsent",
         back_populates="patient",
+        cascade="all, delete-orphan",
+    )
+    patient_consents = relationship(
+        "RelationshipConsent",
+        foreign_keys="RelationshipConsent.patient_id",
+        back_populates="patient",
+        cascade="all, delete-orphan",
+    )
+    requested_consents = relationship(
+        "RelationshipConsent",
+        foreign_keys="RelationshipConsent.requestor_id",
+        back_populates="requestor",
         cascade="all, delete-orphan",
     )

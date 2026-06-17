@@ -77,17 +77,81 @@ Required fields: `full_name`, `mobile_number`, `professional_category`, `registr
 
 Optional fields: `email_address`, `hpid_number`.
 
+`professional_category` must be the exact object from `data/svp_entry_terms.json` where `tag = "occupation"`.
+
+Request:
+
+```json
+{
+  "full_name": "Dr Meera",
+  "mobile_number": "9876543210",
+  "professional_category": {
+    "conceptId": "309343006",
+    "term": "Physician",
+    "tag": "occupation"
+  },
+  "registration_number": "REG-123",
+  "terms_accepted": true
+}
+```
+
 ### POST /auth/register/patient
 
 Required fields: `full_name`, `mobile_number`, `date_of_birth`, `gender`, `preferred_language`, `terms_accepted`, `unified_consent_accepted`.
 
 Optional fields: `abha_number`, `emergency_contact_name`, `emergency_contact_mobile`.
 
+`gender` and `preferred_language` must be exact objects from `data/svp_entry_terms.json`.
+
 `unified_consent_accepted` must be `true`.
+
+Request:
+
+```json
+{
+  "full_name": "Asha Patient",
+  "mobile_number": "9876543210",
+  "date_of_birth": "1992-05-17",
+  "gender": {
+    "conceptId": "248152002",
+    "term": "Female",
+    "tag": "gender"
+  },
+  "preferred_language": {
+    "conceptId": "297487008",
+    "term": "English",
+    "tag": "language"
+  },
+  "terms_accepted": true,
+  "unified_consent_accepted": true
+}
+```
 
 ### POST /auth/register/caregiver
 
 Required fields: `full_name`, `mobile_number`, `relationship_to_patient`, `preferred_language`, `terms_accepted`.
+
+`relationship_to_patient` and `preferred_language` must be exact objects from `data/svp_entry_terms.json`.
+
+Request:
+
+```json
+{
+  "full_name": "Ravi Caregiver",
+  "mobile_number": "9876543211",
+  "relationship_to_patient": {
+    "conceptId": "303071001",
+    "term": "Family member",
+    "tag": "relationship"
+  },
+  "preferred_language": {
+    "conceptId": "161143006",
+    "term": "Hindi",
+    "tag": "language"
+  },
+  "terms_accepted": true
+}
+```
 
 ### POST /auth/session/validate
 
@@ -106,6 +170,29 @@ Request:
 ```json
 {
   "session_token": "session-token"
+}
+```
+
+Registration, login, and session validation user objects return dropdown selections in the same structure:
+
+```json
+{
+  "id": 1,
+  "role": "patient",
+  "full_name": "Asha Patient",
+  "mobile_number": "9876543210",
+  "professional_category": null,
+  "gender": {
+    "conceptId": "248152002",
+    "term": "Female",
+    "tag": "gender"
+  },
+  "preferred_language": {
+    "conceptId": "297487008",
+    "term": "English",
+    "tag": "language"
+  },
+  "relationship_to_patient": null
 }
 ```
 
@@ -205,9 +292,9 @@ Response data:
 }
 ```
 
-## Relationship Consent Foundation
+## Relationship Consent Management
 
-Tuesday scope documents the API surface and validates OTP/session flow. Relationship consent persistence and full decision workflow remain prepared for Wednesday.
+Wednesday scope implements patient-controlled relationship consent persistence, OTP-authenticated grant/reject/revoke decisions, aliases, audit events, CEP events, and access enforcement.
 
 Supported consent types:
 
@@ -217,12 +304,66 @@ Supported consent types:
 Supported states:
 
 - `PENDING`
-- `GRANTED`
+- `ACTIVE`
 - `REJECTED`
 - `REVOKED`
 - `EXPIRED`
 
-### GET /consent/requests
+### POST /consent/request
+
+Requires a provider or caregiver `X-Session-Token`.
+
+Request:
+
+```json
+{
+  "patient_id": 1,
+  "consent_type": "provider_access",
+  "alias": "Primary physician"
+}
+```
+
+`alias` is optional, patient-editable later, and defaults to the registered requestor name.
+
+Response data:
+
+```json
+{
+  "id": 1,
+  "alias": "Dr Meera",
+  "registered_full_name": "Dr Meera",
+  "requestor_role": "provider",
+  "consent_type": "provider_access",
+  "request_date": "2026-06-17T08:30:00Z",
+  "status": "PENDING"
+}
+```
+
+Creates audit action `consent.request` and CEP event `consent.request`.
+
+### GET /consent/active
+
+Requires a patient `X-Session-Token`.
+
+Response data:
+
+```json
+{
+  "consents": [
+    {
+      "id": 1,
+      "alias": "Primary physician",
+      "registered_full_name": "Dr Meera",
+      "requestor_role": "provider",
+      "consent_type": "provider_access",
+      "granted_date": "2026-06-17T08:35:00Z",
+      "status": "ACTIVE"
+    }
+  ]
+}
+```
+
+### GET /consent/pending
 
 Requires a patient `X-Session-Token`.
 
@@ -232,18 +373,113 @@ Response data:
 {
   "requests": [
     {
-      "id": "request-id",
-      "requestor_name": "Dr Meera",
+      "id": 1,
+      "alias": "Dr Meera",
+      "registered_full_name": "Dr Meera",
       "requestor_role": "provider",
       "consent_type": "provider_access",
-      "request_date": "2026-06-16T08:30:00Z",
+      "request_date": "2026-06-17T08:30:00Z",
       "status": "PENDING"
     }
   ]
 }
 ```
 
-Current Tuesday implementation returns an empty list until Wednesday relationship consent tables are activated.
+### GET /consent/inactive
+
+Requires a patient `X-Session-Token`.
+
+Response data:
+
+```json
+{
+  "consents": [
+    {
+      "id": 1,
+      "alias": "Primary physician",
+      "registered_full_name": "Dr Meera",
+      "requestor_role": "provider",
+      "consent_type": "provider_access",
+      "decision_date": "2026-06-17T09:00:00Z",
+      "status": "REVOKED"
+    }
+  ]
+}
+```
+
+### GET /consent/requests
+
+Requires a patient `X-Session-Token`.
+
+Compatibility alias for `GET /consent/pending`.
+
+### GET /consent/{id}
+
+Requires a patient `X-Session-Token`.
+
+Returns a single relationship consent detail record. `mobile_number` is included only in this details response.
+
+### PUT /consent/{id}/alias
+
+Requires a patient `X-Session-Token`.
+
+Request:
+
+```json
+{
+  "alias": "Primary physician"
+}
+```
+
+Alias max length is 60 characters. No OTP is required.
+
+### POST /consent/send-otp
+
+Requires a patient `X-Session-Token`.
+
+Request:
+
+```json
+{
+  "consent_id": 1,
+  "action": "grant"
+}
+```
+
+Response data:
+
+```json
+{
+  "consent_id": 1,
+  "action": "grant",
+  "otp_sent": true,
+  "mobile_number": "9876543210"
+}
+```
+
+### POST /consent/verify-otp
+
+Requires a patient `X-Session-Token`.
+
+Request:
+
+```json
+{
+  "consent_id": 1,
+  "action": "grant",
+  "otp": "123456"
+}
+```
+
+Response data:
+
+```json
+{
+  "consent_id": 1,
+  "action": "grant",
+  "otp_verified": true
+}
+```
 
 ### POST /consent/request/{id}/grant
 
@@ -261,13 +497,12 @@ Response data:
 
 ```json
 {
-  "request_id": "request-id",
-  "status": "GRANTED",
-  "implementation_status": "placeholder_for_wednesday"
+  "id": 1,
+  "status": "ACTIVE"
 }
 ```
 
-Invalid OTP returns `400 BAD_REQUEST`.
+Invalid OTP returns `400 BAD_REQUEST`. Creates audit action `consent.grant` and CEP event `consent.grant`.
 
 ### POST /consent/request/{id}/reject
 
@@ -285,10 +520,32 @@ Response data:
 
 ```json
 {
-  "request_id": "request-id",
-  "status": "REJECTED",
-  "implementation_status": "placeholder_for_wednesday"
+  "id": 1,
+  "status": "REJECTED"
 }
 ```
 
-Invalid OTP returns `400 BAD_REQUEST`.
+Invalid OTP returns `400 BAD_REQUEST`. Creates audit action `consent.reject` and CEP event `consent.reject`.
+
+### POST /consent/request/{id}/revoke
+
+Requires a patient `X-Session-Token`.
+
+Request:
+
+```json
+{
+  "otp": "123456"
+}
+```
+
+Response data:
+
+```json
+{
+  "id": 1,
+  "status": "REVOKED"
+}
+```
+
+Invalid OTP returns `400 BAD_REQUEST`. Creates audit action `consent.revoke` and CEP event `consent.revoke`.

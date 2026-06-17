@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 
 import { fieldHelperText } from "../../../../shared/components/formHelpers";
-import { genders, languages } from "../../../../shared/config/registrationOptions";
+import { findReferenceTerm, genders, languages } from "../../../../shared/config/registrationOptions";
 import { patientSchema, type PatientValues } from "../../../../shared/validation/authSchemas";
 
 type PatientRegistrationFormProps = {
@@ -40,8 +40,8 @@ export function PatientRegistrationForm({
       full_name: "",
       mobile_number: mobile,
       date_of_birth: "",
-      gender: "",
-      preferred_language: "",
+      gender: undefined,
+      preferred_language: undefined,
       abha_number: "",
       emergency_contact_name: "",
       emergency_contact_mobile: "",
@@ -93,12 +93,15 @@ export function PatientRegistrationForm({
                 error={Boolean(errors.gender)}
                 helperText={fieldHelperText(errors.gender?.message)}
                 {...field}
-                value={field.value || ""}
+                value={field.value?.conceptId || ""}
+                onChange={(event) =>
+                  field.onChange(findReferenceTerm(genders, event.target.value) || undefined)
+                }
               >
                 <option value="" aria-label="Select gender" />
                 {genders.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                  <option key={option.conceptId} value={option.conceptId}>
+                    {option.term}
                   </option>
                 ))}
               </TextField>
@@ -117,12 +120,15 @@ export function PatientRegistrationForm({
                 error={Boolean(errors.preferred_language)}
                 helperText={fieldHelperText(errors.preferred_language?.message)}
                 {...field}
-                value={field.value || ""}
+                value={field.value?.conceptId || ""}
+                onChange={(event) =>
+                  field.onChange(findReferenceTerm(languages, event.target.value) || undefined)
+                }
               >
                 <option value="" aria-label="Select preferred language" />
                 {languages.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                  <option key={option.conceptId} value={option.conceptId}>
+                    {option.term}
                   </option>
                 ))}
               </TextField>
