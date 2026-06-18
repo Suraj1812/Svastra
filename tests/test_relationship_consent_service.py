@@ -88,7 +88,7 @@ def test_relationship_consent_service_records_audit_cep_and_enforces_access(db_s
         db_session,
         consent_id=consent.id,
         actor_user=patient,
-        otp="123456",
+        session_id=101,
     )
 
     assert granted.status == "ACTIVE"
@@ -107,7 +107,7 @@ def test_relationship_consent_service_records_audit_cep_and_enforces_access(db_s
         db_session,
         consent_id=consent.id,
         actor_user=patient,
-        otp="123456",
+        session_id=101,
     )
 
     assert revoked.status == "REVOKED"

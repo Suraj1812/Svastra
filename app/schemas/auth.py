@@ -9,7 +9,7 @@ def _validate_mobile_number(value: str):
 
 
 class MobileRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     mobile_number: str = Field(..., min_length=10, max_length=20)
 
@@ -24,6 +24,6 @@ class OTPVerifyRequest(MobileRequest):
 
 
 class SessionTokenRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     session_token: str = Field(..., min_length=1)

@@ -33,8 +33,10 @@ import type {
   Role,
 } from "../../shared/types/auth";
 import { ConsentWorkspace } from "./components/ConsentWorkspace";
+import { CarePlanWorkspace } from "./components/CarePlanWorkspace";
 import { DashboardEmptyState } from "./components/DashboardEmptyState";
 import { PermissionDenied } from "./components/PermissionDenied";
+import { RelationshipWorkspace } from "./components/RelationshipWorkspace";
 
 type DashboardShellProps = {
   auth: AuthResult;
@@ -248,14 +250,33 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
           ) : !hasSectionPermission ? (
             <PermissionDenied />
           ) : selectedItem === "Consent Admin" && auth.user.role === "patient" ? (
-            <ConsentWorkspace
-              consentStatus={consentStatus}
-              activeConsents={activeConsents}
-              pendingRequests={pendingConsents}
-              inactiveConsents={inactiveConsents}
+            <Stack spacing={4}>
+              <ConsentWorkspace
+                consentStatus={consentStatus}
+                activeConsents={activeConsents}
+                pendingRequests={pendingConsents}
+                inactiveConsents={inactiveConsents}
+                sessionToken={auth.session.session_token}
+                onRefresh={() => setRefreshKey((current) => current + 1)}
+              />
+              <RelationshipWorkspace
+                role="patient"
+                sessionToken={auth.session.session_token}
+                pendingCount={pendingConsents.length}
+              />
+            </Stack>
+          ) : selectedItem === "Patients" && auth.user.role === "provider" ? (
+            <RelationshipWorkspace
+              role="provider"
               sessionToken={auth.session.session_token}
-              onRefresh={() => setRefreshKey((current) => current + 1)}
             />
+          ) : selectedItem === "Patient Status" && auth.user.role === "caregiver" ? (
+            <RelationshipWorkspace
+              role="caregiver"
+              sessionToken={auth.session.session_token}
+            />
+          ) : selectedItem === "Care Plans" && auth.user.role === "provider" ? (
+            <CarePlanWorkspace sessionToken={auth.session.session_token} />
           ) : (
             <Grid
               container

@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.auth import otp_provider
 from app.config import settings
 from app.consent.consent_audit import record_consent_event
 from app.models.consent import ConsentVersion, PlatformConsent, RelationshipConsent
@@ -167,6 +166,7 @@ def create_consent_request(
     requestor_user: User,
     consent_type: str,
     alias: str = None,
+    session_id: int = None,
     ip_address: str = None,
 ):
     validate_consent_request(consent_type)
@@ -207,6 +207,9 @@ def create_consent_request(
         "consent.request",
         consent,
         actor_user=requestor_user,
+        session_id=session_id,
+        previous_state=None,
+        new_state=consent.status,
         ip_address=ip_address,
     )
     return consent
@@ -255,45 +258,55 @@ def get_pending_consent_requests(db: Session, *, patient_id: int):
     return get_pending_consents(db, patient_id=patient_id)
 
 
-def send_consent_otp(actor_user: User):
-    if actor_user.role != "patient":
-        raise PermissionError("Consent OTP can only be sent to patients")
-    return otp_provider.send_otp(actor_user.mobile_number)
-
-
-def verify_consent_otp(actor_user: User, otp: str, *, consume: bool = False):
-    if actor_user.role != "patient":
-        raise PermissionError("Consent OTP can only be verified by patients")
-    if not otp_provider.verify_otp(actor_user.mobile_number, otp):
-        raise ValueError("OTP verification is required before consent decision")
-    if consume:
-        otp_provider.consume_mobile_verification(actor_user.mobile_number)
-    return True
-
-
-def _verify_decision_otp(actor_user: User, otp: str):
-    verify_consent_otp(actor_user, otp, consume=True)
-
-
 def grant_consent(
     db: Session,
     *,
     consent_id: int,
     actor_user: User,
-    otp: str,
+    session_id: int,
     ip_address: str = None,
 ):
     consent = _get_relationship_consent(db, consent_id)
     _ensure_patient_authority(consent, actor_user)
     if consent.status != "PENDING":
         raise ValueError("Only pending consent can be granted")
-    _verify_decision_otp(actor_user, otp)
 
+    previous_state = consent.status
     consent.status = "ACTIVE"
     consent.granted_at = _now()
     db.commit()
     db.refresh(consent)
-    record_consent_event(db, "consent.grant", consent, actor_user=actor_user, ip_address=ip_address)
+    record_consent_event(
+        db,
+        "consent.grant",
+        consent,
+        actor_user=actor_user,
+        session_id=session_id,
+        previous_state=previous_state,
+        new_state=consent.status,
+        ip_address=ip_address,
+    )
+    from app.relationships.relationship_service import (
+        create_patient_caregiver_link,
+        create_provider_patient_link,
+    )
+
+    if consent.requestor_role == "provider":
+        create_provider_patient_link(
+            db,
+            provider=consent.requestor,
+            patient_id=consent.patient_id,
+            actor_user=actor_user,
+            ip_address=ip_address,
+        )
+    else:
+        create_patient_caregiver_link(
+            db,
+            caregiver=consent.requestor,
+            patient_id=consent.patient_id,
+            actor_user=actor_user,
+            ip_address=ip_address,
+        )
     return consent
 
 
@@ -302,20 +315,29 @@ def reject_consent(
     *,
     consent_id: int,
     actor_user: User,
-    otp: str,
+    session_id: int,
     ip_address: str = None,
 ):
     consent = _get_relationship_consent(db, consent_id)
     _ensure_patient_authority(consent, actor_user)
     if consent.status != "PENDING":
         raise ValueError("Only pending consent can be rejected")
-    _verify_decision_otp(actor_user, otp)
 
+    previous_state = consent.status
     consent.status = "REJECTED"
     consent.rejected_at = _now()
     db.commit()
     db.refresh(consent)
-    record_consent_event(db, "consent.reject", consent, actor_user=actor_user, ip_address=ip_address)
+    record_consent_event(
+        db,
+        "consent.reject",
+        consent,
+        actor_user=actor_user,
+        session_id=session_id,
+        previous_state=previous_state,
+        new_state=consent.status,
+        ip_address=ip_address,
+    )
     return consent
 
 
@@ -324,20 +346,37 @@ def revoke_consent(
     *,
     consent_id: int,
     actor_user: User,
-    otp: str,
+    session_id: int,
     ip_address: str = None,
 ):
     consent = _get_relationship_consent(db, consent_id)
     _ensure_patient_authority(consent, actor_user)
     if consent.status != "ACTIVE":
         raise ValueError("Only active consent can be revoked")
-    _verify_decision_otp(actor_user, otp)
 
+    previous_state = consent.status
     consent.status = "REVOKED"
     consent.revoked_at = _now()
     db.commit()
     db.refresh(consent)
-    record_consent_event(db, "consent.revoke", consent, actor_user=actor_user, ip_address=ip_address)
+    record_consent_event(
+        db,
+        "consent.revoke",
+        consent,
+        actor_user=actor_user,
+        session_id=session_id,
+        previous_state=previous_state,
+        new_state=consent.status,
+        ip_address=ip_address,
+    )
+    from app.relationships.relationship_service import deactivate_links_for_consent
+
+    deactivate_links_for_consent(
+        db,
+        consent_id=consent.id,
+        actor_user=actor_user,
+        ip_address=ip_address,
+    )
     return consent
 
 

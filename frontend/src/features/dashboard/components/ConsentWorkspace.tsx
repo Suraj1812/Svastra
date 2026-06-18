@@ -34,15 +34,12 @@ import {
 import { SubmitButton } from "../../../shared/components/SubmitButton";
 import { fieldHelperText } from "../../../shared/components/formHelpers";
 import type {
-  ConsentOtpResult,
   ConsentStatusResult,
   RelationshipConsentSummary,
 } from "../../../shared/types/auth";
 import {
   consentAliasSchema,
-  consentDecisionSchema,
   type ConsentAliasValues,
-  type ConsentDecisionValues,
 } from "../../../shared/validation/authSchemas";
 
 type ConsentWorkspaceProps = {
@@ -108,59 +105,35 @@ function detailRows(consent: RelationshipConsentSummary) {
 
 function ConsentDecisionDialog({
   decision,
-  otpSending,
   loading,
   error,
-  otpMessage,
   onClose,
-  onSubmit,
+  onConfirm,
 }: {
   decision: PendingDecision | null;
-  otpSending: boolean;
   loading: boolean;
   error: string | null;
-  otpMessage: string | null;
   onClose: () => void;
-  onSubmit: (values: ConsentDecisionValues) => void;
+  onConfirm: () => void;
 }) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<ConsentDecisionValues>({
-    resolver: zodResolver(consentDecisionSchema),
-    defaultValues: { otp: "" },
-  });
-
-  useEffect(() => {
-    reset({ otp: "" });
-  }, [decision?.action, decision?.consent.id, reset]);
-
   const title = decision ? `${actionLabel[decision.action]} Consent` : "Consent Decision";
+  const confirmationText = decision
+    ? decision.action === "grant"
+      ? `Grant access to ${decision.consent.alias}?`
+      : decision.action === "reject"
+        ? `Reject the access request from ${decision.consent.alias}?`
+        : `Revoke access for ${decision.consent.alias}?`
+    : "Confirm this consent decision?";
 
   return (
     <Dialog open={Boolean(decision)} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <Stack
-          component="form"
-          id="consent-decision-form"
-          spacing={2.5}
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-        >
-          {otpMessage ? <Alert severity="success">{otpMessage}</Alert> : null}
-          {otpSending ? <Alert severity="info">Sending OTP...</Alert> : null}
-          <TextField
-            label="OTP"
-            autoComplete="one-time-code"
-            inputMode="numeric"
-            error={Boolean(errors.otp)}
-            helperText={fieldHelperText(errors.otp?.message)}
-            disabled={otpSending || loading}
-            {...register("otp")}
-          />
+        <Stack spacing={2.5}>
+          <Typography>{confirmationText}</Typography>
+          <Alert severity={decision?.action === "grant" ? "info" : "warning"}>
+            Your authenticated session and this explicit confirmation will be recorded in the audit trail.
+          </Alert>
           {error ? <Alert severity="error">{error}</Alert> : null}
         </Stack>
       </DialogContent>
@@ -169,13 +142,12 @@ function ConsentDecisionDialog({
           Cancel
         </Button>
         <SubmitButton
-          form="consent-decision-form"
           loading={loading}
-          disabled={otpSending}
           icon={decision?.action === "grant" ? <CheckCircleIcon /> : <CloseIcon />}
           sx={{ width: "auto" }}
+          onClick={onConfirm}
         >
-          Confirm
+          {`Yes, ${decision ? actionLabel[decision.action] : "Confirm"}`}
         </SubmitButton>
       </DialogActions>
     </Dialog>
@@ -405,8 +377,6 @@ export function ConsentWorkspace({
   const [decision, setDecision] = useState<PendingDecision | null>(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [decisionError, setDecisionError] = useState<string | null>(null);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpMessage, setOtpMessage] = useState<string | null>(null);
   const [details, setDetails] = useState<RelationshipConsentSummary | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [aliasTarget, setAliasTarget] = useState<RelationshipConsentSummary | null>(null);
@@ -416,46 +386,22 @@ export function ConsentWorkspace({
   const bucketItems =
     bucket === "active" ? activeConsents : bucket === "pending" ? pendingRequests : inactiveConsents;
 
-  async function openDecision(action: ConsentAction, consent: RelationshipConsentSummary) {
+  function openDecision(action: ConsentAction, consent: RelationshipConsentSummary) {
     setDecision({ action, consent });
     setDecisionError(null);
-    setOtpMessage(null);
-    setOtpSending(true);
-    try {
-      const result = await postJsonWithSession<ConsentOtpResult>(
-        "/consent/send-otp",
-        { consent_id: consent.id, action },
-        sessionToken,
-      );
-      setOtpMessage(result.otp_sent ? "OTP sent" : null);
-    } catch (error) {
-      setDecisionError(error instanceof Error ? error.message : "OTP could not be sent");
-    } finally {
-      setOtpSending(false);
-    }
   }
 
-  async function submitDecision(values: ConsentDecisionValues) {
+  async function submitDecision() {
     if (!decision) return;
     setDecisionLoading(true);
     setDecisionError(null);
     try {
-      await postJsonWithSession<ConsentOtpResult>(
-        "/consent/verify-otp",
-        {
-          consent_id: decision.consent.id,
-          action: decision.action,
-          otp: values.otp,
-        },
-        sessionToken,
-      );
       await postJsonWithSession<RelationshipConsentSummary>(
         `/consent/request/${decision.consent.id}/${decision.action}`,
-        values,
+        { confirmed: true },
         sessionToken,
       );
       setDecision(null);
-      setOtpMessage(null);
       onRefresh();
     } catch (error) {
       setDecisionError(error instanceof Error ? error.message : "Consent decision failed");
@@ -591,16 +537,13 @@ export function ConsentWorkspace({
 
       <ConsentDecisionDialog
         decision={decision}
-        otpSending={otpSending}
         loading={decisionLoading}
         error={decisionError}
-        otpMessage={otpMessage}
         onClose={() => {
           setDecision(null);
           setDecisionError(null);
-          setOtpMessage(null);
         }}
-        onSubmit={submitDecision}
+        onConfirm={submitDecision}
       />
 
       <AliasDialog

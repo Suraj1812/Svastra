@@ -31,8 +31,13 @@ def send_otp(payload: MobileRequest, request: Request, db: Session = Depends(get
         action="otp.send",
         mobile_number=payload.mobile_number,
         ip_address=client_ip(request),
-        success=True,
+        success=result["success"],
     )
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"OTP was recently sent; retry in {result['retry_after_seconds']} seconds",
+        )
     return success_response(result, "OTP sent successfully")
 
 
@@ -207,6 +212,7 @@ def validate(payload: SessionTokenRequest, request: Request, db: Session = Depen
         ip_address=client_ip(request),
         success=True,
     )
+    session._issued_session_token = payload.session_token
     return success_response(
         {
             "valid": True,

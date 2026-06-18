@@ -94,7 +94,10 @@ def test_patient_api_flow_enforces_consent_and_sessions(client):
     assert registered["dashboard_route"] == "/dashboards/rogi"
     assert registered["consent"]["patient_id"] == registered["user"]["id"]
 
-    status_response = client.get(f"/consent/patients/{registered['user']['id']}/status")
+    status_response = client.get(
+        f"/consent/patients/{registered['user']['id']}/status",
+        headers={"X-Session-Token": registered["session"]["session_token"]},
+    )
     assert status_response.status_code == 200
     assert status_response.json()["data"]["accepted"] is True
 

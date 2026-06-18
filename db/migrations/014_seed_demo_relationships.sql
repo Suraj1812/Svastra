@@ -1,0 +1,2 @@
+-- Relationships are intentionally created through ACTIVE patient consent.
+-- This migration does not bypass the consent service with synthetic links.

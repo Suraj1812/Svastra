@@ -4,38 +4,27 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ConsentAcceptanceRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     application_name: Optional[str] = None
     app_version: Optional[str] = None
 
 
 class ConsentDecisionRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid")
 
-    otp: str = Field(..., min_length=4, max_length=8)
+    confirmed: Literal[True]
 
 
 class RelationshipConsentRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    patient_id: int
+    patient_id: int = Field(..., gt=0)
     consent_type: Literal["provider_access", "caregiver_access"]
     alias: Optional[str] = Field(default=None, max_length=60)
 
 
-class ConsentOTPRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    consent_id: int
-    action: Literal["grant", "reject", "revoke"]
-
-
-class ConsentOTPVerifyRequest(ConsentOTPRequest):
-    otp: str = Field(..., min_length=4, max_length=8)
-
-
 class ConsentAliasUpdateRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     alias: str = Field(..., min_length=1, max_length=60)

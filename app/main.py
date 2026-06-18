@@ -17,8 +17,11 @@ from app.core.middleware import request_logging_middleware
 from app.core.responses import success_response
 from app.database import init_db
 from app.api.routes.auth import router as auth_router
+from app.api.routes.care_plans import router as care_plans_router
 from app.api.routes.consent import router as consent_router
 from app.api.routes.me import router as me_router
+from app.api.routes.postoffice import router as postoffice_router
+from app.api.routes.relationships import router as relationships_router
 from app.auth.auth_service import RegistrationError
 
 
@@ -59,5 +62,8 @@ def health_check():
 
 
 app.include_router(auth_router)
+app.include_router(care_plans_router)
 app.include_router(consent_router)
 app.include_router(me_router)
+app.include_router(relationships_router)
+app.include_router(postoffice_router)

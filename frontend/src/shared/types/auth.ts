@@ -108,20 +108,71 @@ export type RelationshipConsentSummary = {
 
 export type ConsentRequestSummary = RelationshipConsentSummary;
 
+export type HealthcareRelationship = {
+  id: string;
+  patient: { id: number; full_name: string };
+  linked_user: { id: number; full_name: string; role: "provider" | "caregiver" };
+  alias: string;
+  relationship_type: "provider_patient" | "patient_caregiver";
+  relationship_status: "ACTIVE" | "INACTIVE";
+  consent_request_id: number;
+  relationship_date: string;
+  deactivated_at: string | null;
+  mobile_number?: string;
+  created?: boolean;
+  deactivated?: boolean;
+};
+
+export type RelationshipListResult = { relationships: HealthcareRelationship[] };
+export type LinkablePatientsResult = {
+  patients: Array<{
+    patient: { id: number; full_name: string };
+    consent_request_id: number;
+    consent_type: ConsentType;
+    granted_at: string;
+  }>;
+};
+export type PatientSearchResult = {
+  patient: { id: number; full_name: string };
+  consent_status: ConsentState | null;
+};
+
+export type ProviderTerm = {
+  conceptId: string;
+  term: string;
+  tag: "medication" | "measurement" | "recommendation" | "investigation";
+};
+
+export type AdvisorySummary = {
+  id: number;
+  advisory_type: ProviderTerm["tag"];
+  term: string;
+  tag: ProviderTerm["tag"];
+  configuration: Record<string, unknown>;
+  status: "DRAFT" | "PUBLISHED";
+  published_at: string | null;
+  created_at: string;
+};
+
+export type CarePlanSummary = {
+  id: number;
+  patient: { id: number; full_name: string };
+  provider_id: number;
+  title: string;
+  diagnosis: string | null;
+  status: "DRAFT" | "ACTIVE";
+  advisories: AdvisorySummary[];
+  created_at: string;
+  updated_at: string;
+  event_id?: string;
+};
+
 export type ConsentRequestsResult = {
   requests: ConsentRequestSummary[];
 };
 
 export type ConsentListResult = {
   consents: RelationshipConsentSummary[];
-};
-
-export type ConsentOtpResult = {
-  consent_id: number;
-  action: "grant" | "reject" | "revoke";
-  otp_sent?: boolean;
-  otp_verified?: boolean;
-  mobile_number?: string;
 };
 
 export type ReferenceTermTag = "relationship" | "occupation" | "language" | "gender";

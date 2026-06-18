@@ -27,11 +27,13 @@ def serialize_user(user: User):
 
 
 def serialize_session(session: UserSession):
-    return {
-        "session_token": session.session_token,
+    data = {
         "expires_at": session.expires_at,
         "is_active": session.is_active,
     }
+    if session.session_token is not None:
+        data["session_token"] = session.session_token
+    return data
 
 
 def serialize_consent(consent: ConsentAcceptance):

@@ -30,6 +30,10 @@ class Settings:
         BASE_DIR / "data" / "svp_entry_terms.json",
     )
     session_ttl_hours = int(os.getenv("SESSION_TTL_HOURS", "24"))
+    otp_ttl_seconds = int(os.getenv("OTP_TTL_SECONDS", "300"))
+    otp_resend_cooldown_seconds = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))
+    otp_max_attempts = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+    mock_otp = os.getenv("MOCK_OTP", "123456")
     cors_origins = [
         origin.strip()
         for origin in os.getenv(

@@ -133,7 +133,7 @@ def test_patient_consent_endpoints_reject_non_patient_sessions(client):
 
     grant_response = client.post(
         "/consent/request/999999/grant",
-        json={"otp": "123456"},
+        json={"confirmed": True},
         headers=headers,
     )
     assert grant_response.status_code == 403
@@ -179,32 +179,16 @@ def test_relationship_consent_request_decision_and_revoke_flow(client):
     assert alias_response.status_code == 200
     assert alias_response.json()["data"]["alias"] == "Primary physician"
 
-    otp_response = client.post(
-        "/consent/send-otp",
-        json={"consent_id": created["id"], "action": "grant"},
-        headers=patient_headers,
-    )
-    assert otp_response.status_code == 200
-    assert otp_response.json()["data"]["otp_sent"] is True
-
-    invalid_grant_response = client.post(
+    unconfirmed_grant_response = client.post(
         f"/consent/request/{created['id']}/grant",
-        json={"otp": "000000"},
+        json={"confirmed": False},
         headers=patient_headers,
     )
-    assert invalid_grant_response.status_code == 400
-
-    verify_response = client.post(
-        "/consent/verify-otp",
-        json={"consent_id": created["id"], "action": "grant", "otp": "123456"},
-        headers=patient_headers,
-    )
-    assert verify_response.status_code == 200
-    assert verify_response.json()["data"]["otp_verified"] is True
+    assert unconfirmed_grant_response.status_code == 422
 
     grant_response = client.post(
         f"/consent/request/{created['id']}/grant",
-        json={"otp": "123456"},
+        json={"confirmed": True},
         headers=patient_headers,
     )
     assert grant_response.status_code == 200
@@ -216,7 +200,7 @@ def test_relationship_consent_request_decision_and_revoke_flow(client):
 
     revoke_response = client.post(
         f"/consent/request/{created['id']}/revoke",
-        json={"otp": "123456"},
+        json={"confirmed": True},
         headers=patient_headers,
     )
     assert revoke_response.status_code == 200
@@ -246,7 +230,7 @@ def test_relationship_consent_reject_flow(client):
 
     reject_response = client.post(
         f"/consent/request/{created['id']}/reject",
-        json={"otp": "123456"},
+        json={"confirmed": True},
         headers=patient_headers,
     )
     assert reject_response.status_code == 200

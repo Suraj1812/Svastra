@@ -22,7 +22,7 @@ def _validate_mobile_number(value: str):
 
 
 class RegistrationBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     full_name: str = Field(..., min_length=1)
     mobile_number: str = Field(..., min_length=10, max_length=20)

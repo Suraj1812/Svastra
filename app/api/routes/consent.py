@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_session, get_current_user
 from app.api.serializers import client_ip, serialize_consent, serialize_relationship_consent
 from app.audit.audit_service import record_audit_event
 from app.consent.consent_service import (
@@ -18,9 +18,7 @@ from app.consent.consent_service import (
     record_consent_acceptance,
     reject_consent,
     revoke_consent,
-    send_consent_otp,
     update_consent_alias,
-    verify_consent_otp,
 )
 from app.core.responses import success_response
 from app.database import get_db
@@ -29,8 +27,6 @@ from app.schemas.consent import (
     ConsentAcceptanceRequest,
     ConsentAliasUpdateRequest,
     ConsentDecisionRequest,
-    ConsentOTPRequest,
-    ConsentOTPVerifyRequest,
     RelationshipConsentRequest,
 )
 
@@ -139,9 +135,10 @@ def inactive_consents(current_user=Depends(get_current_user), db: Session = Depe
 def request_relationship_consent(
     payload: RelationshipConsentRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    current_session=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
+    current_user = current_session.user
     authorize_request(current_user, _request_permission_for(payload.consent_type))
     try:
         consent = create_consent_request(
@@ -150,6 +147,7 @@ def request_relationship_consent(
             requestor_user=current_user,
             consent_type=payload.consent_type,
             alias=payload.alias,
+            session_id=current_session.id,
             ip_address=client_ip(request),
         )
     except (ValueError, PermissionError) as error:
@@ -160,70 +158,22 @@ def request_relationship_consent(
     )
 
 
-@router.post("/send-otp")
-def send_relationship_consent_otp(
-    payload: ConsentOTPRequest,
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    _require_patient_consent_admin(current_user)
-    try:
-        consent = get_relationship_consent(db, consent_id=payload.consent_id)
-        if consent.patient_id != current_user.id:
-            raise PermissionError("Patient authority is required for this consent")
-        result = send_consent_otp(current_user)
-    except (ValueError, PermissionError) as error:
-        _relationship_error(error)
-    return success_response(
-        {
-            "consent_id": payload.consent_id,
-            "action": payload.action,
-            "otp_sent": result["success"],
-            "mobile_number": current_user.mobile_number,
-        },
-        "Consent OTP sent",
-    )
-
-
-@router.post("/verify-otp")
-def verify_relationship_consent_otp(
-    payload: ConsentOTPVerifyRequest,
-    current_user=Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    _require_patient_consent_admin(current_user)
-    try:
-        consent = get_relationship_consent(db, consent_id=payload.consent_id)
-        if consent.patient_id != current_user.id:
-            raise PermissionError("Patient authority is required for this consent")
-        verify_consent_otp(current_user, payload.otp)
-    except (ValueError, PermissionError) as error:
-        _relationship_error(error)
-    return success_response(
-        {
-            "consent_id": payload.consent_id,
-            "action": payload.action,
-            "otp_verified": True,
-        },
-        "Consent OTP verified",
-    )
-
-
 @router.post("/request/{request_id}/grant")
 def grant_request(
-    request_id: str,
+    request_id: int,
     payload: ConsentDecisionRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    current_session=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
+    current_user = current_session.user
     _require_patient_consent_admin(current_user)
     try:
         consent = grant_consent(
             db,
-            consent_id=int(request_id),
-            otp=payload.otp,
+            consent_id=request_id,
             actor_user=current_user,
+            session_id=current_session.id,
             ip_address=client_ip(request),
         )
     except (ValueError, PermissionError) as error:
@@ -233,19 +183,20 @@ def grant_request(
 
 @router.post("/request/{request_id}/reject")
 def reject_request(
-    request_id: str,
+    request_id: int,
     payload: ConsentDecisionRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    current_session=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
+    current_user = current_session.user
     _require_patient_consent_admin(current_user)
     try:
         consent = reject_consent(
             db,
-            consent_id=int(request_id),
-            otp=payload.otp,
+            consent_id=request_id,
             actor_user=current_user,
+            session_id=current_session.id,
             ip_address=client_ip(request),
         )
     except (ValueError, PermissionError) as error:
@@ -255,19 +206,20 @@ def reject_request(
 
 @router.post("/request/{request_id}/revoke")
 def revoke_request(
-    request_id: str,
+    request_id: int,
     payload: ConsentDecisionRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    current_session=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
+    current_user = current_session.user
     _require_patient_consent_admin(current_user)
     try:
         consent = revoke_consent(
             db,
-            consent_id=int(request_id),
-            otp=payload.otp,
+            consent_id=request_id,
             actor_user=current_user,
+            session_id=current_session.id,
             ip_address=client_ip(request),
         )
     except (ValueError, PermissionError) as error:
@@ -316,8 +268,11 @@ def accept_consent(
     patient_id: int,
     payload: ConsentAcceptanceRequest,
     request: Request,
+    current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if current_user.role != "patient" or current_user.id != patient_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient authority is required")
     try:
         consent = record_consent_acceptance(
             db,
@@ -351,5 +306,11 @@ def accept_consent(
 
 
 @router.get("/patients/{patient_id}/status")
-def patient_consent_status(patient_id: int, db: Session = Depends(get_db)):
+def patient_consent_status(
+    patient_id: int,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "patient" or current_user.id != patient_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient authority is required")
     return success_response(get_patient_consent_status(db, patient_id))

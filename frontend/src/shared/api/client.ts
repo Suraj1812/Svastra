@@ -81,3 +81,10 @@ export function putJsonWithSession<T>(
     headers: sessionHeaders(sessionToken),
   });
 }
+
+export function deleteJsonWithSession<T>(path: string, sessionToken: string): Promise<T> {
+  return apiRequest<T>(path, {
+    method: "DELETE",
+    headers: sessionHeaders(sessionToken),
+  });
+}
