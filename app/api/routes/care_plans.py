@@ -6,17 +6,28 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.api.serializers import client_ip
 from app.care.advisory_service import add_advisory, serialize_advisory
+from app.care.allergy_service import add_patient_allergy, get_active_allergies, serialize_allergy
 from app.care.care_plan_service import (
     create_care_plan,
+    archive_care_plan,
     get_provider_care_plan,
     get_provider_care_plans,
     publish_care_plan,
+    publish_advisory,
     serialize_care_plan,
+    update_care_plan,
 )
 from app.core.responses import success_response
 from app.database import get_db
-from app.schemas.care import AdvisoryCreateRequest, CarePlanCreateRequest, PublishCarePlanRequest
-from app.terminology.term_service import search_provider_terms
+from app.models.care import Advisory
+from app.schemas.care import (
+    AdvisoryCreateRequest,
+    AllergyCreateRequest,
+    CarePlanCreateRequest,
+    CarePlanUpdateRequest,
+    PublishCarePlanRequest,
+)
+from app.terminology.term_service import get_term, search_provider_terms
 
 
 router = APIRouter(tags=["Care Plans"])
@@ -49,6 +60,20 @@ def terminology_search(
     except ValueError as error:
         _care_error(error)
     return success_response({"terms": terms, "query": query, "count": len(terms)})
+
+
+@router.get("/terminology/provider-terms/{concept_id}")
+def terminology_detail(
+    concept_id: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        term = get_term(db, concept_id=concept_id)
+    except ValueError as error:
+        _care_error(error)
+    return success_response(term)
 
 
 @router.post("/care-plans", status_code=status.HTTP_201_CREATED)
@@ -98,6 +123,52 @@ def plan_detail(
     return success_response(serialize_care_plan(plan))
 
 
+@router.put("/care-plans/{care_plan_id}")
+def update_plan(
+    care_plan_id: int,
+    payload: CarePlanUpdateRequest,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        plan = update_care_plan(
+            db,
+            care_plan_id=care_plan_id,
+            provider=current_user,
+            title=payload.title,
+            diagnosis=payload.diagnosis,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _care_error(error)
+    return success_response(serialize_care_plan(plan), "Care plan updated")
+
+
+@router.delete("/care-plans/{care_plan_id}")
+def archive_plan(
+    care_plan_id: int,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        plan, archived = archive_care_plan(
+            db,
+            care_plan_id=care_plan_id,
+            provider=current_user,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _care_error(error)
+    return success_response(
+        {**serialize_care_plan(plan), "archived": archived},
+        "Care plan archived" if archived else "Care plan already archived",
+    )
+
+
 @router.post("/care-plans/{care_plan_id}/advisories", status_code=status.HTTP_201_CREATED)
 def create_advisory(
     care_plan_id: int,
@@ -132,7 +203,7 @@ def publish_plan(
 ):
     _require_provider(current_user)
     try:
-        plan, event_id = publish_care_plan(
+        plan, deliveries = publish_care_plan(
             db,
             care_plan_id=care_plan_id,
             provider=current_user,
@@ -141,6 +212,123 @@ def publish_plan(
     except (ValueError, PermissionError) as error:
         _care_error(error)
     return success_response(
-        {**serialize_care_plan(plan), "event_id": event_id},
+        {
+            **serialize_care_plan(plan),
+            "event_id": deliveries[0]["event_id"],
+            "event_ids": [item["event_id"] for item in deliveries],
+            "deliveries": deliveries,
+        },
         "Care plan published",
+    )
+
+
+@router.post("/care-plans/{care_plan_id}/advisories/{advisory_id}/publish")
+def publish_one_advisory(
+    care_plan_id: int,
+    advisory_id: int,
+    payload: PublishCarePlanRequest,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        advisory, event_id, acknowledgement = publish_advisory(
+            db,
+            care_plan_id=care_plan_id,
+            advisory_id=advisory_id,
+            provider=current_user,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _care_error(error)
+    return success_response(
+        {
+            "advisory": serialize_advisory(advisory),
+            "event_id": event_id,
+            "acknowledgement": acknowledgement,
+        },
+        "Advisory published, routed, and acknowledged",
+    )
+
+
+def _patient_instruction(advisory: Advisory):
+    data = serialize_advisory(advisory)
+    configuration = data["configuration"]
+    duration = f"{configuration.get('duration_value')} {configuration.get('duration_unit')}"
+    if advisory.advisory_type == "medication":
+        instruction = (
+            f"Take {configuration.get('dose')} by {configuration.get('route')} route, "
+            f"{configuration.get('frequency')}, for {duration}."
+        )
+    elif advisory.advisory_type == "measurement":
+        instruction = (
+            f"Record {advisory.term} in {configuration.get('measurement_unit')} "
+            f"({configuration.get('frequency')}) for {duration}. "
+            f"Target: {configuration.get('target_value')}."
+        )
+    elif advisory.advisory_type == "recommendation":
+        instruction = f"{configuration.get('instruction')} ({configuration.get('frequency')}) for {duration}."
+    else:
+        instruction = (
+            f"Complete {advisory.term} with {configuration.get('priority')} priority "
+            f"({configuration.get('frequency')}) for {duration}."
+        )
+    additional = configuration.get("additional_instructions")
+    if additional:
+        instruction = f"{instruction} {additional}"
+    return {
+        "id": advisory.id,
+        "advisory_type": advisory.advisory_type,
+        "advisory": advisory.term,
+        "instruction": instruction,
+        "status": advisory.status,
+        "created_at": advisory.created_at,
+        "published_at": advisory.published_at,
+        "care_plan": {
+            "id": advisory.care_plan.id,
+            "title": advisory.care_plan.title,
+            "status": "INACTIVE" if advisory.care_plan.is_archived else advisory.care_plan.status,
+        },
+    }
+
+
+@router.get("/me/advisories")
+def my_advisories(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "patient":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient role is required")
+    advisories = db.query(Advisory).filter(
+        Advisory.patient_id == current_user.id,
+        Advisory.status == "PUBLISHED",
+    ).order_by(Advisory.published_at.desc()).all()
+    return success_response({"advisories": [_patient_instruction(item) for item in advisories]})
+
+
+@router.get("/me/allergies")
+def my_allergies(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != "patient":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient role is required")
+    allergies = get_active_allergies(db, patient_id=current_user.id)
+    return success_response({"allergies": [serialize_allergy(item) for item in allergies]})
+
+
+@router.post("/me/allergies", status_code=status.HTTP_201_CREATED)
+def add_my_allergy(
+    payload: AllergyCreateRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "patient":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient role is required")
+    allergy, created = add_patient_allergy(
+        db,
+        patient_id=current_user.id,
+        allergen_term=payload.allergen_term,
+    )
+    return success_response(
+        {**serialize_allergy(allergy), "created": created},
+        "Allergy added" if created else "Allergy already recorded",
     )

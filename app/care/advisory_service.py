@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.care.tag_resolver import resolve_tag
+from app.care.allergy_service import check_medication_allergies
 from app.models.care import Advisory, CarePlan
 from app.models.user import User
 from app.schemas.care import (
@@ -23,6 +24,8 @@ CONFIGURATION_MODELS = {
 
 ALLOWED_MEASUREMENT_UNITS = {
     "demo_term_temperature": {"°C", "°F"},
+    "demo_term_body_temperature": {"°C", "°F"},
+    "demo_term_blood_pressure": {"mmHg"},
 }
 
 
@@ -59,14 +62,20 @@ def add_advisory(
 ):
     if care_plan.provider_id != provider.id:
         raise PermissionError("Only the owning provider may edit this care plan")
-    if care_plan.status != "DRAFT":
-        raise ValueError("Published care plans are immutable")
+    if care_plan.is_archived:
+        raise ValueError("Archived care plans are read-only")
     resolve_tag(db, concept_id=concept_id, term=term, tag=tag)
     validated_configuration = validate_advisory_configuration(
         tag=tag,
         concept_id=concept_id,
         configuration=configuration,
     )
+    if tag == "medication":
+        validated_configuration["allergy_warnings"] = check_medication_allergies(
+            db,
+            patient_id=care_plan.patient_id,
+            medication_term=term,
+        )
     duplicate = db.query(Advisory).filter(
         Advisory.care_plan_id == care_plan.id,
         Advisory.concept_id == concept_id,
@@ -99,6 +108,7 @@ def serialize_advisory(advisory: Advisory):
         "term": advisory.term,
         "tag": advisory.tag,
         "configuration": json.loads(advisory.configuration_json),
+        "allergy_warnings": json.loads(advisory.configuration_json).get("allergy_warnings", []),
         "status": advisory.status,
         "published_at": advisory.published_at,
         "created_at": advisory.created_at,

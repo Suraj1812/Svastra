@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -17,6 +17,8 @@ class CarePlan(Base):
     title = Column(String(160), nullable=False)
     diagnosis = Column(String(255), nullable=True)
     status = Column(String(20), nullable=False, default="DRAFT", index=True)
+    is_archived = Column(Boolean, nullable=False, default=False, index=True)
+    archived_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 

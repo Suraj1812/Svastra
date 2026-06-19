@@ -7,10 +7,14 @@ from app.models.terminology import Term, TermTag
 
 
 DEMO_TERMS = (
+    ("demo_term_paracetamol", "Paracetamol", "medication"),
+    ("demo_term_body_temperature", "Body Temperature", "measurement"),
+    ("demo_term_blood_pressure", "Blood Pressure", "measurement"),
+    ("demo_term_walking_exercise", "Walking Exercise", "recommendation"),
+    ("demo_term_hba1c", "HbA1c", "investigation"),
     ("demo_term_dolo_650", "Dolo 650 mg oral tablet", "medication"),
     ("demo_term_temperature", "Temperature", "measurement"),
     ("demo_term_exercise", "Exercise", "recommendation"),
-    ("demo_term_hba1c", "HbA1c", "investigation"),
 )
 SUPPORTED_TAGS = ("medication", "measurement", "recommendation", "investigation")
 
@@ -64,3 +68,18 @@ def resolve_provider_term(db: Session, *, concept_id: str, expected_term: str, e
     if term.term != expected_term or expected_tag not in tags:
         raise ValueError("Clinical term, concept, and advisory type do not match")
     return _serialize_term(term)
+
+
+def search_terms(db: Session, *, query: str, tag: str | None = None, limit: int = 20):
+    return search_provider_terms(db, query=query, tag=tag, limit=limit)
+
+
+def get_term(db: Session, *, concept_id: str):
+    term = db.query(Term).options(joinedload(Term.tags)).filter(Term.concept_id == concept_id).first()
+    if term is None:
+        raise ValueError("Clinical term not found")
+    return _serialize_term(term)
+
+
+def get_tags(db: Session, *, concept_id: str):
+    return get_term(db, concept_id=concept_id)["tag"]

@@ -12,6 +12,7 @@ from app.models.consent import RelationshipConsent
 from app.models.postoffice import (
     OutboundEvent,
     PostOfficeAcknowledgement,
+    ReceivedEvent,
     TimelineEvent,
 )
 from app.models.relationship import PatientCaregiverLink, ProviderPatientLink
@@ -198,7 +199,12 @@ def acknowledge_event(
         status=status,
         received_at=acknowledged_at,
     )
-    db.add(acknowledgement)
+    received_event = ReceivedEvent(
+        event_id=event_id,
+        target_app=received_by,
+        cep_json=outbound.cep_json,
+    )
+    db.add_all([acknowledgement, received_event])
     db.delete(outbound)
     db.commit()
     db.refresh(acknowledgement)

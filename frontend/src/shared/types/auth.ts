@@ -149,6 +149,13 @@ export type AdvisorySummary = {
   term: string;
   tag: ProviderTerm["tag"];
   configuration: Record<string, unknown>;
+  allergy_warnings: Array<{
+    code: string;
+    severity: "warning";
+    message: string;
+    allergen: string;
+    blocking: false;
+  }>;
   status: "DRAFT" | "PUBLISHED";
   published_at: string | null;
   created_at: string;
@@ -160,11 +167,23 @@ export type CarePlanSummary = {
   provider_id: number;
   title: string;
   diagnosis: string | null;
-  status: "DRAFT" | "ACTIVE";
+  status: "DRAFT" | "ACTIVE" | "INACTIVE";
+  archived_at: string | null;
   advisories: AdvisorySummary[];
   created_at: string;
   updated_at: string;
   event_id?: string;
+};
+
+export type PatientAdvisory = {
+  id: number;
+  advisory_type: ProviderTerm["tag"];
+  advisory: string;
+  instruction: string;
+  status: "PUBLISHED";
+  created_at: string;
+  published_at: string;
+  care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE" };
 };
 
 export type ConsentRequestsResult = {

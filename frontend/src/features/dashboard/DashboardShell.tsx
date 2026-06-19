@@ -37,6 +37,7 @@ import { CarePlanWorkspace } from "./components/CarePlanWorkspace";
 import { DashboardEmptyState } from "./components/DashboardEmptyState";
 import { PermissionDenied } from "./components/PermissionDenied";
 import { RelationshipWorkspace } from "./components/RelationshipWorkspace";
+import { PatientAdvisories } from "./components/PatientAdvisories";
 
 type DashboardShellProps = {
   auth: AuthResult;
@@ -51,6 +52,7 @@ const iconByItem: Record<string, ReactElement> = {
   Alerts: <NotificationsActiveIcon />,
   Profile: <PersonIcon />,
   Tasks: <AssignmentTurnedInIcon />,
+  "My Advisories": <AssignmentTurnedInIcon />,
   Messages: <NotificationsActiveIcon />,
   "Consent Admin": <PrivacyTipIcon />,
   "Patient Status": <HealthAndSafetyIcon />,
@@ -65,7 +67,7 @@ const permissionByItem: Partial<Record<Role, Partial<Record<string, string>>>> =
     Alerts: "VIEW_ALERTS",
   },
   patient: {
-    Tasks: "VIEW_TASKS",
+    "My Advisories": "VIEW_TASKS",
     Timeline: "VIEW_TIMELINE",
     "Consent Admin": "MANAGE_CONSENT",
   },
@@ -277,6 +279,8 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
             />
           ) : selectedItem === "Care Plans" && auth.user.role === "provider" ? (
             <CarePlanWorkspace sessionToken={auth.session.session_token} />
+          ) : selectedItem === "My Advisories" && auth.user.role === "patient" ? (
+            <PatientAdvisories sessionToken={auth.session.session_token} />
           ) : (
             <Grid
               container

@@ -28,6 +28,13 @@ class CarePlanCreateRequest(BaseModel):
     diagnosis: Optional[str] = Field(default=None, max_length=255)
 
 
+class CarePlanUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    title: str = Field(..., min_length=3, max_length=160)
+    diagnosis: Optional[str] = Field(default=None, max_length=255)
+
+
 class ValueWarning(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -56,10 +63,12 @@ class BaseConfiguration(BaseModel):
 
 class MedicationConfiguration(BaseConfiguration):
     dose: str = Field(..., min_length=1, max_length=80)
+    route: Literal["oral", "topical", "inhaled", "injection", "other"]
 
 
 class MeasurementConfiguration(BaseConfiguration):
     measurement_unit: str = Field(..., min_length=1, max_length=24)
+    target_value: str = Field(..., min_length=1, max_length=80)
     value_warning: Optional[ValueWarning] = None
 
     @model_validator(mode="after")
@@ -75,7 +84,13 @@ class InvestigationConfiguration(BaseConfiguration):
 
 
 class RecommendationConfiguration(BaseConfiguration):
-    pass
+    instruction: str = Field(..., min_length=2, max_length=500)
+
+
+class AllergyCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    allergen_term: str = Field(..., min_length=2, max_length=160)
 
 
 class AdvisoryCreateRequest(BaseModel):

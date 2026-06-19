@@ -8,7 +8,13 @@ from app.audit.audit_service import record_audit_event
 from app.care.advisory_service import serialize_advisory
 from app.models.care import Advisory, CarePlan
 from app.models.user import User
-from app.postoffice.dispatcher import create_event, dispatch_event, send_event
+from app.postoffice.dispatcher import (
+    acknowledge_event,
+    create_event,
+    dispatch_event,
+    send_event,
+    serialize_acknowledgement,
+)
 from app.relationships.relationship_validator import has_active_provider_relationship
 
 
@@ -60,6 +66,60 @@ def create_care_plan(
     return plan
 
 
+def update_care_plan(
+    db: Session,
+    *,
+    care_plan_id: int,
+    provider: User,
+    title: str,
+    diagnosis: str | None,
+    ip_address: str | None = None,
+):
+    plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
+    if plan.is_archived:
+        raise ValueError("Archived care plans cannot be updated")
+    plan.title = title
+    plan.diagnosis = diagnosis
+    db.commit()
+    db.refresh(plan)
+    record_audit_event(
+        db,
+        action="care_plan.updated",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata={"care_plan_id": plan.id, "patient_id": plan.patient_id},
+    )
+    return plan
+
+
+def archive_care_plan(
+    db: Session,
+    *,
+    care_plan_id: int,
+    provider: User,
+    ip_address: str | None = None,
+):
+    plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
+    if plan.is_archived:
+        return plan, False
+    plan.is_archived = True
+    plan.archived_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(plan)
+    record_audit_event(
+        db,
+        action="care_plan.archived",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata={"care_plan_id": plan.id, "patient_id": plan.patient_id},
+    )
+    return plan, True
+
+
 def get_provider_care_plans(db: Session, *, provider_id: int, patient_id: int | None = None):
     query = db.query(CarePlan).options(joinedload(CarePlan.advisories)).filter(
         CarePlan.provider_id == provider_id
@@ -76,27 +136,8 @@ def get_provider_care_plan(db: Session, *, care_plan_id: int, provider: User):
     return plan
 
 
-def publish_care_plan(
-    db: Session,
-    *,
-    care_plan_id: int,
-    provider: User,
-    ip_address: str | None = None,
-):
-    plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
-    if plan.status != "DRAFT":
-        raise ValueError("Care plan is already published and immutable")
-    if not plan.advisories:
-        raise ValueError("Add at least one valid advisory before publishing")
-    if not has_active_provider_relationship(
-        db,
-        provider_id=provider.id,
-        patient_id=plan.patient_id,
-    ):
-        raise PermissionError("Active provider-patient relationship is required at publish time")
-
-    published_at = datetime.now(timezone.utc)
-    payload = {
+def _advisory_publish_payload(plan: CarePlan, advisory: Advisory, provider: User):
+    return {
         "actor_id": provider.id,
         "patient_id": plan.patient_id,
         "care_plan_id": plan.id,
@@ -110,33 +151,102 @@ def publish_care_plan(
                 "tag": advisory.tag,
                 "configuration": serialize_advisory(advisory)["configuration"],
             }
-            for advisory in plan.advisories
         ],
     }
-    event = create_event(event_type="advisory.publish", source="mantrana_mitra", payload=payload)
+
+
+def publish_advisory(
+    db: Session,
+    *,
+    care_plan_id: int,
+    advisory_id: int,
+    provider: User,
+    ip_address: str | None = None,
+):
+    plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
+    if plan.is_archived:
+        raise ValueError("Archived care plans cannot publish advisories")
+    advisory = next((item for item in plan.advisories if item.id == advisory_id), None)
+    if advisory is None:
+        raise ValueError("Advisory not found in this care plan")
+    if advisory.status != "DRAFT":
+        raise ValueError("Advisory is already published and immutable")
+    if not has_active_provider_relationship(
+        db,
+        provider_id=provider.id,
+        patient_id=plan.patient_id,
+    ):
+        raise PermissionError("Active provider-patient relationship is required at publish time")
+
+    event = create_event(
+        event_type="advisory.publish",
+        source="mantrana_mitra",
+        payload=_advisory_publish_payload(plan, advisory, provider),
+    )
+    published_at = datetime.now(timezone.utc)
     plan.status = "ACTIVE"
-    for advisory in plan.advisories:
-        advisory.status = "PUBLISHED"
-        advisory.published_at = published_at
+    advisory.status = "PUBLISHED"
+    advisory.published_at = published_at
     outbound, route, _ = send_event(db, event, actor_user=provider, commit=False)
     db.commit()
-    db.refresh(plan)
     dispatch_event(db, outbound.event_id)
+    acknowledgement, _ = acknowledge_event(
+        db,
+        event_id=event.event_id,
+        received_by=route.target_app,
+        status="received",
+        actor_user=provider,
+    )
     record_audit_event(
         db,
-        action="care_plan.published",
+        action="advisory.published",
         actor_user_id=provider.id,
         actor_role=provider.role,
         mobile_number=provider.mobile_number,
         ip_address=ip_address,
         metadata={
             "care_plan_id": plan.id,
+            "advisory_id": advisory.id,
             "patient_id": plan.patient_id,
             "event_id": event.event_id,
-            "route": route.handler,
+            "ack_id": acknowledgement.ack_id,
         },
     )
-    return plan, event.event_id
+    return advisory, event.event_id, serialize_acknowledgement(acknowledgement)
+
+
+def publish_care_plan(
+    db: Session,
+    *,
+    care_plan_id: int,
+    provider: User,
+    ip_address: str | None = None,
+):
+    plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
+    if plan.is_archived:
+        raise ValueError("Archived care plans cannot be published")
+    draft_advisories = [item for item in plan.advisories if item.status == "DRAFT"]
+    if not draft_advisories:
+        raise ValueError("Add at least one valid advisory before publishing")
+    if not has_active_provider_relationship(
+        db,
+        provider_id=provider.id,
+        patient_id=plan.patient_id,
+    ):
+        raise PermissionError("Active provider-patient relationship is required at publish time")
+
+    deliveries = []
+    for advisory in draft_advisories:
+        _, event_id, acknowledgement = publish_advisory(
+            db,
+            care_plan_id=plan.id,
+            advisory_id=advisory.id,
+            provider=provider,
+            ip_address=ip_address,
+        )
+        deliveries.append({"event_id": event_id, "acknowledgement": acknowledgement})
+    db.refresh(plan)
+    return plan, deliveries
 
 
 def serialize_care_plan(plan: CarePlan):
@@ -146,7 +256,8 @@ def serialize_care_plan(plan: CarePlan):
         "provider_id": plan.provider_id,
         "title": plan.title,
         "diagnosis": plan.diagnosis,
-        "status": plan.status,
+        "status": "INACTIVE" if plan.is_archived else plan.status,
+        "archived_at": plan.archived_at,
         "advisories": [serialize_advisory(advisory) for advisory in plan.advisories],
         "created_at": plan.created_at,
         "updated_at": plan.updated_at,

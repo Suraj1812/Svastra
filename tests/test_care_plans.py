@@ -1,5 +1,5 @@
 from app.models.audit import AuditLog
-from app.models.postoffice import OutboundEvent, TimelineEvent
+from app.models.postoffice import OutboundEvent, PostOfficeAcknowledgement, ReceivedEvent, TimelineEvent
 from tests.helpers import grant_provider_access, headers, register_patient, register_provider
 
 
@@ -8,6 +8,7 @@ VALID_MEASUREMENT_CONFIG = {
     "duration_value": 5,
     "duration_unit": "days",
     "measurement_unit": "°F",
+    "target_value": "98.6",
     "additional_instructions": "Record after resting for five minutes",
 }
 
@@ -47,9 +48,10 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
         "/terminology/provider-terms?query=temp", headers=headers(provider)
     )
     assert search.status_code == 200
-    assert search.json()["data"]["terms"] == [
-        {"conceptId": "demo_term_temperature", "term": "Temperature", "tag": "measurement"}
-    ]
+    assert {item["term"] for item in search.json()["data"]["terms"]} == {
+        "Body Temperature",
+        "Temperature",
+    }
 
     tampered = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
@@ -128,7 +130,7 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
     )
     assert republish.status_code == 400
 
-    edit_after_publish = integration_client.post(
+    add_after_first_publish = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
         json={
             "concept_id": "demo_term_exercise",
@@ -138,16 +140,105 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
                 "frequency": "once_daily",
                 "duration_value": 7,
                 "duration_unit": "days",
+                "instruction": "Walk for 20 minutes after breakfast",
             },
         },
         headers=headers(provider),
     )
-    assert edit_after_publish.status_code == 400
+    assert add_after_first_publish.status_code == 201
+
+    patient_view = integration_client.get("/me/advisories", headers=headers(patient))
+    assert patient_view.status_code == 200
+    patient_advisory = patient_view.json()["data"]["advisories"][0]
+    assert patient_advisory["advisory"] == "Temperature"
+    assert "Target: 98.6" in patient_advisory["instruction"]
+    assert "Record after resting for five minutes" in patient_advisory["instruction"]
 
     db = integration_client.testing_session_local()
     try:
         assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "advisory.publish").count() == 1
-        assert db.query(OutboundEvent).filter(OutboundEvent.event_id == body["event_id"]).count() == 1
-        assert db.query(AuditLog).filter(AuditLog.action == "care_plan.published").count() == 1
+        assert db.query(OutboundEvent).filter(OutboundEvent.event_id == body["event_id"]).count() == 0
+        assert db.query(ReceivedEvent).filter(ReceivedEvent.event_id == body["event_id"]).count() == 1
+        assert db.query(PostOfficeAcknowledgement).filter(
+            PostOfficeAcknowledgement.event_id == body["event_id"]
+        ).count() == 1
+        assert db.query(AuditLog).filter(AuditLog.action == "advisory.published").count() == 1
     finally:
         db.close()
+
+
+def test_medication_allergy_warning_is_non_blocking_and_visible(integration_client):
+    patient = register_patient(integration_client, "9876501231")
+    provider = register_provider(integration_client, "9876501232")
+    allergy = integration_client.post(
+        "/me/allergies",
+        json={"allergen_term": "Paracetamol"},
+        headers=headers(patient),
+    )
+    assert allergy.status_code == 201
+    denied_provider_write = integration_client.post(
+        "/me/allergies",
+        json={"allergen_term": "Penicillin"},
+        headers=headers(provider),
+    )
+    assert denied_provider_write.status_code == 403
+
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+    advisory = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_paracetamol",
+            "term": "Paracetamol",
+            "tag": "medication",
+            "configuration": {
+                "dose": "500 mg",
+                "route": "oral",
+                "frequency": "once_daily",
+                "duration_value": 3,
+                "duration_unit": "days",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert advisory.status_code == 201
+    warning = advisory.json()["data"]["allergy_warnings"][0]
+    assert warning["code"] == "POTENTIAL_ALLERGY"
+    assert warning["blocking"] is False
+
+
+def test_care_plan_update_and_archive_are_owner_scoped(integration_client):
+    patient = register_patient(integration_client, "9876501241")
+    provider = register_provider(integration_client, "9876501242")
+    outsider = register_provider(integration_client, "9876501243", "Dr No Access")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+
+    denied = integration_client.put(
+        f"/care-plans/{plan['id']}",
+        json={"title": "Stolen edit", "diagnosis": None},
+        headers=headers(outsider),
+    )
+    assert denied.status_code == 403
+
+    updated = integration_client.put(
+        f"/care-plans/{plan['id']}",
+        json={"title": "Updated monitoring plan", "diagnosis": "Recovery monitoring"},
+        headers=headers(provider),
+    )
+    assert updated.status_code == 200
+    assert updated.json()["data"]["title"] == "Updated monitoring plan"
+
+    archived = integration_client.delete(
+        f"/care-plans/{plan['id']}",
+        headers=headers(provider),
+    )
+    assert archived.status_code == 200
+    assert archived.json()["data"]["status"] == "INACTIVE"
+
+    blocked_edit = integration_client.put(
+        f"/care-plans/{plan['id']}",
+        json={"title": "Should fail", "diagnosis": None},
+        headers=headers(provider),
+    )
+    assert blocked_edit.status_code == 400

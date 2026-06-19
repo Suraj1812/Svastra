@@ -31,6 +31,6 @@ export const roleDashboardLabels: Record<Role, string> = {
 
 export const dashboardItems: Record<Role, string[]> = {
   provider: ["Patients", "Care Plans", "Timeline", "Alerts", "Profile"],
-  patient: ["Tasks", "Timeline", "Messages", "Consent Admin", "Profile"],
+  patient: ["My Advisories", "Timeline", "Messages", "Consent Admin", "Profile"],
   caregiver: ["Patient Status", "Timeline", "Notifications", "Profile"],
 };

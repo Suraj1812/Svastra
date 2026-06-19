@@ -207,7 +207,7 @@ export function useAuthWorkflow() {
     if (result) {
       window.localStorage.removeItem(storedSessionKey);
       setAuth(null);
-      resetFlow("patient");
+      resetFlow("login");
     }
   }
 

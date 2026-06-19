@@ -68,7 +68,7 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function AdvisoryCard({ advisory }: { advisory: AdvisorySummary }) {
+function AdvisoryCard({ advisory, publishing, onPublish }: { advisory: AdvisorySummary; publishing: boolean; onPublish: () => void }) {
   return (
     <Paper variant="outlined" sx={{ p: 2.25 }}>
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1.5}>
@@ -78,6 +78,16 @@ function AdvisoryCard({ advisory }: { advisory: AdvisorySummary }) {
         </Stack>
         <Chip color={advisory.status === "PUBLISHED" ? "success" : "warning"} label={advisory.status} />
       </Stack>
+      {advisory.allergy_warnings?.map((warning) => (
+        <Alert key={`${warning.code}-${warning.allergen}`} severity="warning" sx={{ mt: 1.5 }}>
+          {warning.message}. This MVP warning is non-blocking and requires provider review.
+        </Alert>
+      ))}
+      {advisory.status === "DRAFT" ? (
+        <Button size="small" variant="contained" startIcon={<PublishOutlinedIcon />} onClick={onPublish} disabled={publishing} sx={{ mt: 1.5 }}>
+          Publish Advisory
+        </Button>
+      ) : null}
     </Paper>
   );
 }
@@ -104,9 +114,14 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
   const [durationUnit, setDurationUnit] = useState("days");
   const [instructions, setInstructions] = useState("");
   const [dose, setDose] = useState("");
+  const [route, setRoute] = useState("oral");
   const [measurementUnit, setMeasurementUnit] = useState("°C");
+  const [targetValue, setTargetValue] = useState("");
   const [priority, setPriority] = useState("routine");
+  const [recommendationInstruction, setRecommendationInstruction] = useState("");
+  const [allergyWarning, setAllergyWarning] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [publishAdvisoryTarget, setPublishAdvisoryTarget] = useState<AdvisorySummary | null>(null);
 
   const activeRelationships = relationships.filter((item) => item.relationship_status === "ACTIVE");
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
@@ -189,8 +204,11 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     setSearch(term.term);
     setTerms([]);
     setDose("");
-    setMeasurementUnit("°C");
+    setRoute("oral");
+    setMeasurementUnit(term.conceptId === "demo_term_blood_pressure" ? "mmHg" : "°C");
+    setTargetValue("");
     setPriority("routine");
+    setRecommendationInstruction("");
   }
 
   const advisoryConfiguration = useMemo(() => {
@@ -200,11 +218,11 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       duration_unit: durationUnit,
       additional_instructions: instructions.trim() || undefined,
     };
-    if (selectedTerm?.tag === "medication") return { ...common, dose: dose.trim() };
-    if (selectedTerm?.tag === "measurement") return { ...common, measurement_unit: measurementUnit };
+    if (selectedTerm?.tag === "medication") return { ...common, dose: dose.trim(), route };
+    if (selectedTerm?.tag === "measurement") return { ...common, measurement_unit: measurementUnit, target_value: targetValue.trim() };
     if (selectedTerm?.tag === "investigation") return { ...common, priority, attachment_required: true };
-    return common;
-  }, [dose, durationUnit, durationValue, frequency, instructions, measurementUnit, priority, selectedTerm?.tag]);
+    return { ...common, instruction: recommendationInstruction.trim() };
+  }, [dose, durationUnit, durationValue, frequency, instructions, measurementUnit, priority, recommendationInstruction, route, selectedTerm?.tag, targetValue]);
 
   async function addAdvisory() {
     if (!selectedPlan || !selectedTerm) {
@@ -215,10 +233,18 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       setError("Dose is required for medication advisories.");
       return;
     }
+    if (selectedTerm.tag === "measurement" && !targetValue.trim()) {
+      setError("Target value is required for measurement advisories.");
+      return;
+    }
+    if (selectedTerm.tag === "recommendation" && !recommendationInstruction.trim()) {
+      setError("Instruction is required for recommendation advisories.");
+      return;
+    }
     setWorking(true);
     setError(null);
     try {
-      await postJsonWithSession(
+      const created = await postJsonWithSession<AdvisorySummary>(
         `/care-plans/${selectedPlan.id}/advisories`,
         {
           concept_id: selectedTerm.conceptId,
@@ -229,6 +255,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
         sessionToken,
       );
       setNotice(`${selectedTerm.term} added to the care plan.`);
+      setAllergyWarning(created.allergy_warnings?.[0]?.message || null);
       setSelectedTerm(null);
       setSearch("");
       setInstructions("");
@@ -251,10 +278,30 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
         sessionToken,
       );
       setPublishOpen(false);
-      setNotice(`Care plan published. PostOffice event ${result.event_id} is queued for delivery.`);
+      setNotice(`Care plan published. PostOffice event ${result.event_id} was delivered and acknowledged.`);
       await load();
     } catch (publishError) {
       setError(publishError instanceof Error ? publishError.message : "Care plan could not be published");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function publishOne(advisoryId: number) {
+    if (!selectedPlan) return;
+    setWorking(true);
+    setError(null);
+    try {
+      const result = await postJsonWithSession<{ advisory: AdvisorySummary; event_id: string; acknowledgement: { ack_id: string } }>(
+        `/care-plans/${selectedPlan.id}/advisories/${advisoryId}/publish`,
+        { confirmed: true },
+        sessionToken,
+      );
+      setPublishAdvisoryTarget(null);
+      setNotice(`Advisory published and acknowledged (${result.acknowledgement.ack_id}).`);
+      await load();
+    } catch (publishError) {
+      setError(publishError instanceof Error ? publishError.message : "Advisory could not be published");
     } finally {
       setWorking(false);
     }
@@ -265,11 +312,12 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       <Stack spacing={0.5}>
         <Typography variant="h2">Care Plan Builder</Typography>
         <Typography color="text.secondary">
-          Author validated instructions for consent-backed linked patients. Terminology codes stay hidden.
+          Author validated instructions for consent-backed linked patients using approved clinical terminology.
         </Typography>
       </Stack>
       {error ? <Alert severity="error" onClose={() => setError(null)}>{error}</Alert> : null}
       {notice ? <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert> : null}
+      {allergyWarning ? <Alert severity="warning" onClose={() => setAllergyWarning(null)}>{allergyWarning}. Review before publishing.</Alert> : null}
 
       <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
         <Stack spacing={2.5}>
@@ -334,7 +382,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
         ) : null}
       </Paper>
 
-      {selectedPlan?.status === "DRAFT" ? (
+      {selectedPlan && selectedPlan.status !== "INACTIVE" ? (
         <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2.5}>
             <Typography variant="h3">3. Search and configure an advisory</Typography>
@@ -349,7 +397,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
               <Paper variant="outlined">
                 {terms.map((term) => (
                   <Button key={term.conceptId} fullWidth onClick={() => selectTerm(term)} sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
-                    <span>{term.term}</span><Chip size="small" label={tagLabel(term.tag)} />
+                    <Stack alignItems="flex-start"><span>{term.term}</span><Typography variant="caption" color="text.secondary">ConceptId: {term.conceptId}</Typography></Stack><Chip size="small" label={tagLabel(term.tag)} />
                   </Button>
                 ))}
               </Paper>
@@ -362,13 +410,16 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
                 </Alert>
                 <Grid container spacing={2}>
                   {selectedTerm.tag === "medication" ? (
-                    <Grid size={{ xs: 12, md: 4 }}><TextField fullWidth label="Dose" value={dose} onChange={(event) => setDose(event.target.value)} placeholder="e.g. 650 mg" /></Grid>
+                    <><Grid size={{ xs: 12, md: 3 }}><TextField fullWidth label="Dose" value={dose} onChange={(event) => setDose(event.target.value)} placeholder="e.g. 650 mg" /></Grid><Grid size={{ xs: 12, md: 3 }}><TextField select fullWidth label="Route" value={route} onChange={(event) => setRoute(event.target.value)}>{["oral", "topical", "inhaled", "injection", "other"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField></Grid></>
                   ) : null}
                   {selectedTerm.tag === "measurement" ? (
-                    <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Measurement unit" value={measurementUnit} onChange={(event) => setMeasurementUnit(event.target.value)}><MenuItem value="°C">°C</MenuItem><MenuItem value="°F">°F</MenuItem></TextField></Grid>
+                    <><Grid size={{ xs: 12, md: 3 }}><TextField fullWidth label="Target value" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} placeholder="e.g. 98.6" /></Grid><Grid size={{ xs: 12, md: 3 }}><TextField select fullWidth label="Measurement unit" value={measurementUnit} onChange={(event) => setMeasurementUnit(event.target.value)}><MenuItem value="°C">°C</MenuItem><MenuItem value="°F">°F</MenuItem><MenuItem value="mmHg">mmHg</MenuItem></TextField></Grid></>
                   ) : null}
                   {selectedTerm.tag === "investigation" ? (
                     <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Priority" value={priority} onChange={(event) => setPriority(event.target.value)}><MenuItem value="routine">Routine</MenuItem><MenuItem value="urgent">Urgent</MenuItem><MenuItem value="stat">Stat</MenuItem></TextField></Grid>
+                  ) : null}
+                  {selectedTerm.tag === "recommendation" ? (
+                    <Grid size={{ xs: 12, md: 6 }}><TextField fullWidth label="Instruction" value={recommendationInstruction} onChange={(event) => setRecommendationInstruction(event.target.value)} placeholder="e.g. Walk for 20 minutes after breakfast" /></Grid>
                   ) : null}
                   <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Frequency" value={frequency} onChange={(event) => setFrequency(event.target.value as Frequency)}>{frequencies.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</TextField></Grid>
                   <Grid size={{ xs: 6, md: 2 }}><TextField fullWidth type="number" label="Duration" value={durationValue} onChange={(event) => setDurationValue(event.target.value)} inputProps={{ min: 1, max: 365 }} /></Grid>
@@ -387,9 +438,9 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1.5}>
               <Stack><Typography variant="h3">4. Review and publish</Typography><Typography color="text.secondary">Created {formatDate(selectedPlan.created_at)}</Typography></Stack>
-              {selectedPlan.status === "DRAFT" ? <Button variant="contained" color="success" startIcon={<PublishOutlinedIcon />} onClick={() => setPublishOpen(true)} disabled={selectedPlan.advisories.length === 0}>Publish Care Plan</Button> : null}
+              {selectedPlan.status !== "INACTIVE" && selectedPlan.advisories.some((item) => item.status === "DRAFT") ? <Button variant="contained" color="success" startIcon={<PublishOutlinedIcon />} onClick={() => setPublishOpen(true)}>Publish All Draft Advisories</Button> : null}
             </Stack>
-            {selectedPlan.advisories.length === 0 ? <Alert severity="info">Add at least one advisory before publishing.</Alert> : selectedPlan.advisories.map((advisory) => <AdvisoryCard key={advisory.id} advisory={advisory} />)}
+            {selectedPlan.advisories.length === 0 ? <Alert severity="info">Add at least one advisory before publishing.</Alert> : selectedPlan.advisories.map((advisory) => <AdvisoryCard key={advisory.id} advisory={advisory} publishing={working} onPublish={() => setPublishAdvisoryTarget(advisory)} />)}
           </Stack>
         </Paper>
       ) : null}
@@ -404,6 +455,28 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
           </Stack>
         </DialogContent>
         <DialogActions><Button onClick={() => setPublishOpen(false)} disabled={working}>Cancel</Button><Button variant="contained" color="success" onClick={publish} disabled={working}>Confirm Publish</Button></DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(publishAdvisoryTarget)} onClose={() => setPublishAdvisoryTarget(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Publish this advisory?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Alert severity="warning">Publishing is immutable. Review the clinical instruction before it is delivered to the patient.</Alert>
+            <Typography>{publishAdvisoryTarget?.term}</Typography>
+            <Typography color="text.secondary">PostOffice will deliver the advisory and record the patient-side acknowledgement.</Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPublishAdvisoryTarget(null)} disabled={working}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={() => publishAdvisoryTarget && publishOne(publishAdvisoryTarget.id)}
+            disabled={working}
+          >
+            Confirm Publish
+          </Button>
+        </DialogActions>
       </Dialog>
     </Stack>
   );

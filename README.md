@@ -1,7 +1,8 @@
-# SVASTRA+ Authentication MVP
+# SVASTRA+ Week 3 MVP Foundation
 
-End-to-end Week 3 MVP implementation for authentication, OTP verification,
-registration, session creation, role routing, RBAC, and consent foundations.
+End-to-end identity, RBAC, patient-controlled consent, healthcare relationships,
+PostOffice CEP delivery, care-plan authoring, advisory publication, terminology,
+allergy warnings, and patient advisory display.
 
 ## Backend
 
@@ -15,7 +16,6 @@ registration, session creation, role routing, RBAC, and consent foundations.
 ```bash
 cd frontend
 npm install
-npm run generate:media
 npm run dev
 ```
 
@@ -29,19 +29,30 @@ PYTHONPYCACHEPREFIX=/private/tmp/svastra-pycache ./venv/bin/pytest -q
 cd frontend && npm run build
 ```
 
-## Demo Flow
+## End-to-End Demo Flow
 
 1. `POST /auth/otp/send`
 2. `POST /auth/otp/verify` with OTP `123456`
-3. `POST /auth/register/provider`, `/auth/register/patient`, or `/auth/register/caregiver`
-4. `POST /auth/session/validate`
-5. `POST /auth/logout`
+3. Register/login provider and patient.
+4. Provider requests access; patient confirms consent.
+5. Backend creates the consent-backed provider-patient relationship.
+6. Provider creates a care plan and validated advisory.
+7. Provider publishes; PostOffice routes and acknowledges `advisory.publish`.
+8. Patient opens My Advisories.
 
 Patient registration requires `unified_consent_accepted: true`. When accepted,
 the backend records the active consent version, timestamp, application name,
 application version, and request IP address when available.
 
-## Consent APIs
+Consent decisions use the already OTP-authenticated patient session plus a
+confirmation body: `{"confirmed": true}`. No second OTP is requested.
+
+## API Documentation
+
+See [api_contract.md](./api_contract.md) for every endpoint, request/response
+field, validation rule, role boundary, CEP route, and frontend integration flow.
+
+## Main API Areas
 
 - `GET /consent/current`
 - `GET /me/consent-status`
@@ -55,12 +66,14 @@ application version, and request IP address when available.
 - `POST /consent/request/{id}/grant`
 - `POST /consent/request/{id}/reject`
 - `POST /consent/request/{id}/revoke`
-- `POST /consent/send-otp`
-- `POST /consent/verify-otp`
 - `PUT /consent/{id}/alias`
-- `POST /consent/patients/{patient_id}/accept`
-- `GET /consent/patients/{patient_id}/status`
-
-## RBAC APIs
-
 - `GET /me/permissions`
+- `GET/POST/DELETE /relationships/...`
+- `GET /terminology/provider-terms`
+- `GET/POST/PUT/DELETE /care-plans/...`
+- `POST /care-plans/{id}/advisories`
+- `POST /care-plans/{id}/advisories/{advisory_id}/publish`
+- `GET /me/advisories`
+- `GET/POST /me/allergies`
+- `POST /postoffice/send`
+- `POST /postoffice/acknowledge`
