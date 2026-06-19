@@ -381,7 +381,7 @@ export function EventMonitor({ role, sessionToken, userId }: EventMonitorProps) 
               {detail.redacted_fields.length ? <Alert severity="info">Privacy redaction applied to: {detail.redacted_fields.join(", ")}</Alert> : null}
               <Box>
                 <Typography variant="h3" gutterBottom>Validated payload</Typography>
-                <Box component="pre" sx={{ m: 0, p: 2, bgcolor: "grey.950", color: "grey.100", borderRadius: 2, overflow: "auto", fontSize: 13, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+                <Box component="pre" sx={{ m: 0, p: 2, bgcolor: "grey.950", color: "black", borderRadius: 2, overflow: "auto", fontSize: 13, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
                   {JSON.stringify(detail.payload, null, 2)}
                 </Box>
               </Box>
