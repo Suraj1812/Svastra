@@ -38,6 +38,7 @@ import { DashboardEmptyState } from "./components/DashboardEmptyState";
 import { PermissionDenied } from "./components/PermissionDenied";
 import { RelationshipWorkspace } from "./components/RelationshipWorkspace";
 import { PatientAdvisories } from "./components/PatientAdvisories";
+import { EventMonitor } from "./components/EventMonitor";
 
 type DashboardShellProps = {
   auth: AuthResult;
@@ -281,6 +282,12 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
             <CarePlanWorkspace sessionToken={auth.session.session_token} />
           ) : selectedItem === "My Advisories" && auth.user.role === "patient" ? (
             <PatientAdvisories sessionToken={auth.session.session_token} />
+          ) : selectedItem === "Timeline" ? (
+            <EventMonitor
+              role={auth.user.role}
+              sessionToken={auth.session.session_token}
+              userId={auth.user.id}
+            />
           ) : (
             <Grid
               container

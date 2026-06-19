@@ -186,6 +186,63 @@ export type PatientAdvisory = {
   care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE" };
 };
 
+export type EventDeliveryStatus = "pending" | "sent" | "acknowledged" | "failed" | "untracked";
+export type EventIntegrityStatus = "verified" | "legacy_unverified" | "mismatch";
+
+export type EventMonitorItem = {
+  event_id: string;
+  event_type: string;
+  patient_id: number;
+  actor_id: string;
+  source: string;
+  target: string;
+  delivery_status: EventDeliveryStatus;
+  retry_count: number;
+  occurred_at: string;
+  recorded_at: string;
+  last_attempt_at: string | null;
+  acknowledged_at: string | null;
+  delivery_latency_ms: number | null;
+  ack_id: string | null;
+  received_by: string | null;
+  integrity_status: EventIntegrityStatus;
+  anomalies: string[];
+  payload_preview: Record<string, unknown>;
+};
+
+export type EventMonitorDetail = EventMonitorItem & {
+  payload: Record<string, unknown>;
+  redacted_fields: string[];
+  payload_sha256: string;
+  lifecycle: Array<{ state: string; timestamp: string }>;
+  last_error: { code: string | null; message: string | null } | null;
+};
+
+export type EventMonitorSummary = {
+  patient_id: number;
+  total_events: number;
+  delivery_counts: Record<EventDeliveryStatus, number>;
+  event_type_counts: Record<string, number>;
+  acknowledgement_rate: number;
+  average_delivery_latency_ms: number | null;
+  latest_event_at: string | null;
+  integrity_counts: Record<EventIntegrityStatus, number>;
+  anomaly_count: number;
+  stale_unacknowledged: number;
+  health: "healthy" | "attention";
+};
+
+export type EventMonitorPage = {
+  events: EventMonitorItem[];
+  page: {
+    count: number;
+    limit: number;
+    has_more: boolean;
+    next_cursor: string | null;
+  };
+  filters: Record<string, unknown>;
+};
+
 export type ConsentRequestsResult = {
   requests: ConsentRequestSummary[];
 };

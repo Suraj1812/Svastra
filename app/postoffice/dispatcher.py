@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from hashlib import sha256
 from uuid import uuid4
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.audit.audit_service import record_audit_event
+from app.config import settings
 from app.models.care import CarePlan
 from app.models.consent import RelationshipConsent
 from app.models.postoffice import (
@@ -43,6 +46,13 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
         return patient
     if event.payload["actor_id"] != actor_user.id:
         raise PermissionError("CEP actor_id must match the authenticated user")
+    expected_source = {
+        "provider": "mantrana_mitra",
+        "patient": "rogi_mitra",
+        "caregiver": "sahay_mitra",
+    }.get(actor_user.role)
+    if expected_source is None or event.source != expected_source:
+        raise PermissionError("CEP source does not match the authenticated application role")
 
     if event.event_type.startswith("consent."):
         consent = db.query(RelationshipConsent).filter(
@@ -107,6 +117,13 @@ def _serialize_event(event: CEPEvent):
     return json.dumps(event.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
 
 
+def _related_user_id(event: CEPEvent):
+    related = event.payload.get("requestor_id") or event.payload.get("linked_user_id")
+    if related is None and event.payload["actor_id"] != event.payload["patient_id"]:
+        related = event.payload["actor_id"]
+    return related
+
+
 def send_event(
     db: Session,
     event: CEPEvent | dict,
@@ -117,23 +134,27 @@ def send_event(
     event = validate_event(event)
     patient = _authorize_event(db, event, actor_user)
     route = route_event(event)
+    serialized = _serialize_event(event)
 
     existing = db.query(OutboundEvent).filter(OutboundEvent.event_id == event.event_id).first()
     if existing is not None:
+        if existing.cep_json != serialized:
+            raise CEPValidationError("event_id is already queued with a different immutable payload")
         return existing, route, True
     existing_timeline = db.query(TimelineEvent).filter(TimelineEvent.event_id == event.event_id).first()
     if existing_timeline is not None:
         raise CEPValidationError("event_id already exists in the immutable timeline")
 
-    serialized = _serialize_event(event)
     timeline = TimelineEvent(
         event_id=event.event_id,
         event_type=event.event_type,
         patient_id=patient.id,
         actor_id=str(event.payload["actor_id"]),
+        related_user_id=_related_user_id(event),
         source_app=event.source,
         target_app=route.target_app,
         payload_json=serialized,
+        payload_sha256=sha256(serialized.encode("utf-8")).hexdigest(),
         occurred_at=event.timestamp,
     )
     outbound = OutboundEvent(
@@ -146,7 +167,16 @@ def send_event(
     )
     db.add_all([timeline, outbound])
     if commit:
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            concurrent = db.query(OutboundEvent).filter(
+                OutboundEvent.event_id == event.event_id
+            ).first()
+            if concurrent is not None and concurrent.cep_json == serialized:
+                return concurrent, route, True
+            raise CEPValidationError("event_id conflicts with an existing immutable event") from error
         db.refresh(outbound)
     else:
         db.flush()
@@ -159,10 +189,28 @@ def dispatch_event(db: Session, event_id: str):
         raise ValueError("Outbound event not found")
     if outbound.status == "sent":
         return outbound
+    if outbound.retry_count >= settings.postoffice_max_retries:
+        raise ValueError(
+            f"PostOffice retry limit of {settings.postoffice_max_retries} has been reached"
+        )
 
     outbound.retry_count += 1
     outbound.last_attempt_at = _utcnow()
     outbound.status = "sent"
+    outbound.last_error_code = None
+    outbound.last_error_message = None
+    db.commit()
+    db.refresh(outbound)
+    return outbound
+
+
+def mark_event_failed(db: Session, *, event_id: str, error_code: str, error_message: str):
+    outbound = db.query(OutboundEvent).filter(OutboundEvent.event_id == event_id).first()
+    if outbound is None:
+        raise ValueError("Outbound event not found")
+    outbound.status = "failed"
+    outbound.last_error_code = error_code[:64]
+    outbound.last_error_message = error_message[:255]
     db.commit()
     db.refresh(outbound)
     return outbound
@@ -182,6 +230,8 @@ def acknowledge_event(
             PostOfficeAcknowledgement.event_id == event_id
         ).first()
         if existing is not None:
+            if existing.received_by != received_by or existing.status != status:
+                raise PermissionError("Acknowledgement conflicts with the immutable receipt")
             return existing, True
         raise ValueError("Outbound event not found")
     if outbound.status != "sent":
@@ -197,6 +247,8 @@ def acknowledge_event(
         event_id=event_id,
         received_by=received_by,
         status=status,
+        retry_count=outbound.retry_count,
+        last_attempt_at=outbound.last_attempt_at,
         received_at=acknowledged_at,
     )
     received_event = ReceivedEvent(
@@ -233,6 +285,11 @@ def serialize_outbound(outbound: OutboundEvent):
         "retry_count": outbound.retry_count,
         "created_at": outbound.created_at,
         "last_attempt_at": outbound.last_attempt_at,
+        "last_error": (
+            {"code": outbound.last_error_code, "message": outbound.last_error_message}
+            if outbound.last_error_code or outbound.last_error_message
+            else None
+        ),
     }
 
 
@@ -242,5 +299,7 @@ def serialize_acknowledgement(acknowledgement: PostOfficeAcknowledgement):
         "event_id": acknowledgement.event_id,
         "received_by": acknowledgement.received_by,
         "status": acknowledgement.status,
+        "retry_count": acknowledgement.retry_count,
+        "last_attempt_at": acknowledgement.last_attempt_at,
         "received_at": acknowledgement.received_at,
     }

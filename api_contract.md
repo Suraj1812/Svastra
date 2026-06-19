@@ -1,9 +1,9 @@
 # SVASTRA+ MVP API Contract
 
-Version: 3.0
+Version: 3.1
 
 Updated: 19 June 2026
-Scope: Week 3 identity, RBAC, consent, relationships, PostOffice, care plans, advisories, terminology, allergies, and the first provider-to-patient clinical flow.
+Scope: Week 3 identity, RBAC, consent, relationships, PostOffice, API Event Monitor, care plans, advisories, terminology, allergies, and the first provider-to-patient clinical flow.
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
 
@@ -56,6 +56,11 @@ Security rules:
 - The local MVP OTP is `123456`; it is development-only and must be replaced by a production OTP provider.
 - Consent grant, reject, and revoke do not request a second OTP. They require an OTP-authenticated patient session plus explicit confirmation.
 - Request bodies reject undeclared fields.
+- API request bodies larger than the configured 1 MiB ceiling are rejected before parsing.
+- PostOffice event IDs are immutable: an identical queued replay is idempotent, while changed content under the same ID is rejected.
+- Monitor cursors are signed and bound to their original filter set.
+- Stored CEP documents have a SHA-256 digest checked whenever the monitor reads them.
+- Caregiver event details redact diagnoses, clinical configuration, advisory bodies, and messages.
 - IDs, roles, ownership, relationships, consent states, terminology bindings, and legal state transitions are rechecked by the server.
 
 ## 3. Standard response envelope
@@ -95,6 +100,8 @@ Every error has the same outer shape:
 
 Every HTTP response includes `X-Request-ID`. Give this ID to backend engineers when reporting a failed request.
 
+Responses also include `X-Process-Time-Ms`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, a restrictive referrer policy, and a restrictive permissions policy.
+
 | HTTP status | Error code | Meaning |
 | --- | --- | --- |
 | `400` | `BAD_REQUEST` | Business rule or state transition failed. |
@@ -104,6 +111,7 @@ Every HTTP response includes `X-Request-ID`. Give this ID to backend engineers w
 | `405` | `HTTP_ERROR` | HTTP method is not allowed. |
 | `422` | `VALIDATION_ERROR` | Body, path, or query data has the wrong type, range, format, or extra fields. |
 | `429` | `HTTP_ERROR` | OTP resend cooldown is still active. |
+| `413` | `PAYLOAD_TOO_LARGE` | Request body exceeds the configured API ceiling. |
 | `500` | `INTERNAL_SERVER_ERROR` | Unexpected server failure; private details are not exposed. |
 
 ## 4. Shared data objects
@@ -285,6 +293,9 @@ message.send
 | PostOffice | `POST /postoffice/events/{event_id}/retry` | Patient or linked party |
 | PostOffice | `GET /postoffice/outbound` | Patient or linked party |
 | PostOffice | `GET /postoffice/timeline` | Patient or linked party |
+| Event Monitor | `GET /postoffice/monitor/summary` | Patient or ACTIVE linked party |
+| Event Monitor | `GET /postoffice/monitor/events` | Patient or ACTIVE linked party |
+| Event Monitor | `GET /postoffice/monitor/events/{event_id}` | Patient or ACTIVE linked party |
 
 ## 6. Health and authentication APIs
 
@@ -880,7 +891,134 @@ Required query: `patient_id`. Returns at most 100 newest immutable CEP history r
 
 This endpoint exposes the Week 3 event foundation, not the Week 4 Timeline Engine UI.
 
-## 15. Event-specific payload validation
+## 15. API Event Monitor
+
+The API Event Monitor is the secured operational view behind the Timeline tab. It reports PostOffice transport state; it does not create healthcare tasks or make clinical decisions.
+
+### Access boundary
+
+- A patient may monitor only their own events.
+- A provider may monitor a patient only while an ACTIVE provider-patient link and its source consent remain ACTIVE.
+- A caregiver has the same relationship requirement, but sensitive clinical payload fields are redacted.
+- Providers and caregivers see only events they authored or events whose immutable payload explicitly identifies them as the related requestor/linked user. An active relationship never exposes another professional's event stream.
+- Event IDs never grant access by themselves. Detail lookup also requires `patient_id`, and the server checks the relationship before looking up the event within that scope.
+- Revoking consent or deactivating the link immediately removes provider/caregiver monitor access.
+
+### Delivery states
+
+| State | Meaning |
+| --- | --- |
+| `pending` | Event is durably queued but has not completed a send attempt. |
+| `sent` | At least one bounded delivery attempt was made; acknowledgement is pending. |
+| `acknowledged` | Receiver copy and immutable acknowledgement both exist; the temporary queue row is removed. |
+| `failed` | Latest delivery attempt failed and contains a safe error code/message. |
+| `untracked` | Timeline event has neither queue row nor acknowledgement. This is an anomaly requiring investigation. |
+
+Integrity is reported independently as `verified`, `legacy_unverified`, or `mismatch`. `mismatch` means the stored CEP no longer matches its SHA-256 digest and must be treated as an incident.
+
+### Shared monitor filters
+
+| Query field | Type | Required | Validation and behavior |
+| --- | --- | --- | --- |
+| `patient_id` | positive integer | Yes | Patient scope is re-authorized on every call. |
+| `event_type` | CEP event enum | No | Exact match; arbitrary event names are rejected. |
+| `delivery_status` | delivery-state enum | No | Exact derived transport status. |
+| `source` | string | No | 2–64 chars; letters, numbers, dot, underscore and hyphen. |
+| `target` | string | No | Same rules as source. |
+| `event_id_prefix` | string | No | 3–64 allowed event-ID characters; prefix search only. |
+| `occurred_from` | timezone-aware datetime | No | Inclusive lower bound. |
+| `occurred_to` | timezone-aware datetime | No | Inclusive upper bound. |
+
+When both time bounds are present, `occurred_from` must precede `occurred_to`, and the interval cannot exceed `MONITOR_MAX_WINDOW_DAYS` (366 by default). Unknown query fields return `422`.
+
+### GET /postoffice/monitor/summary
+
+Authentication: patient or ACTIVE linked provider/caregiver.
+
+Accepts the shared filters. Response fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `patient_id` | integer | Authorized patient scope. |
+| `total_events` | integer | Events matching current filters. |
+| `delivery_counts` | object | Counts for pending, sent, acknowledged, failed and untracked. |
+| `event_type_counts` | object | Count per CEP type. |
+| `acknowledgement_rate` | number | Acknowledged events divided by matching events, percentage. |
+| `average_delivery_latency_ms` | number or null | Mean timeline-record to acknowledgement duration. |
+| `latest_event_at` | datetime or null | Latest matching business timestamp. |
+| `integrity_counts` | object | Verified, legacy-unverified and mismatch totals. |
+| `anomaly_count` | integer | Count of integrity/delivery anomaly signals. |
+| `stale_unacknowledged` | integer | Queue items still open after five minutes. |
+| `health` | enum | `healthy` or `attention`. |
+
+Example:
+
+```json
+{
+  "patient_id": 3,
+  "total_events": 7,
+  "delivery_counts": {
+    "pending": 0,
+    "sent": 6,
+    "acknowledged": 1,
+    "failed": 0,
+    "untracked": 0
+  },
+  "acknowledgement_rate": 14.29,
+  "average_delivery_latency_ms": 23.4,
+  "integrity_counts": {"verified": 7, "legacy_unverified": 0, "mismatch": 0},
+  "anomaly_count": 0,
+  "stale_unacknowledged": 0,
+  "health": "healthy"
+}
+```
+
+### GET /postoffice/monitor/events
+
+Authentication: patient or ACTIVE linked provider/caregiver.
+
+Adds these pagination fields to the shared filters:
+
+| Query field | Type | Required | Validation |
+| --- | --- | --- | --- |
+| `limit` | integer | No | Default 25; range 1–100. |
+| `cursor` | string | No | Signed opaque cursor returned by the previous page. |
+
+The query uses `(occurred_at, id)` keyset pagination and the patient/time/type indexes. The cursor is HMAC-signed and contains a filter fingerprint; changing the cursor or filters returns `400`.
+
+Each list item contains:
+
+| Field | Meaning |
+| --- | --- |
+| `event_id`, `event_type`, `patient_id`, `actor_id` | Event identity and scope. |
+| `source`, `target` | PostOffice route. |
+| `delivery_status`, `retry_count` | Current derived state and bounded attempt count. |
+| `occurred_at`, `recorded_at`, `last_attempt_at`, `acknowledged_at` | Lifecycle timestamps. |
+| `delivery_latency_ms` | Record-to-ack duration when acknowledged. |
+| `ack_id`, `received_by` | Immutable receipt references when present. |
+| `integrity_status` | SHA-256 verification result. |
+| `anomalies` | Safe machine-readable anomaly codes. |
+| `payload_preview` | Non-sensitive IDs/status summary; full payload is never returned in list pages. |
+
+The `page` object returns `count`, `limit`, `has_more`, and `next_cursor`.
+
+### GET /postoffice/monitor/events/{event_id}
+
+Required query: positive `patient_id`. Event ID must match the CEP ID format.
+
+Returns the list fields plus:
+
+| Field | Meaning |
+| --- | --- |
+| `payload` | Validated stored payload after role-based recursive redaction. |
+| `redacted_fields` | Exact JSON paths replaced by `[REDACTED]`. |
+| `payload_sha256` | Stored integrity digest. |
+| `lifecycle` | Ordered recorded, sent, received and acknowledged steps that exist. |
+| `last_error` | Safe delivery error code/message for a currently queued failed event. |
+
+Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with actor, patient, event, IP and request timestamp. Raw session tokens, OTPs, mobile numbers, IPs and session identifiers are always redacted. Caregivers additionally cannot see `diagnosis`, `advisories`, `configuration`, or `message_text`.
+
+## 16. Event-specific payload validation
 
 | Event family | Additional required payload fields |
 | --- | --- |
@@ -891,7 +1029,7 @@ This endpoint exposes the Week 3 event foundation, not the Week 4 Timeline Engin
 | `alert.trigger` | `alert_id`, `severity` |
 | `message.send` | `message_id`, `message_text` |
 
-## 16. Frontend integration checklist
+## 17. Frontend integration checklist
 
 The frontend must:
 
@@ -907,8 +1045,11 @@ The frontend must:
 10. Refresh consent, relationship, and care-plan data after every state-changing call.
 11. Show `request_id` when support/debug information is useful.
 12. Do not expose raw CEP JSON to patients.
+13. Use `next_cursor` exactly as returned; never construct or edit monitor cursors.
+14. Fetch full monitor payload only after a user explicitly opens event detail.
+15. Preserve `[REDACTED]` values and never try to reconstruct caregiver-hidden data client-side.
 
-## 17. Friday end-to-end acceptance example
+## 18. Friday end-to-end acceptance example
 
 ```text
 Provider POST /consent/request

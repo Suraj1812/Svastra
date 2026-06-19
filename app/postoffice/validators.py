@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -61,6 +61,8 @@ class CEPEvent(BaseModel):
     def validate_timestamp(cls, value: datetime):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("timestamp must include a timezone")
+        if value.astimezone(timezone.utc) > datetime.now(timezone.utc) + timedelta(minutes=5):
+            raise ValueError("timestamp cannot be more than five minutes in the future")
         return value
 
     @model_validator(mode="after")
@@ -75,25 +77,58 @@ class CEPEvent(BaseModel):
             _positive_int(self.payload, "consent_id")
             _positive_int(self.payload, "requestor_id")
             _non_empty(self.payload, "status")
+            expected_status = {
+                "consent.request": "PENDING",
+                "consent.grant": "ACTIVE",
+                "consent.reject": "REJECTED",
+                "consent.revoke": "REVOKED",
+            }[self.event_type]
+            if self.payload["status"] != expected_status:
+                raise ValueError(f"payload.status must be {expected_status} for {self.event_type}")
+            _one_of(self.payload, "requestor_role", {"provider", "caregiver"})
+            _one_of(self.payload, "consent_type", {"provider_access", "caregiver_access"})
         elif self.event_type.startswith("relationship."):
             _non_empty(self.payload, "relationship_id")
             _positive_int(self.payload, "linked_user_id")
             _non_empty(self.payload, "relationship_type")
             _non_empty(self.payload, "status")
+            _one_of(
+                self.payload,
+                "relationship_type",
+                {"provider_patient", "patient_caregiver"},
+            )
+            expected_status = "ACTIVE" if self.event_type == "relationship.created" else "INACTIVE"
+            if self.payload["status"] != expected_status:
+                raise ValueError(f"payload.status must be {expected_status} for {self.event_type}")
         elif self.event_type == "advisory.publish":
             _positive_int(self.payload, "care_plan_id")
             advisories = self.payload.get("advisories")
             if not isinstance(advisories, list) or not advisories:
                 raise ValueError("payload.advisories must be a non-empty list")
+            if len(advisories) > 50:
+                raise ValueError("payload.advisories cannot contain more than 50 items")
+            for index, advisory in enumerate(advisories):
+                if not isinstance(advisory, dict):
+                    raise ValueError(f"payload.advisories.{index} must be an object")
+                _positive_int(advisory, "advisory_id", prefix=f"payload.advisories.{index}")
+                _one_of(
+                    advisory,
+                    "advisory_type",
+                    {"medication", "measurement", "recommendation", "investigation"},
+                    prefix=f"payload.advisories.{index}",
+                )
+                _bounded_string(advisory, "term", 1, 255, prefix=f"payload.advisories.{index}")
+                if not isinstance(advisory.get("configuration"), dict):
+                    raise ValueError(f"payload.advisories.{index}.configuration must be an object")
         elif self.event_type == "response.log":
-            _non_empty(self.payload, "task_id")
-            _non_empty(self.payload, "response_type")
+            _bounded_string(self.payload, "task_id", 1, 100)
+            _bounded_string(self.payload, "response_type", 1, 64)
         elif self.event_type == "alert.trigger":
-            _non_empty(self.payload, "alert_id")
-            _non_empty(self.payload, "severity")
+            _bounded_string(self.payload, "alert_id", 1, 100)
+            _one_of(self.payload, "severity", {"low", "medium", "high", "critical"})
         elif self.event_type == "message.send":
-            _non_empty(self.payload, "message_id")
-            _non_empty(self.payload, "message_text")
+            _bounded_string(self.payload, "message_id", 1, 100)
+            _bounded_string(self.payload, "message_text", 1, 4000)
         return self
 
 
@@ -104,17 +139,48 @@ class AcknowledgementRequest(BaseModel):
     received_by: str = Field(..., min_length=2, max_length=64)
     status: Literal["received"] = "received"
 
+    @field_validator("event_id")
+    @classmethod
+    def validate_event_id(cls, value: str):
+        if not _EVENT_ID_PATTERN.fullmatch(value):
+            raise ValueError("event_id format is invalid")
+        return value
 
-def _positive_int(payload: dict[str, Any], field_name: str):
+
+def _positive_int(payload: dict[str, Any], field_name: str, prefix: str = "payload"):
     value = payload.get(field_name)
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
-        raise ValueError(f"payload.{field_name} must be a positive integer")
+        raise ValueError(f"{prefix}.{field_name} must be a positive integer")
 
 
 def _non_empty(payload: dict[str, Any], field_name: str):
     value = payload.get(field_name)
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"payload.{field_name} must be a non-empty string")
+
+
+def _bounded_string(
+    payload: dict[str, Any],
+    field_name: str,
+    minimum: int,
+    maximum: int,
+    prefix: str = "payload",
+):
+    value = payload.get(field_name)
+    if not isinstance(value, str) or not minimum <= len(value.strip()) <= maximum:
+        raise ValueError(f"{prefix}.{field_name} must contain {minimum} to {maximum} characters")
+
+
+def _one_of(
+    payload: dict[str, Any],
+    field_name: str,
+    allowed: set[str],
+    prefix: str = "payload",
+):
+    value = payload.get(field_name)
+    if value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"{prefix}.{field_name} must be one of: {choices}")
 
 
 def validate_event(event: CEPEvent | dict):
