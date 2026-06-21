@@ -1109,7 +1109,7 @@ Returns the list fields plus:
 | `lifecycle` | Ordered recorded, sent, received and acknowledged steps that exist. |
 | `last_error` | Safe delivery error code/message for a currently queued failed event. |
 
-Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with actor, patient, event, IP and request timestamp. Raw session tokens, OTPs, mobile numbers, IPs and session identifiers are always redacted. Caregivers additionally cannot see `diagnosis`, `advisories`, `configuration`, or `message_text`.
+Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with actor, patient, event, IP and request timestamp. Raw session tokens, OTPs, mobile numbers, IPs and session identifiers are always redacted. Internal `concept_id` values are also redacted for non-provider viewers. Caregivers additionally cannot see `diagnosis`, `advisories`, `configuration`, or `message_text`.
 
 ## 16. Event-specific payload validation
 

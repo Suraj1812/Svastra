@@ -265,6 +265,10 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       setError("Approved advisory controls are still loading.");
       return;
     }
+    if (!durationValue || Number(durationValue) < 1 || Number(durationValue) > 365 || !Number.isInteger(Number(durationValue))) {
+      setError("Duration must be a whole number between 1 and 365.");
+      return;
+    }
     if (selectedTerm.tag === "medication" && (!doseValue || Number(doseValue) <= 0)) {
       setError("Enter a positive medication dose.");
       return;

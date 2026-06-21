@@ -2,23 +2,102 @@
   "2647801000189105": {
     "conceptId": "2647801000189105",
     "term": "Levaz 500 mg oral tablet",
+    "term_conceptId": "2647801000189105",
+    "fsn": "Levaz (levofloxacin) 500 mg oral tablet Hauz Pharma Private Limited (real clinical drug)",
     "semanticTag": "real clinical drug",
     "generic": "Levofloxacin",
+    "generic_conceptIds": ["387552007"],
+    "ingredient_count": 1,
+    "manufactured_df_conceptId": "421026006",
     "dose_form": "Tablet",
+    "dose_form_conceptId": "385055001",
     "route": "Oral",
+    "route_conceptId": "738956005",
+    "preparation": "No transformation",
+    "preparation_conceptId": "761954006",
+    "method": "Swallow",
+    "method_conceptId": "738995006",
     "strength": "500 mg per 1 Tablet",
+    "strength_type": "presentation",
+    "strength_presentation": "500 mg per 1 Tablet",
+    "strength_concentration": null,
+    "strength_details": [
+      {
+        "ingredient_conceptIds": ["387552007"],
+        "ingredient_term": "Levofloxacin",
+        "presentation_struct": {
+          "numerator_value": "500.0",
+          "numerator_unit_cid": "258684004",
+          "denominator_value": "1.0",
+          "denominator_unit_cid": "732936001"
+        },
+        "presentation_text": "500 mg per 1 Tablet",
+        "concentration_struct": null,
+        "concentration_text": null
+      }
+    ],
+    "product_name": "Levaz",
+    "product_name_conceptId": "2562301000189104",
     "supplier_name": "Hauz Pharma Private Limited",
+    "supplier_conceptId": "55451000189108",
+    "count_of_base": 1,
     "prescription_print": "Tablet Levofloxacin 500 mg per 1 Tablet, (Levaz, Hauz Pharma Private Limited)"
   },
   "2647791000189106": {
     "conceptId": "2647791000189106",
     "term": "Loxof OZ 250 mg + 500 mg oral tablet",
+    "term_conceptId": "2647791000189106",
+    "fsn": "Loxof OZ (levofloxacin and ornidazole) 250 mg + 500 mg oral tablet Sun Pharmaceutical Industries Limited (real clinical drug)",
     "semanticTag": "real clinical drug",
     "generic": "Levofloxacin + Ornidazole",
+    "generic_conceptIds": ["387552007", "442924004"],
+    "ingredient_count": 2,
+    "manufactured_df_conceptId": "421026006",
     "dose_form": "Tablet",
+    "dose_form_conceptId": "385055001",
     "route": "Oral",
+    "route_conceptId": "738956005",
+    "preparation": "No transformation",
+    "preparation_conceptId": "761954006",
+    "method": "Swallow",
+    "method_conceptId": "738995006",
     "strength": "250 mg per 1 Tablet, 500 mg per 1 Tablet",
+    "strength_type": "presentation",
+    "strength_presentation": "250 mg per 1 Tablet, 500 mg per 1 Tablet",
+    "strength_concentration": null,
+    "strength_details": [
+      {
+        "ingredient_conceptIds": ["387552007"],
+        "ingredient_term": "Levofloxacin",
+        "presentation_struct": {
+          "numerator_value": "250.0",
+          "numerator_unit_cid": "258684004",
+          "denominator_value": "1.0",
+          "denominator_unit_cid": "732936001"
+        },
+        "presentation_text": "250 mg per 1 Tablet",
+        "concentration_struct": null,
+        "concentration_text": null
+      },
+      {
+        "ingredient_conceptIds": ["442924004"],
+        "ingredient_term": "Ornidazole",
+        "presentation_struct": {
+          "numerator_value": "500.0",
+          "numerator_unit_cid": "258684004",
+          "denominator_value": "1.0",
+          "denominator_unit_cid": "732936001"
+        },
+        "presentation_text": "500 mg per 1 Tablet",
+        "concentration_struct": null,
+        "concentration_text": null
+      }
+    ],
+    "product_name": "Loxof OZ",
+    "product_name_conceptId": "2587961000189100",
     "supplier_name": "Sun Pharmaceutical Industries Limited",
+    "supplier_conceptId": "9781000189101",
+    "count_of_base": 2,
     "prescription_print": "Tablet Levofloxacin + Ornidazole 250 mg per 1 Tablet, 500 mg per 1 Tablet, (Loxof OZ, Sun Pharmaceutical Industries Limited)"
   }
 }

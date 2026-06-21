@@ -97,6 +97,8 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
         ).first()
         if relationship is None or relationship.source_consent.status != "ACTIVE":
             raise PermissionError("An active consent-backed provider relationship is required")
+        if event.payload.get("title") != plan.title or event.payload.get("diagnosis") != plan.diagnosis:
+            raise CEPValidationError("CEP care-plan context does not match stored state")
         advisory_ids: set[int] = set()
         for item in event.payload["advisories"]:
             if item["advisory_id"] in advisory_ids:
@@ -116,6 +118,8 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
                 or stored.concept_id != item["concept_id"]
                 or stored.term != item["term"]
                 or stored.advisory_type != item["advisory_type"]
+                or stored.tag != item["tag"]
+                or json.loads(stored.configuration_json) != item["configuration"]
             ):
                 raise CEPValidationError("CEP advisory does not match the immutable stored state")
     elif actor_user.role == "patient":

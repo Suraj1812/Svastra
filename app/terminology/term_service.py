@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from sqlalchemy import func
@@ -58,6 +59,7 @@ TERM_OPTIONS = {
 DRUG_CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "svp_ide_drug_catalog_details_sample.json"
 
 
+@lru_cache(maxsize=1)
 def _drug_catalog():
     try:
         data = json.loads(DRUG_CATALOG_PATH.read_text(encoding="utf-8"))

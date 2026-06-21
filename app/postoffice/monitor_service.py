@@ -39,6 +39,7 @@ _CAREGIVER_REDACT = {
     "diagnosis",
     "message_text",
 }
+_NON_PROVIDER_INTERNAL_FIELDS = {"concept_id"}
 _PREVIEW_KEYS = {
     "alert_id",
     "care_plan_id",
@@ -201,6 +202,7 @@ def _redact_payload(value, *, role: str, redacted_fields: set[str], path: str = 
                 lowered in _ALWAYS_REDACT
                 or "token" in lowered
                 or (role == "caregiver" and lowered in _CAREGIVER_REDACT)
+                or (role != "provider" and lowered in _NON_PROVIDER_INTERNAL_FIELDS)
             )
             if should_redact:
                 result[key] = "[REDACTED]"

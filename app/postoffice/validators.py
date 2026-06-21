@@ -119,6 +119,16 @@ class CEPEvent(BaseModel):
                     {"medication", "measurement", "recommendation", "investigation"},
                     prefix=f"payload.advisories.{index}",
                 )
+                _one_of(
+                    advisory,
+                    "tag",
+                    {"medication", "measurement", "recommendation", "investigation"},
+                    prefix=f"payload.advisories.{index}",
+                )
+                if advisory["tag"] != advisory["advisory_type"]:
+                    raise ValueError(
+                        f"payload.advisories.{index}.tag must match advisory_type"
+                    )
                 _bounded_string(advisory, "term", 1, 255, prefix=f"payload.advisories.{index}")
                 _one_of(
                     advisory,

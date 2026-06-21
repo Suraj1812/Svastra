@@ -65,6 +65,14 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
     )
     assert drug_search.status_code == 200
     assert drug_search.json()["data"]["terms"][0]["term"] == "Levaz 500 mg oral tablet"
+    drug_options = integration_client.get(
+        "/terminology/provider-terms/2647801000189105/advisory-options",
+        headers=headers(provider),
+    )
+    assert drug_options.status_code == 200
+    assert drug_options.json()["data"]["options"]["dose_units"] == ["tablet"]
+    assert drug_options.json()["data"]["options"]["routes"] == ["oral"]
+    assert drug_options.json()["data"]["options"]["medication_details"]["generic"] == "Levofloxacin"
 
     tampered = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
@@ -168,6 +176,16 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
     assert patient_advisory["advisory"] == "Temperature"
     assert "Record after resting for five minutes" in patient_advisory["instruction"]
     assert patient_advisory["execution_status"] == "pending"
+
+    patient_monitor = integration_client.get(
+        f"/postoffice/monitor/events/{body['event_id']}",
+        params={"patient_id": patient["user"]["id"]},
+        headers=headers(patient),
+    )
+    assert patient_monitor.status_code == 200
+    monitor_data = patient_monitor.json()["data"]
+    assert monitor_data["payload"]["advisories"][0]["concept_id"] == "[REDACTED]"
+    assert "payload.advisories[].concept_id" in monitor_data["redacted_fields"]
 
     db = integration_client.testing_session_local()
     try:

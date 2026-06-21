@@ -38,3 +38,16 @@ The provider-to-patient advisory flow is implemented end to end. Week 3 executio
 - CEPs reject invalid IDs, naive/future timestamps, unsupported types, oversized payloads and modified duplicate IDs.
 - Patient and provider data access stays relationship-scoped.
 - The monitor applies role-based redaction and verifies stored payload SHA-256 digests.
+
+## Final verification
+
+| Check | Result |
+| --- | --- |
+| Backend integration suite | 33 passed |
+| Frontend TypeScript + production build | Passed |
+| Frontend dependency audit | 0 high-severity vulnerabilities |
+| Live provider → publish → patient browser story | Passed |
+| Live advisory Event Monitor acknowledgement/integrity/pending state | Passed |
+| Browser console warnings/errors | None |
+| 390 px responsive overflow check | No horizontal overflow |
+| OpenAPI-to-contract operation coverage | 56 of 56 documented |
