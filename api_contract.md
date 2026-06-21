@@ -1,9 +1,9 @@
 # SVASTRA+ MVP API Contract
 
-Version: 3.2 — Friday Advisory Authoritative
+Version: 4.0 — Advisory, Task and Response Workflow
 
 Updated: 21 June 2026
-Scope: Week 3 identity, RBAC, consent, relationships, PostOffice, API Event Monitor, care plans, advisories, terminology, allergies, and the first provider-to-patient clinical flow.
+Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory scheduling, patient tasks, coded responses, investigation uploads, clinical alerts, PostOffice and API Event Monitor.
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
 
@@ -26,9 +26,13 @@ Server resolves its type and validates its fields
         ↓
 Provider publishes the advisory
         ↓
-PostOffice validates, routes, stores, and acknowledges the CEP event
+Schedule and patient tasks are generated
         ↓
-Patient sees the published advisory in My Advisories
+PostOffice validates, routes, stores, and acknowledges every CEP event
+        ↓
+Patient responds or uploads a report
+        ↓
+Backend updates execution state and generates alerts when rules are breached
 ```
 
 Consent and relationship are deliberately separate:
@@ -57,11 +61,15 @@ Security rules:
 - Consent grant, reject, and revoke do not request a second OTP. They require an OTP-authenticated patient session plus explicit confirmation.
 - Request bodies reject undeclared fields.
 - API request bodies larger than the configured 1 MiB ceiling are rejected before parsing.
+- Investigation uploads use a separate bounded multipart allowance and accept at most 5 MiB.
+- Uploaded reports are private, signature-checked PDF/JPEG files stored with random names, `0600` permissions and SHA-256 hashes.
 - PostOffice event IDs are immutable: an identical queued replay is idempotent, while changed content under the same ID is rejected.
 - Monitor cursors are signed and bound to their original filter set.
 - Stored CEP documents have a SHA-256 digest checked whenever the monitor reads them.
 - Caregiver event details redact diagnoses, clinical configuration, advisory bodies, and messages.
 - IDs, roles, ownership, relationships, consent states, terminology bindings, and legal state transitions are rechecked by the server.
+- Schedule generation is capped at 500 tasks per advisory to prevent accidental or hostile resource exhaustion.
+- Task responses and attachments are immutable: a task accepts exactly one successful response.
 
 ## 3. Standard response envelope
 
@@ -234,7 +242,9 @@ consent.reject
 consent.revoke
 relationship.created
 relationship.deactivated
+schedule.generate
 advisory.publish
+task.generate
 response.log
 alert.trigger
 message.send
@@ -278,6 +288,7 @@ message.send
 | Terminology | `GET /terminology/provider-terms` | Provider |
 | Terminology | `GET /terminology/provider-terms/{concept_id}` | Provider |
 | Terminology | `GET /terminology/provider-terms/{concept_id}/advisory-options` | Provider |
+| Terminology | `GET /terminology/response-reasons` | Patient |
 | Care plans | `POST /care-plans` | Linked provider |
 | Care plans | `GET /care-plans` | Provider owner |
 | Care plans | `GET /care-plans/{id}` | Provider owner |
@@ -287,6 +298,15 @@ message.send
 | Advisories | `POST /care-plans/{id}/advisories/{advisory_id}/publish` | Linked provider owner |
 | Advisories | `POST /care-plans/{id}/publish` | Linked provider owner |
 | Patient care | `GET /me/advisories` | Patient |
+| Tasks | `GET /me/tasks` | Patient |
+| Tasks | `GET /provider/tasks` | Provider owner with ACTIVE relationship |
+| Tasks | `GET /tasks/{task_uid}` | Assigned patient or ACTIVE linked provider |
+| Responses | `POST /tasks/{task_uid}/responses` | Assigned patient |
+| Reports | `POST /tasks/{task_uid}/upload` | Assigned patient |
+| Reports | `GET /attachments/{attachment_uid}` | Assigned patient or ACTIVE linked provider |
+| Workflow | `POST /provider/tasks/evaluate-overdue` | Provider owner |
+| Alerts | `GET /provider/alerts` | Provider owner with ACTIVE relationship |
+| Alerts | `POST /provider/alerts/{alert_uid}/acknowledge` | Provider owner |
 | Allergies | `GET /me/allergies` | Patient |
 | Allergies | `POST /me/allergies` | Patient |
 | PostOffice | `POST /postoffice/send` | Authorized event actor |
@@ -673,6 +693,22 @@ Response `data`:
 
 Measurement responses instead include `measurement_units` and `comparators`; investigation includes `priorities`. Unknown concepts return `404`; approved measurements with missing unit metadata return `400` and cannot be authored.
 
+### GET /terminology/response-reasons
+
+Authentication: patient. Returns approved coded reasons for a missed response. Optional `query` requires 2–80 characters; `limit` is 1–50.
+
+```json
+{
+  "reasons": [
+    {"conceptId":"422587007","term":"Nausea","tag":"response_reason"},
+    {"conceptId":"418290006","term":"Itching","tag":"response_reason"}
+  ],
+  "count": 2
+}
+```
+
+The API stores a reason only after rechecking the exact concept/term pair. Free-text medication-miss reasons are rejected.
+
 ## 11. Care-plan APIs
 
 ### POST /care-plans
@@ -767,7 +803,7 @@ Medication adds:
 }
 ```
 
-Medication creation checks the patient's ACTIVE allergy list. A match returns `allergy_warnings`; it does not block the MVP request.
+Medication creation checks the patient's ACTIVE allergy list. A match returns a blocking `allergy_warnings` entry. Publication then creates a critical `allergy_conflict` alert and `alert.trigger` CEP, writes an audit entry, and rejects publication. No schedule, task or `advisory.publish` event is created for the unsafe medicine.
 
 Measurement adds:
 
@@ -780,7 +816,16 @@ Allowed `condition`: `more_than`, `less_than`, `at_least`, `at_most`, `equal_to`
 
 Recommendation adds no forced duplicate instruction field: the selected approved term is the recommendation. The provider may add `additional_instructions` in the common fields.
 
-Investigation adds required `priority`: `routine`, `urgent`, or `stat`. Friday does not require an attachment.
+Investigation adds:
+
+| Field | Type | Required | Validation |
+| --- | --- | --- | --- |
+| `priority` | enum | Yes | `routine`, `urgent`, `asap`, `stat`. |
+| `due_date` | ISO date | Yes | Today through five years ahead. |
+| `upload_required` | true | Yes/default | Must remain true for the report workflow. |
+| `alert_if_not_uploaded` | boolean | No | Defaults true. |
+| `grace_period_value` | integer | No | 0–30. |
+| `grace_period_unit` | enum | No | `hours` or `days`; defaults `days`. |
 
 Unknown configuration fields, mismatched units, missing fields, duplicate terms in one plan, and tampered terminology all return `400` or `422`.
 
@@ -794,7 +839,7 @@ Created advisory response fields:
 | `configuration` | object | Normalized validated configuration; unknown fields are absent because they are rejected. |
 | `allergy_warnings` | array | Non-blocking medication warnings; empty for no match/non-medication. |
 | `status` | enum | `DRAFT` or `PUBLISHED`. |
-| `execution_status` | enum | Always `pending` during Week 3. Clients cannot submit or alter it. |
+| `execution_status` | enum | Server-owned: `pending`, `completed`, `completed_late`, or `missed`. Clients cannot submit or directly alter it. |
 | `created_at`, `published_at` | datetime/null | Server timestamps. |
 
 Security and consistency checks occur twice: when the advisory is authored and again when its CEP is published. The server rechecks plan ownership, non-archived state, active consent-backed relationship, terminology identity, type-specific schema, units, duplicate concept, stored advisory ownership, publication state, and immutable event fields. Creation and publication each write an audit entry.
@@ -808,14 +853,13 @@ Body: `{"confirmed":true}`.
 Effects:
 
 1. Advisory becomes immutable `PUBLISHED`.
-2. Advisory retains `execution_status: pending`.
-3. Care plan becomes `ACTIVE`.
-4. Creates `advisory.publish` CEP.
-5. PostOffice validates and routes it to `rogi_mitra`.
-6. Receiver copy is stored.
-7. Acknowledgement is stored.
-8. Temporary outbound queue row is removed.
-9. Audit and permanent event history remain.
+2. The bounded schedule is calculated and stored as patient tasks.
+3. Care plan becomes `ACTIVE`; advisory starts at `execution_status: pending`.
+4. Creates ordered `schedule.generate`, `advisory.publish`, and `task.generate` CEPs.
+5. PostOffice validates stored ownership/state and routes every event.
+6. Receiver copies and acknowledgements are stored.
+7. Successful temporary outbound rows are removed.
+8. Schedule, task, publication and delivery audit records remain.
 
 Exact `advisory.publish` CEP body stored in the immutable timeline:
 
@@ -901,9 +945,169 @@ Response:
 }
 ```
 
-`instruction` is a patient-friendly sentence generated by the backend from the validated, typed configuration. It includes the clinically relevant dose, route, unit, priority, frequency, duration, and any provider-entered additional instructions that apply to that advisory type. The patient cannot edit it. Friday displays `execution_status: pending`; it does not create patient tasks or capture responses.
+`instruction` is a patient-friendly sentence generated by the backend from the validated configuration. The task screen is the actionable surface; My Advisories remains read-only history.
 
-## 13. Allergy APIs
+## 13. Schedule, task, response, report and alert APIs
+
+### Schedule rules
+
+Publication generates tasks from the validated frequency and duration.
+
+| Frequency | Interval |
+| --- | --- |
+| `once_daily` | 24 hours |
+| `twice_daily` | 12 hours |
+| `three_times_daily` | 8 hours |
+| `four_times_daily` | 6 hours |
+| `every_4_hours` | 4 hours |
+| `every_6_hours` | 6 hours |
+| `weekly` | 168 hours |
+| `monthly` | 720 hours for MVP scheduling |
+| `as_needed` | One task |
+
+Hours, days, weeks and months convert to 1, 24, 168 and 720 hours. More than 500 generated tasks is rejected before publication. Investigation creates one task due at 17:00 UTC on `due_date`.
+
+### CareTask object
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `task_id` | opaque string | Server-generated task reference; never manufactured by clients. |
+| `advisory_id`, `care_plan_id` | positive integer | Parent records. |
+| `task_type` | enum | `medication`, `measurement`, `recommendation`, `investigation`. |
+| `patient` | object | Patient ID/name visible only inside authorized scope. |
+| `title`, `advisory` | string | Simple patient instruction and approved term. |
+| `configuration` | object | Validated advisory configuration. |
+| `expected_response` | enum | `taken_or_missed`, `numeric_value`, `done_or_missed`, `report_upload`. |
+| `due_at`, `grace_expires_at` | datetime | Due and clinical grace boundary. |
+| `execution_status` | enum | `pending`, `completed`, `completed_late`, `missed`. |
+| `response` | object/null | Immutable response after completion. |
+
+### GET /me/tasks
+
+Authentication: patient. Optional `execution_status` filter. Returns at most 500 assigned tasks ordered by due time.
+
+### GET /provider/tasks
+
+Authentication: provider. Optional `patient_id` and `execution_status`. Only tasks belonging to currently ACTIVE consent-backed relationships are returned.
+
+### GET /tasks/{task_uid}
+
+Authentication: assigned patient or owning provider with an ACTIVE relationship. Task IDs must match `task_` plus 32 lowercase hexadecimal characters.
+
+### POST /tasks/{task_uid}/responses
+
+Authentication: assigned patient. Status: `201`. Unknown fields are rejected. Only a `pending` task without a response can be submitted.
+
+Common body fields:
+
+| Field | Type | Required | Rules |
+| --- | --- | --- | --- |
+| `response_status` | enum | Yes | Type-specific values below. |
+| `reason` | coded object/null | Conditional | Allowed only for `missed`; mandatory for missed medication. |
+| `numeric_value` | finite number/null | Measurement | −1,000,000 to 1,000,000. |
+| `measurement_unit` | string/null | Measurement | Must exactly match the advisory unit. |
+
+Medication taken:
+
+```json
+{"response_status":"taken"}
+```
+
+Medication missed:
+
+```json
+{
+  "response_status": "missed",
+  "reason": {"concept_id":"422587007","term":"Nausea"}
+}
+```
+
+Measurement:
+
+```json
+{
+  "response_status": "recorded",
+  "numeric_value": 101.2,
+  "measurement_unit": "°F"
+}
+```
+
+Recommendation accepts `done` or `missed`. Investigation accepts `missed` here; a successful investigation uses the upload endpoint.
+
+Successful processing:
+
+1. Stores one immutable TaskResponse.
+2. Sets task status to `completed`, `completed_late`, or `missed` using the grace boundary.
+3. Recalculates aggregate advisory status.
+4. Creates, routes and acknowledges `response.log`.
+5. Evaluates any measurement threshold.
+6. Creates `value_threshold` alert + `alert.trigger` only when the configured rule is breached and notification is not `none`.
+7. Writes mandatory response audit history.
+
+### POST /tasks/{task_uid}/upload
+
+Authentication: assigned patient. Content type: `multipart/form-data`; form field: `file`.
+
+Validation:
+
+| Rule | Accepted |
+| --- | --- |
+| Task | Pending investigation only |
+| File type | PDF or JPEG only |
+| MIME | `application/pdf` or `image/jpeg` |
+| Content signature | `%PDF-` or JPEG `FF D8 FF`; extension alone is never trusted |
+| Maximum | 5 MiB plus bounded multipart overhead |
+| Filename | Basename only, 1–180 chars, PDF/JPG/JPEG extension |
+| Storage | Private directory, random server filename, `0600` permission |
+| Integrity | SHA-256 recorded and returned in `X-Content-SHA256` on download |
+
+The database write, `response.log` event and file are coordinated. If event/database persistence fails, the new private file is removed.
+
+### GET /attachments/{attachment_uid}
+
+Returns the binary report only to the assigned patient or owning provider with a currently ACTIVE consent-backed relationship. Other providers receive `403`. The storage path is never returned.
+
+### POST /provider/tasks/evaluate-overdue
+
+Authentication: provider. Body:
+
+```json
+{"patient_id": 41}
+```
+
+`patient_id` may be null to evaluate all actively linked patients. At most 500 overdue pending tasks are evaluated per call. Each becomes `missed`. Configured non-response/investigation rules create one stored alert and `alert.trigger`; a second evaluation does not duplicate terminal tasks or alerts.
+
+### GET /provider/alerts
+
+Authentication: provider. Optional `patient_id` and `alert_status=OPEN|ACKNOWLEDGED`. Only alerts within ACTIVE consent-backed relationships are returned.
+
+Alert object fields:
+
+| Field | Meaning |
+| --- | --- |
+| `alert_id`, `advisory_id`, `task_id` | Stored references. |
+| `patient`, `advisory` | Human-readable context. |
+| `alert_type` | `allergy_conflict`, `non_response`, or `value_threshold`. |
+| `severity` | `low`, `medium`, `high`, or `critical`. |
+| `message` | Safe clinical summary. |
+| `notification_mode` | `immediate`, `daily_summary`, or `both`. `none` suppresses rule-generated alerts. |
+| `status` | `OPEN` or `ACKNOWLEDGED`. |
+| `event_id`, timestamps | CEP and lifecycle references. |
+
+### POST /provider/alerts/{alert_uid}/acknowledge
+
+Authentication: owning provider with ACTIVE relationship. Body: `{"confirmed":true}`. Idempotent; returns `changed: false` when already acknowledged. Writes `alert.acknowledged` audit history.
+
+### Aggregate advisory status
+
+| Task state | Advisory result |
+| --- | --- |
+| Any task still pending | `pending` |
+| All terminal and any missed | `missed` |
+| All terminal, none missed, any late | `completed_late` |
+| All tasks completed on time | `completed` |
+
+## 14. Allergy APIs
 
 ### GET /me/allergies
 
@@ -919,7 +1123,7 @@ Authentication: patient only.
 
 Idempotent for an existing case-insensitive allergen. Providers cannot silently modify a patient's allergy list.
 
-## 14. PostOffice APIs
+## 15. PostOffice APIs
 
 ### POST /postoffice/send
 
@@ -984,7 +1188,7 @@ Required query: `patient_id`. Returns at most 100 newest immutable CEP history r
 
 This endpoint exposes the Week 3 event foundation, not the Week 4 Timeline Engine UI.
 
-## 15. API Event Monitor
+## 16. API Event Monitor
 
 The API Event Monitor is the secured operational view behind the Timeline tab. It reports PostOffice transport state; it does not create healthcare tasks or make clinical decisions.
 
@@ -1111,18 +1315,20 @@ Returns the list fields plus:
 
 Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with actor, patient, event, IP and request timestamp. Raw session tokens, OTPs, mobile numbers, IPs and session identifiers are always redacted. Internal `concept_id` values are also redacted for non-provider viewers. Caregivers additionally cannot see `diagnosis`, `advisories`, `configuration`, or `message_text`.
 
-## 16. Event-specific payload validation
+## 17. Event-specific payload validation
 
 | Event family | Additional required payload fields |
 | --- | --- |
 | `consent.*` | `consent_id`, `requestor_id`, `status` |
 | `relationship.*` | `relationship_id`, `linked_user_id`, `relationship_type`, `status` |
+| `schedule.generate` | `care_plan_id`, `advisory_id`, positive `task_count` |
 | `advisory.publish` | `care_plan_id`, top-level `execution_status=pending`, non-empty `advisories` array; every entry requires advisory ID/type, concept, term, `execution_status=pending`, configuration |
-| `response.log` | `task_id`, `response_type` |
+| `task.generate` | `care_plan_id`, `advisory_id`, 1–500 unique task IDs |
+| `response.log` | `task_id`, response type/status, terminal execution status; must match stored immutable response |
 | `alert.trigger` | `alert_id`, `severity` |
 | `message.send` | `message_id`, `message_text` |
 
-## 17. Frontend integration checklist
+## 18. Frontend integration checklist
 
 The frontend must:
 
@@ -1133,7 +1339,7 @@ The frontend must:
 5. Search terminology only after three characters.
 6. Submit the exact selected `conceptId`, `term`, and `tag`; never manufacture tags and never display concept IDs to clinical users.
 7. Fetch `/advisory-options` after selection and render its server-owned controls; show validation messages beside the relevant fields.
-8. Display medication allergy warnings prominently but allow Week 3 publication after provider review.
+8. Display medication allergy conflicts prominently and disable publication until another medicine is selected.
 9. Hide mobile numbers in list views; fetch detail endpoints only when the user opens details.
 10. Refresh consent, relationship, and care-plan data after every state-changing call.
 11. Show `request_id` when support/debug information is useful.
@@ -1141,8 +1347,11 @@ The frontend must:
 13. Use `next_cursor` exactly as returned; never construct or edit monitor cursors.
 14. Fetch full monitor payload only after a user explicitly opens event detail.
 15. Preserve `[REDACTED]` values and never try to reconstruct caregiver-hidden data client-side.
+16. Keep patient task actions short and obvious: Taken, Missed, Done, Save, Choose report, Upload.
+17. Never accept a free-text medication-miss reason; submit the selected coded reason.
+18. Send uploads as multipart without a JSON `Content-Type` header.
 
-## 18. Friday end-to-end acceptance example
+## 19. End-to-end acceptance example
 
 ```text
 Provider POST /consent/request
@@ -1155,9 +1364,11 @@ Provider POST /care-plans/{id}/advisories
 Provider reviews any allergy_warnings
 Provider POST /care-plans/{id}/advisories/{advisory_id}/publish {confirmed:true}
 Backend returns event_id + acknowledgement
-Patient GET /me/advisories
-Patient sees the published instruction with execution Pending
-Provider/patient opens API Event Monitor and sees advisory.publish + execution Pending
+Backend records schedule.generate → advisory.publish → task.generate
+Patient GET /me/tasks
+Patient POST /tasks/{task_uid}/responses or /upload
+Backend records response.log and updates task/advisory execution status
+Backend optionally records alert.trigger for threshold/non-response rules
+Provider GET /provider/tasks and /provider/alerts
+Provider/patient opens API Event Monitor and sees the complete acknowledged lifecycle
 ```
-
-No scheduler, task generation, reminders, warning engine, alert engine, or daily summary is part of this Week 3 contract.

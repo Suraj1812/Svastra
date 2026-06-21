@@ -17,7 +17,7 @@ Base = declarative_base()
 
 
 def init_db():
-    from app.models import allergy, audit, care, consent, postoffice, rbac, relationship, session, terminology, user  # noqa: F401
+    from app.models import allergy, audit, care, consent, postoffice, rbac, relationship, session, terminology, user, workflow  # noqa: F401
     from app.terminology.term_service import seed_demo_terms
 
     Base.metadata.create_all(bind=engine)
@@ -144,6 +144,16 @@ def _ensure_schema_compatibility():
             if "last_attempt_at" not in columns:
                 connection.execute(
                     text("ALTER TABLE postoffice_acknowledgements ADD COLUMN last_attempt_at DATETIME")
+                )
+
+        if "clinical_alerts" in tables:
+            columns = {column["name"] for column in inspector.get_columns("clinical_alerts")}
+            if "notification_mode" not in columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE clinical_alerts ADD COLUMN notification_mode "
+                        "VARCHAR(32) NOT NULL DEFAULT 'immediate'"
+                    )
                 )
 
 

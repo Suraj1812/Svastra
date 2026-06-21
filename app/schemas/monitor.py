@@ -16,7 +16,9 @@ MonitorEventType = Literal[
     "consent.revoke",
     "relationship.created",
     "relationship.deactivated",
+    "schedule.generate",
     "advisory.publish",
+    "task.generate",
     "response.log",
     "alert.trigger",
     "message.send",
@@ -76,4 +78,3 @@ class EventMonitorQuery(EventMonitorFilters):
 
 class EventMonitorSummaryQuery(EventMonitorFilters):
     pass
-

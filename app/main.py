@@ -23,6 +23,7 @@ from app.api.routes.consent import router as consent_router
 from app.api.routes.me import router as me_router
 from app.api.routes.postoffice import router as postoffice_router
 from app.api.routes.relationships import router as relationships_router
+from app.api.routes.workflow import router as workflow_router
 from app.auth.auth_service import RegistrationError
 
 
@@ -48,7 +49,11 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Session-Token", "X-Request-ID"],
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=5)
-app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.max_request_bytes)
+app.add_middleware(
+    RequestBodyLimitMiddleware,
+    max_bytes=settings.max_request_bytes,
+    upload_max_bytes=settings.attachment_max_bytes + 512 * 1024,
+)
 app.middleware("http")(request_logging_middleware)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -70,3 +75,4 @@ app.include_router(consent_router)
 app.include_router(me_router)
 app.include_router(relationships_router)
 app.include_router(postoffice_router)
+app.include_router(workflow_router)

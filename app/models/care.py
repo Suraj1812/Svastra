@@ -36,7 +36,7 @@ class Advisory(Base):
         ),
         CheckConstraint("status in ('DRAFT', 'PUBLISHED')", name="ck_advisories_status"),
         CheckConstraint(
-            "execution_status in ('pending')",
+            "execution_status in ('pending', 'completed', 'completed_late', 'missed')",
             name="ck_advisories_execution_status",
         ),
     )
@@ -59,3 +59,4 @@ class Advisory(Base):
     care_plan = relationship("CarePlan", back_populates="advisories")
     provider = relationship("User", foreign_keys=[provider_id])
     patient = relationship("User", foreign_keys=[patient_id])
+    tasks = relationship("CareTask", back_populates="advisory", cascade="all, delete-orphan")

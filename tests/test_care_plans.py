@@ -207,7 +207,7 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
         db.close()
 
 
-def test_medication_allergy_warning_is_non_blocking_and_visible(integration_client):
+def test_medication_allergy_warning_is_blocking_and_visible(integration_client):
     patient = register_patient(integration_client, "9876501231")
     provider = register_provider(integration_client, "9876501232")
     allergy = integration_client.post(
@@ -245,7 +245,7 @@ def test_medication_allergy_warning_is_non_blocking_and_visible(integration_clie
     assert advisory.status_code == 201
     warning = advisory.json()["data"]["allergy_warnings"][0]
     assert warning["code"] == "POTENTIAL_ALLERGY"
-    assert warning["blocking"] is False
+    assert warning["blocking"] is True
 
 
 def test_care_plan_update_and_archive_are_owner_scoped(integration_client):

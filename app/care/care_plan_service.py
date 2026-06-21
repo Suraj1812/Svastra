@@ -8,14 +8,13 @@ from app.audit.audit_service import record_audit_event
 from app.care.advisory_service import serialize_advisory
 from app.models.care import Advisory, CarePlan
 from app.models.user import User
-from app.postoffice.dispatcher import (
-    acknowledge_event,
-    create_event,
-    dispatch_event,
-    send_event,
-    serialize_acknowledgement,
-)
 from app.relationships.relationship_validator import has_active_provider_relationship
+from app.workflow.service import (
+    create_publication_workflow_events,
+    create_scheduled_tasks,
+    enforce_prepublication_safety,
+    finish_publication_workflow,
+)
 
 
 def _get_care_plan(db: Session, care_plan_id: int):
@@ -181,25 +180,40 @@ def publish_advisory(
     ):
         raise PermissionError("Active provider-patient relationship is required at publish time")
 
-    event = create_event(
-        event_type="advisory.publish",
-        source="mantrana_mitra",
-        payload=_advisory_publish_payload(plan, advisory, provider),
+    enforce_prepublication_safety(
+        db,
+        advisory=advisory,
+        provider=provider,
+        ip_address=ip_address,
     )
     published_at = datetime.now(timezone.utc)
     plan.status = "ACTIVE"
     advisory.status = "PUBLISHED"
     advisory.published_at = published_at
-    outbound, route, _ = send_event(db, event, actor_user=provider, commit=False)
-    db.commit()
-    dispatch_event(db, outbound.event_id)
-    acknowledgement, _ = acknowledge_event(
+    tasks = create_scheduled_tasks(
         db,
-        event_id=event.event_id,
-        received_by=route.target_app,
-        status="received",
-        actor_user=provider,
+        plan=plan,
+        advisory=advisory,
+        published_at=published_at,
     )
+    events = create_publication_workflow_events(
+        db,
+        plan=plan,
+        advisory=advisory,
+        tasks=tasks,
+        provider=provider,
+        advisory_payload=_advisory_publish_payload(plan, advisory, provider),
+    )
+    db.commit()
+    workflow = finish_publication_workflow(
+        db,
+        events=events,
+        provider=provider,
+        advisory=advisory,
+        task_count=len(tasks),
+        ip_address=ip_address,
+    )
+    acknowledgement = workflow["advisory"]["acknowledgement"]
     record_audit_event(
         db,
         action="advisory.published",
@@ -211,11 +225,12 @@ def publish_advisory(
             "care_plan_id": plan.id,
             "advisory_id": advisory.id,
             "patient_id": plan.patient_id,
-            "event_id": event.event_id,
-            "ack_id": acknowledgement.ack_id,
+            "event_id": events[1].event_id,
+            "ack_id": acknowledgement["ack_id"],
+            "task_count": len(tasks),
         },
     )
-    return advisory, event.event_id, serialize_acknowledgement(acknowledgement)
+    return advisory, events[1].event_id, acknowledgement, workflow
 
 
 def publish_care_plan(
@@ -238,16 +253,30 @@ def publish_care_plan(
     ):
         raise PermissionError("Active provider-patient relationship is required at publish time")
 
+    for advisory in draft_advisories:
+        enforce_prepublication_safety(
+            db,
+            advisory=advisory,
+            provider=provider,
+            ip_address=ip_address,
+        )
+
     deliveries = []
     for advisory in draft_advisories:
-        _, event_id, acknowledgement = publish_advisory(
+        _, event_id, acknowledgement, workflow = publish_advisory(
             db,
             care_plan_id=plan.id,
             advisory_id=advisory.id,
             provider=provider,
             ip_address=ip_address,
         )
-        deliveries.append({"event_id": event_id, "acknowledgement": acknowledgement})
+        deliveries.append(
+            {
+                "event_id": event_id,
+                "acknowledgement": acknowledgement,
+                "workflow": workflow,
+            }
+        )
     db.refresh(plan)
     return plan, deliveries
 

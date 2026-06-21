@@ -44,7 +44,7 @@ export function PatientAdvisories({ sessionToken }: { sessionToken: string }) {
                   <Stack direction="row" spacing={1}>
                     <Chip size="small" label={item.advisory_type} />
                     <Chip size="small" color="success" label={item.status} />
-                    <Chip size="small" color="info" variant="outlined" label="Execution: Pending" />
+                    <Chip size="small" color={item.execution_status === "pending" ? "info" : item.execution_status === "missed" ? "error" : "success"} variant="outlined" label={item.execution_status.replaceAll("_", " ")} />
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
                     Published {new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(item.published_at))}

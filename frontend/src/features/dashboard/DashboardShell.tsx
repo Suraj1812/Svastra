@@ -39,6 +39,9 @@ import { PermissionDenied } from "./components/PermissionDenied";
 import { RelationshipWorkspace } from "./components/RelationshipWorkspace";
 import { PatientAdvisories } from "./components/PatientAdvisories";
 import { EventMonitor } from "./components/EventMonitor";
+import { PatientTasks } from "./components/PatientTasks";
+import { ProviderAlerts } from "./components/ProviderAlerts";
+import { ProviderTasks } from "./components/ProviderTasks";
 
 type DashboardShellProps = {
   auth: AuthResult;
@@ -66,6 +69,7 @@ const permissionByItem: Partial<Record<Role, Partial<Record<string, string>>>> =
     "Care Plans": "CREATE_CARE_PLANS",
     Timeline: "VIEW_TIMELINE",
     Alerts: "VIEW_ALERTS",
+    Tasks: "VIEW_PATIENTS",
   },
   patient: {
     "My Advisories": "VIEW_TASKS",
@@ -280,6 +284,12 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
             />
           ) : selectedItem === "Care Plans" && auth.user.role === "provider" ? (
             <CarePlanWorkspace sessionToken={auth.session.session_token} />
+          ) : selectedItem === "Tasks" && auth.user.role === "provider" ? (
+            <ProviderTasks sessionToken={auth.session.session_token} />
+          ) : selectedItem === "Alerts" && auth.user.role === "provider" ? (
+            <ProviderAlerts sessionToken={auth.session.session_token} />
+          ) : selectedItem === "Tasks" && auth.user.role === "patient" ? (
+            <PatientTasks sessionToken={auth.session.session_token} />
           ) : selectedItem === "My Advisories" && auth.user.role === "patient" ? (
             <PatientAdvisories sessionToken={auth.session.session_token} />
           ) : selectedItem === "Timeline" ? (

@@ -70,6 +70,40 @@ export function postJsonWithSession<T>(
   });
 }
 
+export async function postFormWithSession<T>(
+  path: string,
+  formData: FormData,
+  sessionToken: string,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    body: formData,
+    headers: sessionHeaders(sessionToken),
+  });
+  const envelope = (await response.json()) as ApiEnvelope<T>;
+  if (!response.ok || !envelope.success) {
+    const error = envelope.error;
+    throw new ApiError(error?.message || "Request failed", error?.code, error?.details, error?.request_id);
+  }
+  return envelope.data as T;
+}
+
+export async function downloadWithSession(path: string, sessionToken: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: sessionHeaders(sessionToken),
+  });
+  if (!response.ok) {
+    const envelope = (await response.json()) as ApiEnvelope<unknown>;
+    throw new ApiError(
+      envelope.error?.message || "Download failed",
+      envelope.error?.code,
+      envelope.error?.details,
+      envelope.error?.request_id,
+    );
+  }
+  return response.blob();
+}
+
 export function putJsonWithSession<T>(
   path: string,
   payload: unknown,

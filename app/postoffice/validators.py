@@ -15,7 +15,9 @@ SUPPORTED_EVENT_TYPES = (
     "consent.revoke",
     "relationship.created",
     "relationship.deactivated",
+    "schedule.generate",
     "advisory.publish",
+    "task.generate",
     "response.log",
     "alert.trigger",
     "message.send",
@@ -39,7 +41,9 @@ class CEPEvent(BaseModel):
         "consent.revoke",
         "relationship.created",
         "relationship.deactivated",
+        "schedule.generate",
         "advisory.publish",
+        "task.generate",
         "response.log",
         "alert.trigger",
         "message.send",
@@ -100,6 +104,20 @@ class CEPEvent(BaseModel):
             expected_status = "ACTIVE" if self.event_type == "relationship.created" else "INACTIVE"
             if self.payload["status"] != expected_status:
                 raise ValueError(f"payload.status must be {expected_status} for {self.event_type}")
+        elif self.event_type in {"schedule.generate", "task.generate"}:
+            _positive_int(self.payload, "care_plan_id")
+            _positive_int(self.payload, "advisory_id")
+            if self.event_type == "schedule.generate":
+                _positive_int(self.payload, "task_count")
+            else:
+                task_ids = self.payload.get("task_ids")
+                if not isinstance(task_ids, list) or not task_ids or len(task_ids) > 500:
+                    raise ValueError("payload.task_ids must contain 1 to 500 task identifiers")
+                if len(set(task_ids)) != len(task_ids):
+                    raise ValueError("payload.task_ids cannot contain duplicates")
+                for index, task_id in enumerate(task_ids):
+                    if not isinstance(task_id, str) or not 8 <= len(task_id) <= 64:
+                        raise ValueError(f"payload.task_ids.{index} must be 8 to 64 characters")
         elif self.event_type == "advisory.publish":
             _positive_int(self.payload, "care_plan_id")
             _one_of(self.payload, "execution_status", {"pending"})
@@ -140,7 +158,21 @@ class CEPEvent(BaseModel):
                     raise ValueError(f"payload.advisories.{index}.configuration must be an object")
         elif self.event_type == "response.log":
             _bounded_string(self.payload, "task_id", 1, 100)
-            _bounded_string(self.payload, "response_type", 1, 64)
+            _one_of(
+                self.payload,
+                "response_type",
+                {"medication", "measurement", "recommendation", "investigation"},
+            )
+            _one_of(
+                self.payload,
+                "response_status",
+                {"taken", "missed", "done", "recorded", "uploaded"},
+            )
+            _one_of(
+                self.payload,
+                "execution_status",
+                {"completed", "completed_late", "missed"},
+            )
         elif self.event_type == "alert.trigger":
             _bounded_string(self.payload, "alert_id", 1, 100)
             _one_of(self.payload, "severity", {"low", "medium", "high", "critical"})

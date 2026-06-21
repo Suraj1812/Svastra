@@ -42,6 +42,7 @@ _CAREGIVER_REDACT = {
 _NON_PROVIDER_INTERNAL_FIELDS = {"concept_id"}
 _PREVIEW_KEYS = {
     "alert_id",
+    "alert_type",
     "care_plan_id",
     "consent_id",
     "consent_type",
@@ -52,9 +53,11 @@ _PREVIEW_KEYS = {
     "relationship_id",
     "relationship_type",
     "response_type",
+    "response_status",
     "severity",
     "status",
     "task_id",
+    "task_count",
 }
 
 

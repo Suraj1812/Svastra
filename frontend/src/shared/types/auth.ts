@@ -157,8 +157,67 @@ export type AdvisoryConfigurationOptions = {
     strength: string;
     dose_form: string;
     route: string;
+    method: string;
     supplier_name: string;
   };
+};
+
+export type TaskExecutionStatus = "pending" | "completed" | "completed_late" | "missed";
+
+export type TaskAttachment = {
+  attachment_id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  sha256: string;
+  uploaded_at: string;
+};
+
+export type CareTask = {
+  task_id: string;
+  advisory_id: number;
+  care_plan_id: number;
+  task_type: ProviderTerm["tag"];
+  patient: { id: number; full_name: string };
+  title: string;
+  advisory: string;
+  configuration: Record<string, unknown>;
+  expected_response: string;
+  due_at: string;
+  grace_expires_at: string;
+  execution_status: TaskExecutionStatus;
+  response: null | {
+    response_id: string;
+    response_status: "taken" | "missed" | "done" | "recorded" | "uploaded";
+    value: Record<string, unknown>;
+    is_late: boolean;
+    responded_at: string;
+    event_id: string;
+    attachment: TaskAttachment | null;
+  };
+  created_at: string;
+};
+
+export type ResponseReason = {
+  conceptId: string;
+  term: string;
+  tag: "response_reason";
+};
+
+export type ClinicalAlert = {
+  alert_id: string;
+  advisory_id: number;
+  task_id: string | null;
+  patient: { id: number; full_name: string };
+  advisory: string;
+  alert_type: "allergy_conflict" | "non_response" | "value_threshold";
+  severity: "low" | "medium" | "high" | "critical";
+  message: string;
+  notification_mode: "immediate" | "daily_summary" | "both";
+  status: "OPEN" | "ACKNOWLEDGED";
+  event_id: string;
+  acknowledged_at: string | null;
+  created_at: string;
 };
 
 export type AdvisoryOptionsResult = {
@@ -177,10 +236,10 @@ export type AdvisorySummary = {
     severity: "warning";
     message: string;
     allergen: string;
-    blocking: false;
+    blocking: true;
   }>;
   status: "DRAFT" | "PUBLISHED";
-  execution_status: "pending";
+  execution_status: TaskExecutionStatus;
   published_at: string | null;
   created_at: string;
 };
@@ -205,7 +264,7 @@ export type PatientAdvisory = {
   advisory: string;
   instruction: string;
   status: "PUBLISHED";
-  execution_status: "pending";
+  execution_status: TaskExecutionStatus;
   created_at: string;
   published_at: string;
   care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE" };

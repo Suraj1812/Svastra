@@ -51,7 +51,7 @@ def check_medication_allergies(db: Session, *, patient_id: int, medication_term:
                     "severity": "warning",
                     "message": f"Potential allergy conflict: {allergy.allergen_term}",
                     "allergen": allergy.allergen_term,
-                    "blocking": False,
+                    "blocking": True,
                 }
             )
     return warnings

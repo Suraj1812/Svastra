@@ -17,9 +17,10 @@ class RequestBodyTooLargeError(ValueError):
 
 
 class RequestBodyLimitMiddleware:
-    def __init__(self, app: ASGIApp, max_bytes: int):
+    def __init__(self, app: ASGIApp, max_bytes: int, upload_max_bytes: int | None = None):
         self.app = app
         self.max_bytes = max_bytes
+        self.upload_max_bytes = upload_max_bytes or max_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] != "http":
@@ -27,6 +28,12 @@ class RequestBodyLimitMiddleware:
             return
 
         request_id = scope.get("state", {}).get("request_id")
+        request_limit = (
+            self.upload_max_bytes
+            if scope.get("path", "").startswith("/tasks/")
+            and scope.get("path", "").endswith("/upload")
+            else self.max_bytes
+        )
         headers = {key.lower(): value for key, value in scope.get("headers", [])}
         declared_length = headers.get(b"content-length")
         if declared_length is not None:
@@ -54,8 +61,10 @@ class RequestBodyLimitMiddleware:
                 )
                 await response(scope, receive, send)
                 return
-            if parsed_length > self.max_bytes:
-                response = _payload_too_large_response(request_id=request_id)
+            if parsed_length > request_limit:
+                response = _payload_too_large_response(
+                    request_id=request_id, max_bytes=request_limit
+                )
                 await response(scope, receive, send)
                 return
 
@@ -66,14 +75,14 @@ class RequestBodyLimitMiddleware:
             message = await receive()
             if message.get("type") == "http.request":
                 received_bytes += len(message.get("body", b""))
-                if received_bytes > self.max_bytes:
+                if received_bytes > request_limit:
                     raise RequestBodyTooLargeError
             return message
 
         try:
             await self.app(scope, limited_receive, send)
         except RequestBodyTooLargeError:
-            response = _payload_too_large_response(request_id=request_id)
+            response = _payload_too_large_response(request_id=request_id, max_bytes=request_limit)
             await response(scope, receive, send)
 
 
@@ -88,12 +97,12 @@ def _apply_security_headers(response, *, elapsed_ms: float):
     return response
 
 
-def _payload_too_large_response(*, request_id: str | None):
+def _payload_too_large_response(*, request_id: str | None, max_bytes: int | None = None):
     return JSONResponse(
         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
         content=error_response(
             "PAYLOAD_TOO_LARGE",
-            f"Request body exceeds the {settings.max_request_bytes}-byte limit",
+            f"Request body exceeds the {max_bytes or settings.max_request_bytes}-byte limit",
             request_id=request_id,
         ),
     )

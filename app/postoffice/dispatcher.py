@@ -20,6 +20,7 @@ from app.models.postoffice import (
 )
 from app.models.relationship import PatientCaregiverLink, ProviderPatientLink
 from app.models.user import User
+from app.models.workflow import CareTask, ClinicalAlert, TaskResponse
 from app.postoffice.router import route_event
 from app.postoffice.validators import CEPEvent, CEPValidationError, validate_event
 
@@ -86,6 +87,31 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
         serialized_status = "ACTIVE" if relationship.status == "active" else "INACTIVE"
         if serialized_status != event.payload["status"]:
             raise CEPValidationError("CEP relationship status does not match stored state")
+    elif event.event_type in {"schedule.generate", "task.generate"}:
+        plan = db.query(CarePlan).filter(CarePlan.id == event.payload["care_plan_id"]).first()
+        advisory = db.query(Advisory).filter(
+            Advisory.id == event.payload["advisory_id"],
+            Advisory.care_plan_id == event.payload["care_plan_id"],
+            Advisory.provider_id == actor_user.id,
+            Advisory.patient_id == patient.id,
+            Advisory.status == "PUBLISHED",
+        ).first()
+        if plan is None or advisory is None or plan.provider_id != actor_user.id:
+            raise PermissionError("Workflow event does not belong to the owning provider")
+        relationship = db.query(ProviderPatientLink).filter(
+            ProviderPatientLink.patient_id == patient.id,
+            ProviderPatientLink.provider_id == actor_user.id,
+            ProviderPatientLink.status == "active",
+        ).first()
+        if relationship is None or relationship.source_consent.status != "ACTIVE":
+            raise PermissionError("An active consent-backed provider relationship is required")
+        tasks = db.query(CareTask).filter(CareTask.advisory_id == advisory.id).all()
+        if event.event_type == "schedule.generate":
+            if len(tasks) != event.payload["task_count"]:
+                raise CEPValidationError("Schedule task_count does not match stored tasks")
+        else:
+            if {task.task_uid for task in tasks} != set(event.payload["task_ids"]):
+                raise CEPValidationError("Generated task IDs do not match stored tasks")
     elif event.event_type == "advisory.publish":
         plan = db.query(CarePlan).filter(CarePlan.id == event.payload["care_plan_id"]).first()
         if plan is None or plan.patient_id != patient.id or plan.provider_id != actor_user.id:
@@ -122,6 +148,34 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
                 or json.loads(stored.configuration_json) != item["configuration"]
             ):
                 raise CEPValidationError("CEP advisory does not match the immutable stored state")
+    elif event.event_type == "response.log":
+        task = db.query(CareTask).filter(CareTask.task_uid == event.payload["task_id"]).first()
+        if task is None or task.patient_id != patient.id or actor_user.id != patient.id:
+            raise PermissionError("Only the assigned patient may send this response event")
+        response = db.query(TaskResponse).filter(
+            TaskResponse.task_id == task.id,
+            TaskResponse.response_event_id == event.event_id,
+        ).first()
+        if response is None:
+            raise CEPValidationError("Response CEP does not match the stored task response")
+        if (
+            task.task_type != event.payload["response_type"]
+            or response.response_status != event.payload["response_status"]
+            or task.execution_status != event.payload["execution_status"]
+        ):
+            raise CEPValidationError("Response CEP does not match the immutable stored state")
+    elif event.event_type == "alert.trigger":
+        alert = db.query(ClinicalAlert).filter(
+            ClinicalAlert.alert_uid == event.payload["alert_id"],
+            ClinicalAlert.event_id == event.event_id,
+            ClinicalAlert.patient_id == patient.id,
+        ).first()
+        if alert is None:
+            raise CEPValidationError("Alert CEP does not match a stored clinical alert")
+        if actor_user.id not in {alert.provider_id, alert.patient_id}:
+            raise PermissionError("Alert actor is outside the clinical relationship")
+        if alert.severity != event.payload["severity"]:
+            raise CEPValidationError("Alert severity does not match stored state")
     elif actor_user.role == "patient":
         if actor_user.id != patient.id:
             raise PermissionError("Patients may send events only for themselves")

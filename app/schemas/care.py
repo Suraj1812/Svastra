@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 Frequency = Literal[
@@ -79,7 +80,22 @@ class MeasurementConfiguration(BaseConfiguration):
 
 
 class InvestigationConfiguration(BaseConfiguration):
-    priority: Literal["routine", "urgent", "stat"]
+    priority: Literal["routine", "urgent", "asap", "stat"]
+    due_date: date
+    upload_required: Literal[True] = True
+    alert_if_not_uploaded: bool = True
+    grace_period_value: int = Field(default=2, ge=0, le=30)
+    grace_period_unit: Literal["hours", "days"] = "days"
+
+    @field_validator("due_date")
+    @classmethod
+    def due_date_is_reasonable(cls, value: date):
+        today = date.today()
+        if value < today:
+            raise ValueError("Investigation due date cannot be in the past")
+        if value > today + timedelta(days=366 * 5):
+            raise ValueError("Investigation due date cannot be more than five years ahead")
+        return value
 
 
 class RecommendationConfiguration(BaseConfiguration):

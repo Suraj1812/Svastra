@@ -20,6 +20,15 @@ DEMO_TERMS = (
     ("demo_term_temperature", "Temperature", "measurement"),
     ("demo_term_exercise", "Exercise", "recommendation"),
 )
+RESPONSE_REASON_TERMS = (
+    ("422587007", "Nausea", "response_reason"),
+    ("418290006", "Itching", "response_reason"),
+    ("200892002", "Rashes", "response_reason"),
+    ("422400008", "Vomiting", "response_reason"),
+    ("16932000", "Nausea and vomiting", "response_reason"),
+    ("62315008", "Diarrhoea", "response_reason"),
+    ("74964007", "Other", "response_reason"),
+)
 SUPPORTED_TAGS = ("medication", "measurement", "recommendation", "investigation")
 
 COMMON_OPTIONS = {
@@ -36,6 +45,12 @@ COMMON_OPTIONS = {
     ],
     "duration_units": ["hours", "days", "weeks", "months"],
     "notifications": ["immediate", "daily_summary", "both", "none"],
+    "instruction_suggestions": [
+        "With or after meals",
+        "Before meals",
+        "After resting for five minutes",
+        "Follow the provider's safety instructions",
+    ],
 }
 
 TAG_OPTIONS = {
@@ -46,7 +61,7 @@ TAG_OPTIONS = {
     "measurement": {
         "comparators": ["more_than", "less_than", "at_least", "at_most", "equal_to"],
     },
-    "investigation": {"priorities": ["routine", "urgent", "stat"]},
+    "investigation": {"priorities": ["routine", "urgent", "asap", "stat"]},
     "recommendation": {},
 }
 
@@ -76,7 +91,7 @@ def seed_demo_terms(db: Session):
         (concept_id, item["term"], "medication")
         for concept_id, item in _drug_catalog().items()
     )
-    for concept_id, display_term, tag in (*DEMO_TERMS, *catalog_terms):
+    for concept_id, display_term, tag in (*DEMO_TERMS, *catalog_terms, *RESPONSE_REASON_TERMS):
         term = db.query(Term).options(joinedload(Term.tags)).filter(Term.concept_id == concept_id).first()
         if term is None:
             term = Term(concept_id=concept_id, term=display_term, language="en")
@@ -108,6 +123,7 @@ def search_provider_terms(db: Session, *, query: str, tag: str | None = None, li
         raise ValueError("Unsupported terminology tag")
 
     query_builder = db.query(Term).options(joinedload(Term.tags)).join(TermTag)
+    query_builder = query_builder.filter(TermTag.tag.in_(SUPPORTED_TAGS))
     query_builder = query_builder.filter(func.lower(Term.term).contains(cleaned.lower(), autoescape=True))
     if tag is not None:
         query_builder = query_builder.filter(TermTag.tag == tag)
@@ -162,8 +178,38 @@ def get_advisory_options(db: Session, *, concept_id: str):
             "strength": catalog_item.get("strength"),
             "dose_form": catalog_item.get("dose_form"),
             "route": catalog_item.get("route"),
+            "method": catalog_item.get("method"),
             "supplier_name": catalog_item.get("supplier_name"),
         }
     if tag == "measurement" and not options.get("measurement_units"):
         raise ValueError("The selected measurement has no approved unit metadata")
     return {"term": term, "options": options}
+
+
+def search_response_reasons(db: Session, *, query: str | None = None, limit: int = 20):
+    cleaned = (query or "").strip()
+    if cleaned and len(cleaned) < 2:
+        raise ValueError("Enter at least 2 characters to search response reasons")
+    if len(cleaned) > 80:
+        raise ValueError("Search query must be 80 characters or fewer")
+    builder = db.query(Term).options(joinedload(Term.tags)).join(TermTag).filter(
+        TermTag.tag == "response_reason"
+    )
+    if cleaned:
+        builder = builder.filter(func.lower(Term.term).contains(cleaned.lower(), autoescape=True))
+    terms = builder.order_by(func.lower(Term.term)).limit(min(max(limit, 1), 50)).all()
+    return [
+        {"conceptId": term.concept_id, "term": term.term, "tag": "response_reason"}
+        for term in terms
+    ]
+
+
+def resolve_response_reason(db: Session, *, concept_id: str, term: str):
+    record = db.query(Term).join(TermTag).filter(
+        Term.concept_id == concept_id,
+        Term.term == term,
+        TermTag.tag == "response_reason",
+    ).first()
+    if record is None:
+        raise ValueError("Missed-response reason must be selected from approved terminology")
+    return {"conceptId": record.concept_id, "term": record.term, "tag": "response_reason"}

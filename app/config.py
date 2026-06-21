@@ -42,6 +42,11 @@ class Settings:
         "local-development-only-change-before-production",
     )
     max_request_bytes = int(os.getenv("MAX_REQUEST_BYTES", str(1024 * 1024)))
+    attachment_max_bytes = int(os.getenv("ATTACHMENT_MAX_BYTES", str(5 * 1024 * 1024)))
+    attachment_storage_path = _path_from_env(
+        "ATTACHMENT_STORAGE_PATH",
+        BASE_DIR / "data" / "private_attachments",
+    )
     cors_origins = [
         origin.strip()
         for origin in os.getenv(
@@ -61,6 +66,11 @@ class Settings:
             "MONITOR_MAX_PAGE_SIZE": (self.monitor_max_page_size, 1, 100),
             "MONITOR_MAX_WINDOW_DAYS": (self.monitor_max_window_days, 1, 3660),
             "MAX_REQUEST_BYTES": (self.max_request_bytes, 64 * 1024, 10 * 1024 * 1024),
+            "ATTACHMENT_MAX_BYTES": (
+                self.attachment_max_bytes,
+                64 * 1024,
+                20 * 1024 * 1024,
+            ),
         }
         for name, (value, minimum, maximum) in ranges.items():
             if not minimum <= value <= maximum:

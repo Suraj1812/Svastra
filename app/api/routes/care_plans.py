@@ -253,7 +253,7 @@ def publish_one_advisory(
 ):
     _require_provider(current_user)
     try:
-        advisory, event_id, acknowledgement = publish_advisory(
+        advisory, event_id, acknowledgement, workflow = publish_advisory(
             db,
             care_plan_id=care_plan_id,
             advisory_id=advisory_id,
@@ -267,6 +267,7 @@ def publish_one_advisory(
             "advisory": serialize_advisory(advisory),
             "event_id": event_id,
             "acknowledgement": acknowledgement,
+            "workflow": workflow,
         },
         "Advisory published, routed, and acknowledged",
     )

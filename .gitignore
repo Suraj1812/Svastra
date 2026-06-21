@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .env
 svastra_auth_mvp.db
+data/private_attachments/
 venv/
 frontend/node_modules/
 frontend/dist/

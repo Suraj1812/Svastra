@@ -2,6 +2,8 @@
 
 Date: 21 June 2026
 
+> Historical Friday-only checkpoint. The later authorized Advisory → Task → Response implementation supersedes its non-blocking allergy behavior and pending-only execution state. See `advisory-task-response-compliance-report.md`.
+
 Authoritative scope: Friday Engineering Activities v1.0 plus Additional Design v1.2.
 
 ## Outcome

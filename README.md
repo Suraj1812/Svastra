@@ -4,13 +4,11 @@ End-to-end identity, RBAC, patient-controlled consent, healthcare relationships,
 PostOffice CEP delivery, API Event Monitor, care-plan authoring, advisory publication,
 terminology, allergy warnings, and patient advisory display.
 
-Friday v1.2 is implemented as a complete advisory path: the provider selects an
-approved human-readable term, the server supplies and validates type-specific
-controls, publication creates an immutable `advisory.publish` CEP with
-`execution_status: pending`, PostOffice routes and acknowledges it, and both the
-patient view and API Event Monitor display the pending execution state. Task
-generation, scheduling, response capture and warning/alert engines remain later
-phase work by design.
+The complete terminology-driven care workflow is implemented: advisory creation,
+bounded schedule generation, patient tasks, medication Taken/Missed responses,
+coded missed reasons, measurement values, investigation uploads, response CEPs,
+threshold/non-response/allergy alerts, execution-state aggregation, audit history,
+PostOffice acknowledgements, provider views and the patient task UI.
 
 ## Backend
 
@@ -45,9 +43,11 @@ cd frontend && npm run build
 4. Provider requests access; patient confirms consent.
 5. Backend creates the consent-backed provider-patient relationship.
 6. Provider creates a care plan and validated advisory.
-7. Provider publishes; PostOffice routes and acknowledges `advisory.publish`.
-8. Patient opens My Advisories.
-9. Patient or an actively linked provider/caregiver opens Timeline to inspect the
+7. Provider publishes; schedule and tasks are generated and all three workflow CEPs are acknowledged.
+8. Patient opens Tasks and responds or uploads a report.
+9. Backend records `response.log`, updates execution state, and creates `alert.trigger` only for breached rules.
+10. Provider reviews Tasks and Alerts.
+11. Patient or an actively linked provider/caregiver opens Timeline to inspect the
    role-scoped API Event Monitor, delivery lifecycle and integrity status.
 
 Patient registration requires `unified_consent_accepted: true`. When accepted,
@@ -88,6 +88,14 @@ performance controls and incident checks.
 - `GET/POST/PUT/DELETE /care-plans/...`
 - `POST /care-plans/{id}/advisories`
 - `POST /care-plans/{id}/advisories/{advisory_id}/publish`
+- `GET /me/tasks`
+- `GET /provider/tasks`
+- `POST /tasks/{task_uid}/responses`
+- `POST /tasks/{task_uid}/upload`
+- `GET /attachments/{attachment_uid}`
+- `POST /provider/tasks/evaluate-overdue`
+- `GET /provider/alerts`
+- `POST /provider/alerts/{alert_uid}/acknowledge`
 - `GET /me/advisories`
 - `GET/POST /me/allergies`
 - `POST /postoffice/send`
@@ -105,6 +113,11 @@ performance controls and incident checks.
   published status, concept, term, type, and Week 3 execution state.
 - Medication controls can be narrowed by the approved IDE drug-catalog metadata;
   internal concept identifiers are not rendered in clinical screens.
+- Task generation is capped at 500 per advisory.
+- Medication-miss reasons must use exact approved coded terminology.
+- Investigation files are private, size/MIME/signature checked, SHA-256 hashed,
+  randomly named and consent-scoped on every download.
+- Responses are single-write and immutable; task/advisory status is server-owned.
 - API request bodies are capped at 1 MiB before request parsing.
 - PostOffice retries are bounded and audited.
 - Monitor pagination uses signed, filter-bound keyset cursors.
