@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -27,7 +27,7 @@ from app.schemas.care import (
     CarePlanUpdateRequest,
     PublishCarePlanRequest,
 )
-from app.terminology.term_service import get_term, search_provider_terms
+from app.terminology.term_service import get_advisory_options, get_term, search_provider_terms
 
 
 router = APIRouter(tags=["Care Plans"])
@@ -64,7 +64,9 @@ def terminology_search(
 
 @router.get("/terminology/provider-terms/{concept_id}")
 def terminology_detail(
-    concept_id: str,
+    concept_id: str = Path(
+        ..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    ),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -74,6 +76,22 @@ def terminology_detail(
     except ValueError as error:
         _care_error(error)
     return success_response(term)
+
+
+@router.get("/terminology/provider-terms/{concept_id}/advisory-options")
+def terminology_advisory_options(
+    concept_id: str = Path(
+        ..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    ),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        result = get_advisory_options(db, concept_id=concept_id)
+    except ValueError as error:
+        _care_error(error)
+    return success_response(result)
 
 
 @router.post("/care-plans", status_code=status.HTTP_201_CREATED)
@@ -173,6 +191,7 @@ def archive_plan(
 def create_advisory(
     care_plan_id: int,
     payload: AdvisoryCreateRequest,
+    request: Request,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -187,6 +206,7 @@ def create_advisory(
             term=payload.term,
             tag=payload.tag,
             configuration=payload.configuration,
+            ip_address=client_ip(request),
         )
     except (ValueError, PermissionError) as error:
         _care_error(error)
@@ -256,23 +276,32 @@ def _patient_instruction(advisory: Advisory):
     data = serialize_advisory(advisory)
     configuration = data["configuration"]
     duration = f"{configuration.get('duration_value')} {configuration.get('duration_unit')}"
+    frequency = str(configuration.get("frequency", "")).replace("_", " ")
     if advisory.advisory_type == "medication":
+        dose_value = configuration.get("dose_value")
+        if isinstance(dose_value, float) and dose_value.is_integer():
+            dose_value = int(dose_value)
+        dose = configuration.get("dose") or (
+            f"{dose_value} {configuration.get('dose_unit')}"
+        )
         instruction = (
-            f"Take {configuration.get('dose')} by {configuration.get('route')} route, "
-            f"{configuration.get('frequency')}, for {duration}."
+            f"Take {dose} by {configuration.get('route')} route, "
+            f"{frequency}, for {duration}."
         )
     elif advisory.advisory_type == "measurement":
         instruction = (
             f"Record {advisory.term} in {configuration.get('measurement_unit')} "
-            f"({configuration.get('frequency')}) for {duration}. "
-            f"Target: {configuration.get('target_value')}."
+            f"({frequency}) for {duration}."
         )
+        if configuration.get("target_value") is not None:
+            instruction = f"{instruction} Target: {configuration.get('target_value')}."
     elif advisory.advisory_type == "recommendation":
-        instruction = f"{configuration.get('instruction')} ({configuration.get('frequency')}) for {duration}."
+        recommendation = configuration.get("instruction") or advisory.term
+        instruction = f"{recommendation} ({frequency}) for {duration}."
     else:
         instruction = (
             f"Complete {advisory.term} with {configuration.get('priority')} priority "
-            f"({configuration.get('frequency')}) for {duration}."
+            f"({frequency}) for {duration}."
         )
     additional = configuration.get("additional_instructions")
     if additional:
@@ -283,6 +312,7 @@ def _patient_instruction(advisory: Advisory):
         "advisory": advisory.term,
         "instruction": instruction,
         "status": advisory.status,
+        "execution_status": advisory.execution_status,
         "created_at": advisory.created_at,
         "published_at": advisory.published_at,
         "care_plan": {

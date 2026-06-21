@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Box,
   Button,
   Chip,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   Grid,
+  FormControlLabel,
   MenuItem,
   Paper,
   Stack,
@@ -27,37 +29,20 @@ import {
 } from "../../../shared/api/client";
 import type {
   AdvisorySummary,
+  AdvisoryConfigurationOptions,
+  AdvisoryOptionsResult,
   CarePlanSummary,
   ProviderTerm,
   RelationshipListResult,
 } from "../../../shared/types/auth";
 
 type Props = { sessionToken: string };
-type Frequency =
-  | "once_daily"
-  | "twice_daily"
-  | "three_times_daily"
-  | "four_times_daily"
-  | "every_4_hours"
-  | "every_6_hours"
-  | "weekly"
-  | "monthly"
-  | "as_needed";
-
-const frequencies: Array<{ value: Frequency; label: string }> = [
-  { value: "once_daily", label: "Once daily" },
-  { value: "twice_daily", label: "Twice daily" },
-  { value: "three_times_daily", label: "Three times daily" },
-  { value: "four_times_daily", label: "Four times daily" },
-  { value: "every_4_hours", label: "Every 4 hours" },
-  { value: "every_6_hours", label: "Every 6 hours" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "as_needed", label: "As needed" },
-];
-
 function tagLabel(tag: ProviderTerm["tag"]) {
   return tag.charAt(0).toUpperCase() + tag.slice(1);
+}
+
+function optionLabel(value: string) {
+  return value.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
 }
 
 function formatDate(value: string) {
@@ -84,10 +69,15 @@ function AdvisoryCard({ advisory, publishing, onPublish }: { advisory: AdvisoryS
         </Alert>
       ))}
       {advisory.status === "DRAFT" ? (
-        <Button size="small" variant="contained" startIcon={<PublishOutlinedIcon />} onClick={onPublish} disabled={publishing} sx={{ mt: 1.5 }}>
+        <Button data-testid={`publish-advisory-${advisory.id}`} size="small" variant="contained" startIcon={<PublishOutlinedIcon />} onClick={onPublish} disabled={publishing} sx={{ mt: 1.5 }}>
           Publish Advisory
         </Button>
-      ) : null}
+      ) : (
+        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+          <Chip size="small" color="info" variant="outlined" label="Execution: Pending" />
+          {advisory.published_at ? <Chip size="small" variant="outlined" label={`Published ${formatDate(advisory.published_at)}`} /> : null}
+        </Stack>
+      )}
     </Paper>
   );
 }
@@ -109,19 +99,27 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
   const [terms, setTerms] = useState<ProviderTerm[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<ProviderTerm | null>(null);
-  const [frequency, setFrequency] = useState<Frequency>("once_daily");
+  const [options, setOptions] = useState<AdvisoryConfigurationOptions | null>(null);
+  const [frequency, setFrequency] = useState("once_daily");
   const [durationValue, setDurationValue] = useState("7");
   const [durationUnit, setDurationUnit] = useState("days");
   const [instructions, setInstructions] = useState("");
-  const [dose, setDose] = useState("");
+  const [doseValue, setDoseValue] = useState("");
+  const [doseUnit, setDoseUnit] = useState("mg");
   const [route, setRoute] = useState("oral");
   const [measurementUnit, setMeasurementUnit] = useState("°C");
-  const [targetValue, setTargetValue] = useState("");
   const [priority, setPriority] = useState("routine");
-  const [recommendationInstruction, setRecommendationInstruction] = useState("");
+  const [valueWarningEnabled, setValueWarningEnabled] = useState(false);
+  const [warningCondition, setWarningCondition] = useState("more_than");
+  const [warningThreshold, setWarningThreshold] = useState("");
+  const [warningNotification, setWarningNotification] = useState("immediate");
+  const [nonResponseEnabled, setNonResponseEnabled] = useState(false);
+  const [clinicalGraceMinutes, setClinicalGraceMinutes] = useState("60");
+  const [nonResponseNotification, setNonResponseNotification] = useState("immediate");
   const [allergyWarning, setAllergyWarning] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishAdvisoryTarget, setPublishAdvisoryTarget] = useState<AdvisorySummary | null>(null);
+  const optionRequest = useRef(0);
 
   const activeRelationships = relationships.filter((item) => item.relationship_status === "ACTIVE");
   const selectedPlan = plans.find((plan) => plan.id === selectedPlanId) || null;
@@ -199,16 +197,37 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     }
   }
 
-  function selectTerm(term: ProviderTerm) {
+  async function selectTerm(term: ProviderTerm) {
+    const requestId = ++optionRequest.current;
     setSelectedTerm(term);
     setSearch(term.term);
     setTerms([]);
-    setDose("");
-    setRoute("oral");
-    setMeasurementUnit(term.conceptId === "demo_term_blood_pressure" ? "mmHg" : "°C");
-    setTargetValue("");
-    setPriority("routine");
-    setRecommendationInstruction("");
+    setOptions(null);
+    setDoseValue("");
+    setValueWarningEnabled(false);
+    setWarningThreshold("");
+    setNonResponseEnabled(false);
+    try {
+      const result = await getJsonWithSession<AdvisoryOptionsResult>(
+        `/terminology/provider-terms/${encodeURIComponent(term.conceptId)}/advisory-options`,
+        sessionToken,
+      );
+      if (requestId !== optionRequest.current) return;
+      setOptions(result.options);
+      setFrequency(result.options.frequencies[0]?.value || "once_daily");
+      setDurationUnit(result.options.duration_units[1] || result.options.duration_units[0] || "days");
+      setDoseUnit(result.options.dose_units?.[1] || result.options.dose_units?.[0] || "mg");
+      setRoute(result.options.routes?.[0] || "oral");
+      setMeasurementUnit(result.options.measurement_units?.[0] || "");
+      setPriority(result.options.priorities?.[0] || "routine");
+      setWarningCondition(result.options.comparators?.[0] || "more_than");
+      setWarningNotification(result.options.notifications[0] || "immediate");
+      setNonResponseNotification(result.options.notifications[0] || "immediate");
+    } catch (optionsError) {
+      if (requestId !== optionRequest.current) return;
+      setSelectedTerm(null);
+      setError(optionsError instanceof Error ? optionsError.message : "Advisory controls could not be loaded");
+    }
   }
 
   const advisoryConfiguration = useMemo(() => {
@@ -217,28 +236,49 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       duration_value: Number(durationValue),
       duration_unit: durationUnit,
       additional_instructions: instructions.trim() || undefined,
+      non_response_warning: nonResponseEnabled ? {
+        clinical_grace_minutes: Number(clinicalGraceMinutes),
+        notification: nonResponseNotification,
+      } : undefined,
     };
-    if (selectedTerm?.tag === "medication") return { ...common, dose: dose.trim(), route };
-    if (selectedTerm?.tag === "measurement") return { ...common, measurement_unit: measurementUnit, target_value: targetValue.trim() };
-    if (selectedTerm?.tag === "investigation") return { ...common, priority, attachment_required: true };
-    return { ...common, instruction: recommendationInstruction.trim() };
-  }, [dose, durationUnit, durationValue, frequency, instructions, measurementUnit, priority, recommendationInstruction, route, selectedTerm?.tag, targetValue]);
+    if (selectedTerm?.tag === "medication") return { ...common, dose_value: Number(doseValue), dose_unit: doseUnit, route };
+    if (selectedTerm?.tag === "measurement") return {
+      ...common,
+      measurement_unit: measurementUnit,
+      value_warning: valueWarningEnabled ? {
+        condition: warningCondition,
+        threshold_value: Number(warningThreshold),
+        measurement_unit: measurementUnit,
+        notification: warningNotification,
+      } : undefined,
+    };
+    if (selectedTerm?.tag === "investigation") return { ...common, priority };
+    return common;
+  }, [clinicalGraceMinutes, doseUnit, doseValue, durationUnit, durationValue, frequency, instructions, measurementUnit, nonResponseEnabled, nonResponseNotification, priority, route, selectedTerm?.tag, valueWarningEnabled, warningCondition, warningNotification, warningThreshold]);
 
   async function addAdvisory() {
     if (!selectedPlan || !selectedTerm) {
       setError("Choose a draft and select an approved clinical term.");
       return;
     }
-    if (selectedTerm.tag === "medication" && !dose.trim()) {
-      setError("Dose is required for medication advisories.");
+    if (!options) {
+      setError("Approved advisory controls are still loading.");
       return;
     }
-    if (selectedTerm.tag === "measurement" && !targetValue.trim()) {
-      setError("Target value is required for measurement advisories.");
+    if (selectedTerm.tag === "medication" && (!doseValue || Number(doseValue) <= 0)) {
+      setError("Enter a positive medication dose.");
       return;
     }
-    if (selectedTerm.tag === "recommendation" && !recommendationInstruction.trim()) {
-      setError("Instruction is required for recommendation advisories.");
+    if (selectedTerm.tag === "measurement" && !measurementUnit) {
+      setError("Choose an approved measurement unit.");
+      return;
+    }
+    if (valueWarningEnabled && (!warningThreshold || !Number.isFinite(Number(warningThreshold)))) {
+      setError("Enter a valid threshold for the value warning.");
+      return;
+    }
+    if (nonResponseEnabled && (!clinicalGraceMinutes || Number(clinicalGraceMinutes) < 1 || Number(clinicalGraceMinutes) > 1440)) {
+      setError("Clinical grace period must be between 1 and 1440 minutes.");
       return;
     }
     setWorking(true);
@@ -389,46 +429,77 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
             <TextField
               label="Search clinical term"
               value={search}
-              onChange={(event) => { setSearch(event.target.value); setSelectedTerm(null); }}
+              onChange={(event) => { optionRequest.current += 1; setSearch(event.target.value); setSelectedTerm(null); setOptions(null); }}
               helperText={searching ? "Searching approved terminology…" : "Type at least 3 characters"}
               InputProps={{ startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} /> }}
             />
             {terms.length > 0 ? (
               <Paper variant="outlined">
                 {terms.map((term) => (
-                  <Button key={term.conceptId} fullWidth onClick={() => selectTerm(term)} sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
-                    <Stack alignItems="flex-start"><span>{term.term}</span><Typography variant="caption" color="text.secondary">ConceptId: {term.conceptId}</Typography></Stack><Chip size="small" label={tagLabel(term.tag)} />
+                  <Button key={term.conceptId} fullWidth onClick={() => void selectTerm(term)} sx={{ justifyContent: "space-between", px: 2, py: 1.5 }}>
+                    <span>{term.term}</span><Chip size="small" label={tagLabel(term.tag)} />
                   </Button>
                 ))}
               </Paper>
             ) : null}
 
-            {selectedTerm ? (
+            {selectedTerm && options ? (
               <Stack spacing={2.5}>
                 <Alert icon={<LocalHospitalOutlinedIcon />} severity="success">
                   {selectedTerm.term} selected. {tagLabel(selectedTerm.tag)} controls loaded.
                 </Alert>
+                {options.medication_details ? (
+                  <Alert severity="info">
+                    {options.medication_details.generic} · {options.medication_details.strength} · {options.medication_details.route} {options.medication_details.dose_form}
+                  </Alert>
+                ) : null}
                 <Grid container spacing={2}>
                   {selectedTerm.tag === "medication" ? (
-                    <><Grid size={{ xs: 12, md: 3 }}><TextField fullWidth label="Dose" value={dose} onChange={(event) => setDose(event.target.value)} placeholder="e.g. 650 mg" /></Grid><Grid size={{ xs: 12, md: 3 }}><TextField select fullWidth label="Route" value={route} onChange={(event) => setRoute(event.target.value)}>{["oral", "topical", "inhaled", "injection", "other"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField></Grid></>
+                    <>
+                      <Grid size={{ xs: 6, md: 3 }}><TextField fullWidth type="number" label="Dose" value={doseValue} onChange={(event) => setDoseValue(event.target.value)} inputProps={{ min: 0.001, max: 1000000, step: "any" }} /></Grid>
+                      <Grid size={{ xs: 6, md: 3 }}><TextField select fullWidth label="Dose unit" value={doseUnit} onChange={(event) => setDoseUnit(event.target.value)}>{options.dose_units?.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField></Grid>
+                      <Grid size={{ xs: 12, md: 3 }}><TextField select fullWidth label="Route" value={route} onChange={(event) => setRoute(event.target.value)}>{options.routes?.map((item) => <MenuItem key={item} value={item}>{optionLabel(item)}</MenuItem>)}</TextField></Grid>
+                    </>
                   ) : null}
                   {selectedTerm.tag === "measurement" ? (
-                    <><Grid size={{ xs: 12, md: 3 }}><TextField fullWidth label="Target value" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} placeholder="e.g. 98.6" /></Grid><Grid size={{ xs: 12, md: 3 }}><TextField select fullWidth label="Measurement unit" value={measurementUnit} onChange={(event) => setMeasurementUnit(event.target.value)}><MenuItem value="°C">°C</MenuItem><MenuItem value="°F">°F</MenuItem><MenuItem value="mmHg">mmHg</MenuItem></TextField></Grid></>
+                    <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Measurement unit" value={measurementUnit} onChange={(event) => setMeasurementUnit(event.target.value)}>{options.measurement_units?.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</TextField></Grid>
                   ) : null}
                   {selectedTerm.tag === "investigation" ? (
-                    <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Priority" value={priority} onChange={(event) => setPriority(event.target.value)}><MenuItem value="routine">Routine</MenuItem><MenuItem value="urgent">Urgent</MenuItem><MenuItem value="stat">Stat</MenuItem></TextField></Grid>
+                    <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Priority" value={priority} onChange={(event) => setPriority(event.target.value)}>{options.priorities?.map((item) => <MenuItem key={item} value={item}>{optionLabel(item)}</MenuItem>)}</TextField></Grid>
                   ) : null}
-                  {selectedTerm.tag === "recommendation" ? (
-                    <Grid size={{ xs: 12, md: 6 }}><TextField fullWidth label="Instruction" value={recommendationInstruction} onChange={(event) => setRecommendationInstruction(event.target.value)} placeholder="e.g. Walk for 20 minutes after breakfast" /></Grid>
-                  ) : null}
-                  <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Frequency" value={frequency} onChange={(event) => setFrequency(event.target.value as Frequency)}>{frequencies.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</TextField></Grid>
+                  <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}>{options.frequencies.map((item) => <MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>)}</TextField></Grid>
                   <Grid size={{ xs: 6, md: 2 }}><TextField fullWidth type="number" label="Duration" value={durationValue} onChange={(event) => setDurationValue(event.target.value)} inputProps={{ min: 1, max: 365 }} /></Grid>
-                  <Grid size={{ xs: 6, md: 2 }}><TextField select fullWidth label="Unit" value={durationUnit} onChange={(event) => setDurationUnit(event.target.value)}>{["hours", "days", "weeks", "months"].map((unit) => <MenuItem key={unit} value={unit}>{unit}</MenuItem>)}</TextField></Grid>
+                  <Grid size={{ xs: 6, md: 2 }}><TextField select fullWidth label="Duration unit" value={durationUnit} onChange={(event) => setDurationUnit(event.target.value)}>{options.duration_units.map((unit) => <MenuItem key={unit} value={unit}>{unit}</MenuItem>)}</TextField></Grid>
                   <Grid size={{ xs: 12 }}><TextField fullWidth multiline minRows={2} label="Additional instructions (optional)" value={instructions} onChange={(event) => setInstructions(event.target.value)} inputProps={{ maxLength: 500 }} /></Grid>
+                  {selectedTerm.tag === "measurement" ? (
+                    <Grid size={{ xs: 12 }}>
+                      <Stack spacing={1.5}>
+                        <FormControlLabel control={<Checkbox checked={valueWarningEnabled} onChange={(event) => setValueWarningEnabled(event.target.checked)} />} label="Add an optional value warning" />
+                        {valueWarningEnabled ? (
+                          <Grid container spacing={2}>
+                            <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Warn when value is" value={warningCondition} onChange={(event) => setWarningCondition(event.target.value)}>{options.comparators?.map((item) => <MenuItem key={item} value={item}>{optionLabel(item)}</MenuItem>)}</TextField></Grid>
+                            <Grid size={{ xs: 12, md: 4 }}><TextField fullWidth type="number" label={`Threshold (${measurementUnit})`} value={warningThreshold} onChange={(event) => setWarningThreshold(event.target.value)} inputProps={{ step: "any" }} /></Grid>
+                            <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Notification" value={warningNotification} onChange={(event) => setWarningNotification(event.target.value)}>{options.notifications.map((item) => <MenuItem key={item} value={item}>{item.replaceAll("_", " ")}</MenuItem>)}</TextField></Grid>
+                          </Grid>
+                        ) : null}
+                      </Stack>
+                    </Grid>
+                  ) : null}
+                  <Grid size={{ xs: 12 }}>
+                    <Stack spacing={1.5}>
+                      <FormControlLabel control={<Checkbox checked={nonResponseEnabled} onChange={(event) => setNonResponseEnabled(event.target.checked)} />} label="Store optional non-response warning settings (engine activates in a later phase)" />
+                      {nonResponseEnabled ? (
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12, md: 4 }}><TextField fullWidth type="number" label="Clinical grace period (minutes)" value={clinicalGraceMinutes} onChange={(event) => setClinicalGraceMinutes(event.target.value)} inputProps={{ min: 1, max: 1440 }} /></Grid>
+                          <Grid size={{ xs: 12, md: 4 }}><TextField select fullWidth label="Notification" value={nonResponseNotification} onChange={(event) => setNonResponseNotification(event.target.value)}>{options.notifications.map((item) => <MenuItem key={item} value={item}>{item.replaceAll("_", " ")}</MenuItem>)}</TextField></Grid>
+                        </Grid>
+                      ) : null}
+                    </Stack>
+                  </Grid>
                 </Grid>
                 <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={addAdvisory} disabled={working} sx={{ alignSelf: "flex-start" }}>Add Advisory</Button>
               </Stack>
-            ) : null}
+            ) : selectedTerm ? <Alert severity="info">Loading approved controls…</Alert> : null}
           </Stack>
         </Paper>
       ) : null}

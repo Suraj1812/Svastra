@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.audit.audit_service import record_audit_event
 from app.config import settings
-from app.models.care import CarePlan
+from app.models.care import Advisory, CarePlan
 from app.models.consent import RelationshipConsent
 from app.models.postoffice import (
     OutboundEvent,
@@ -90,6 +90,34 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
         plan = db.query(CarePlan).filter(CarePlan.id == event.payload["care_plan_id"]).first()
         if plan is None or plan.patient_id != patient.id or plan.provider_id != actor_user.id:
             raise PermissionError("Only the owning provider may publish this care plan event")
+        relationship = db.query(ProviderPatientLink).filter(
+            ProviderPatientLink.patient_id == patient.id,
+            ProviderPatientLink.provider_id == actor_user.id,
+            ProviderPatientLink.status == "active",
+        ).first()
+        if relationship is None or relationship.source_consent.status != "ACTIVE":
+            raise PermissionError("An active consent-backed provider relationship is required")
+        advisory_ids: set[int] = set()
+        for item in event.payload["advisories"]:
+            if item["advisory_id"] in advisory_ids:
+                raise CEPValidationError("CEP advisories cannot contain duplicate advisory_id values")
+            advisory_ids.add(item["advisory_id"])
+            stored = db.query(Advisory).filter(
+                Advisory.id == item["advisory_id"],
+                Advisory.care_plan_id == plan.id,
+                Advisory.provider_id == actor_user.id,
+                Advisory.patient_id == patient.id,
+            ).first()
+            if stored is None:
+                raise CEPValidationError("CEP advisory does not belong to the published care plan")
+            if (
+                stored.status != "PUBLISHED"
+                or stored.execution_status != "pending"
+                or stored.concept_id != item["concept_id"]
+                or stored.term != item["term"]
+                or stored.advisory_type != item["advisory_type"]
+            ):
+                raise CEPValidationError("CEP advisory does not match the immutable stored state")
     elif actor_user.role == "patient":
         if actor_user.id != patient.id:
             raise PermissionError("Patients may send events only for themselves")

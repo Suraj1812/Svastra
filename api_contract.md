@@ -1,8 +1,8 @@
 # SVASTRA+ MVP API Contract
 
-Version: 3.1
+Version: 3.2 — Friday Advisory Authoritative
 
-Updated: 19 June 2026
+Updated: 21 June 2026
 Scope: Week 3 identity, RBAC, consent, relationships, PostOffice, API Event Monitor, care plans, advisories, terminology, allergies, and the first provider-to-patient clinical flow.
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
@@ -277,6 +277,7 @@ message.send
 | Relationships | `DELETE /relationships/{link_id}` | Relationship party |
 | Terminology | `GET /terminology/provider-terms` | Provider |
 | Terminology | `GET /terminology/provider-terms/{concept_id}` | Provider |
+| Terminology | `GET /terminology/provider-terms/{concept_id}/advisory-options` | Provider |
 | Care plans | `POST /care-plans` | Linked provider |
 | Care plans | `GET /care-plans` | Provider owner |
 | Care plans | `GET /care-plans/{id}` | Provider owner |
@@ -632,11 +633,45 @@ Response: `{"terms":[ProviderTerm],"query":"temp","count":2}`.
 
 Minimum Friday data includes Paracetamol, Body Temperature, Blood Pressure, Walking Exercise, and HbA1c. Additional demonstration synonyms may also be present.
 
+The approved drug-catalog sample is also indexed. It currently adds Levaz 500 mg oral tablet and Loxof OZ 250 mg + 500 mg oral tablet. Search results expose only the human-readable term and category in the clinician UI; `conceptId` remains an API/storage binding and is never shown as clinical content.
+
 ### GET /terminology/provider-terms/{concept_id}
 
 Authentication: provider. Returns the exact ProviderTerm or `404`.
 
 The advisory API never trusts a frontend tag. It verifies that `concept_id`, `term`, and `tag` belong together in the local terminology database.
+
+### GET /terminology/provider-terms/{concept_id}/advisory-options
+
+Authentication: provider. Purpose: gives the frontend the exact server-owned controls for one selected approved term. The frontend must not maintain a separate unit/route/frequency ruleset.
+
+Response `data`:
+
+```json
+{
+  "term": {
+    "conceptId": "2647801000189105",
+    "term": "Levaz 500 mg oral tablet",
+    "tag": "medication"
+  },
+  "options": {
+    "frequencies": [{"value":"once_daily","label":"Once daily"}],
+    "duration_units": ["hours", "days", "weeks", "months"],
+    "notifications": ["immediate", "daily_summary", "both", "none"],
+    "dose_units": ["tablet"],
+    "routes": ["oral"],
+    "medication_details": {
+      "generic": "Levofloxacin",
+      "strength": "500 mg per 1 Tablet",
+      "dose_form": "Tablet",
+      "route": "Oral",
+      "supplier_name": "Hauz Pharma Private Limited"
+    }
+  }
+}
+```
+
+Measurement responses instead include `measurement_units` and `comparators`; investigation includes `priorities`. Unknown concepts return `404`; approved measurements with missing unit metadata return `400` and cannot be authored.
 
 ## 11. Care-plan APIs
 
@@ -706,13 +741,14 @@ Common configuration fields:
 | `duration_value` | integer | Yes | 1–365. |
 | `duration_unit` | enum | Yes | `hours`, `days`, `weeks`, `months`. |
 | `additional_instructions` | string | No | Up to 500 chars. |
-| `non_response_warning` | object | No | `clinical_grace_minutes` 1–1440 and notification type. |
+| `non_response_warning` | object | No | Future-ready settings only: `clinical_grace_minutes` 1–1440 and `notification`. Friday stores this object but does not run a warning engine. |
 
 Medication adds:
 
 | Field | Type | Required | Validation |
 | --- | --- | --- | --- |
-| `dose` | string | Yes | 1–80 chars. |
+| `dose_value` | number | Yes | Finite, greater than 0, maximum 1,000,000. Booleans, text, zero, negative, infinity and NaN fail. |
+| `dose_unit` | enum | Yes | `mcg`, `mg`, `g`, `mL`, `tablet`, `capsule`, `drop`, `puff`, or `unit`; a catalog drug may narrow this list. |
 | `route` | enum | Yes | `oral`, `topical`, `inhaled`, `injection`, `other`. |
 
 ```json
@@ -721,7 +757,8 @@ Medication adds:
   "term": "Paracetamol",
   "tag": "medication",
   "configuration": {
-    "dose": "500 mg",
+    "dose_value": 500,
+    "dose_unit": "mg",
     "route": "oral",
     "frequency": "twice_daily",
     "duration_value": 3,
@@ -736,15 +773,31 @@ Measurement adds:
 
 | Field | Type | Required | Validation |
 | --- | --- | --- | --- |
-| `target_value` | string | Yes | 1–80 chars. |
 | `measurement_unit` | string | Yes | Constrained by selected term: temperature `°C/°F`, blood pressure `mmHg`. |
-| `value_warning` | object | No | Condition, finite threshold, same unit, notification. |
+| `value_warning` | object | No | `condition`, numeric `threshold_value`, same `measurement_unit`, and `notification`. |
 
-Recommendation adds `instruction` (required, 2–500 chars).
+Allowed `condition`: `more_than`, `less_than`, `at_least`, `at_most`, `equal_to`. Allowed `notification`: `immediate`, `daily_summary`, `both`, `none`. A value warning using a different unit from the selected measurement is rejected.
 
-Investigation adds `priority` (`routine`, `urgent`, `stat`) and `attachment_required` boolean.
+Recommendation adds no forced duplicate instruction field: the selected approved term is the recommendation. The provider may add `additional_instructions` in the common fields.
+
+Investigation adds required `priority`: `routine`, `urgent`, or `stat`. Friday does not require an attachment.
 
 Unknown configuration fields, mismatched units, missing fields, duplicate terms in one plan, and tampered terminology all return `400` or `422`.
+
+Created advisory response fields:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `id` | positive integer | Internal advisory reference. |
+| `advisory_type`, `tag` | enum | Resolved clinical category. |
+| `term` | string | Human-readable approved term. |
+| `configuration` | object | Normalized validated configuration; unknown fields are absent because they are rejected. |
+| `allergy_warnings` | array | Non-blocking medication warnings; empty for no match/non-medication. |
+| `status` | enum | `DRAFT` or `PUBLISHED`. |
+| `execution_status` | enum | Always `pending` during Week 3. Clients cannot submit or alter it. |
+| `created_at`, `published_at` | datetime/null | Server timestamps. |
+
+Security and consistency checks occur twice: when the advisory is authored and again when its CEP is published. The server rechecks plan ownership, non-archived state, active consent-backed relationship, terminology identity, type-specific schema, units, duplicate concept, stored advisory ownership, publication state, and immutable event fields. Creation and publication each write an audit entry.
 
 ### POST /care-plans/{care_plan_id}/advisories/{advisory_id}/publish
 
@@ -755,13 +808,52 @@ Body: `{"confirmed":true}`.
 Effects:
 
 1. Advisory becomes immutable `PUBLISHED`.
-2. Care plan becomes `ACTIVE`.
-3. Creates `advisory.publish` CEP.
-4. PostOffice validates and routes it to `rogi_mitra`.
-5. Receiver copy is stored.
-6. Acknowledgement is stored.
-7. Temporary outbound queue row is removed.
-8. Audit and permanent event history remain.
+2. Advisory retains `execution_status: pending`.
+3. Care plan becomes `ACTIVE`.
+4. Creates `advisory.publish` CEP.
+5. PostOffice validates and routes it to `rogi_mitra`.
+6. Receiver copy is stored.
+7. Acknowledgement is stored.
+8. Temporary outbound queue row is removed.
+9. Audit and permanent event history remain.
+
+Exact `advisory.publish` CEP body stored in the immutable timeline:
+
+```json
+{
+  "event_type": "advisory.publish",
+  "event_id": "evt_018f4f457d5d4b4ea68967262f887123",
+  "timestamp": "2026-06-21T10:00:00Z",
+  "source": "mantrana_mitra",
+  "payload": {
+    "actor_id": 12,
+    "patient_id": 41,
+    "care_plan_id": 3,
+    "title": "Recovery monitoring",
+    "diagnosis": "Post appendicectomy",
+    "execution_status": "pending",
+    "advisories": [
+      {
+        "advisory_id": 8,
+        "advisory_type": "measurement",
+        "concept_id": "demo_term_body_temperature",
+        "term": "Body Temperature",
+        "tag": "measurement",
+        "execution_status": "pending",
+        "configuration": {
+          "frequency": "four_times_daily",
+          "duration_value": 5,
+          "duration_unit": "days",
+          "measurement_unit": "°F",
+          "additional_instructions": "Record after resting for five minutes"
+        }
+      }
+    ]
+  }
+}
+```
+
+The CEP validator requires top-level and per-advisory `execution_status` to be exactly `pending`, a non-empty concept/term, a supported advisory type, a non-empty configuration object, and no more than 50 advisories. The dispatcher then compares the event with the stored published advisory before accepting delivery.
 
 Response:
 
@@ -798,8 +890,9 @@ Response:
       "id": 8,
       "advisory_type": "measurement",
       "advisory": "Body Temperature",
-      "instruction": "Record Body Temperature in °F (four_times_daily) for 5 days. Target: 98.6. Record after resting for five minutes",
+      "instruction": "Record Body Temperature in °F (four times daily) for 5 days. Record after resting for five minutes",
       "status": "PUBLISHED",
+      "execution_status": "pending",
       "created_at": "2026-06-19T09:00:00Z",
       "published_at": "2026-06-19T09:05:00Z",
       "care_plan": {"id":3,"title":"Recovery monitoring","status":"ACTIVE"}
@@ -808,7 +901,7 @@ Response:
 }
 ```
 
-`instruction` is a patient-friendly sentence generated by the backend from the validated, typed configuration. It includes the clinically relevant dose, route, unit, target, priority, frequency, duration, and any provider-entered additional instructions that apply to that advisory type. The patient cannot edit it.
+`instruction` is a patient-friendly sentence generated by the backend from the validated, typed configuration. It includes the clinically relevant dose, route, unit, priority, frequency, duration, and any provider-entered additional instructions that apply to that advisory type. The patient cannot edit it. Friday displays `execution_status: pending`; it does not create patient tasks or capture responses.
 
 ## 13. Allergy APIs
 
@@ -1024,7 +1117,7 @@ Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with a
 | --- | --- |
 | `consent.*` | `consent_id`, `requestor_id`, `status` |
 | `relationship.*` | `relationship_id`, `linked_user_id`, `relationship_type`, `status` |
-| `advisory.publish` | `care_plan_id`, non-empty `advisories` array |
+| `advisory.publish` | `care_plan_id`, top-level `execution_status=pending`, non-empty `advisories` array; every entry requires advisory ID/type, concept, term, `execution_status=pending`, configuration |
 | `response.log` | `task_id`, `response_type` |
 | `alert.trigger` | `alert_id`, `severity` |
 | `message.send` | `message_id`, `message_text` |
@@ -1038,8 +1131,8 @@ The frontend must:
 3. Send `confirmed: true` only after the user accepts a visible confirmation dialog.
 4. Never infer access from UI state; wait for backend success.
 5. Search terminology only after three characters.
-6. Submit the exact selected `conceptId`, `term`, and `tag`; never manufacture tags.
-7. Render controls from the returned tag and show server validation messages beside the relevant fields.
+6. Submit the exact selected `conceptId`, `term`, and `tag`; never manufacture tags and never display concept IDs to clinical users.
+7. Fetch `/advisory-options` after selection and render its server-owned controls; show validation messages beside the relevant fields.
 8. Display medication allergy warnings prominently but allow Week 3 publication after provider review.
 9. Hide mobile numbers in list views; fetch detail endpoints only when the user opens details.
 10. Refresh consent, relationship, and care-plan data after every state-changing call.
@@ -1057,12 +1150,14 @@ Patient POST /consent/request/{id}/grant {confirmed:true}
 Backend creates ACTIVE relationship
 Provider POST /care-plans
 Provider GET /terminology/provider-terms?query=body
+Provider GET /terminology/provider-terms/{concept_id}/advisory-options
 Provider POST /care-plans/{id}/advisories
 Provider reviews any allergy_warnings
 Provider POST /care-plans/{id}/advisories/{advisory_id}/publish {confirmed:true}
 Backend returns event_id + acknowledgement
 Patient GET /me/advisories
-Patient sees the published instruction
+Patient sees the published instruction with execution Pending
+Provider/patient opens API Event Monitor and sees advisory.publish + execution Pending
 ```
 
 No scheduler, task generation, reminders, warning engine, alert engine, or daily summary is part of this Week 3 contract.

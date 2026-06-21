@@ -45,6 +45,22 @@ def _ensure_schema_compatibility():
             if "archived_at" not in columns:
                 connection.execute(text("ALTER TABLE care_plans ADD COLUMN archived_at DATETIME"))
 
+        if "advisories" in tables:
+            columns = {column["name"] for column in inspector.get_columns("advisories")}
+            if "execution_status" not in columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE advisories ADD COLUMN execution_status "
+                        "VARCHAR(20) NOT NULL DEFAULT 'pending'"
+                    )
+                )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_advisories_execution_status "
+                    "ON advisories(execution_status)"
+                )
+            )
+
         if "timeline_events" in tables:
             columns = {column["name"] for column in inspector.get_columns("timeline_events")}
             if "payload_sha256" not in columns:

@@ -1,0 +1,24 @@
+{
+  "2647801000189105": {
+    "conceptId": "2647801000189105",
+    "term": "Levaz 500 mg oral tablet",
+    "semanticTag": "real clinical drug",
+    "generic": "Levofloxacin",
+    "dose_form": "Tablet",
+    "route": "Oral",
+    "strength": "500 mg per 1 Tablet",
+    "supplier_name": "Hauz Pharma Private Limited",
+    "prescription_print": "Tablet Levofloxacin 500 mg per 1 Tablet, (Levaz, Hauz Pharma Private Limited)"
+  },
+  "2647791000189106": {
+    "conceptId": "2647791000189106",
+    "term": "Loxof OZ 250 mg + 500 mg oral tablet",
+    "semanticTag": "real clinical drug",
+    "generic": "Levofloxacin + Ornidazole",
+    "dose_form": "Tablet",
+    "route": "Oral",
+    "strength": "250 mg per 1 Tablet, 500 mg per 1 Tablet",
+    "supplier_name": "Sun Pharmaceutical Industries Limited",
+    "prescription_print": "Tablet Levofloxacin + Ornidazole 250 mg per 1 Tablet, 500 mg per 1 Tablet, (Loxof OZ, Sun Pharmaceutical Industries Limited)"
+  }
+}

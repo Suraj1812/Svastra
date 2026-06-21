@@ -102,6 +102,7 @@ class CEPEvent(BaseModel):
                 raise ValueError(f"payload.status must be {expected_status} for {self.event_type}")
         elif self.event_type == "advisory.publish":
             _positive_int(self.payload, "care_plan_id")
+            _one_of(self.payload, "execution_status", {"pending"})
             advisories = self.payload.get("advisories")
             if not isinstance(advisories, list) or not advisories:
                 raise ValueError("payload.advisories must be a non-empty list")
@@ -111,6 +112,7 @@ class CEPEvent(BaseModel):
                 if not isinstance(advisory, dict):
                     raise ValueError(f"payload.advisories.{index} must be an object")
                 _positive_int(advisory, "advisory_id", prefix=f"payload.advisories.{index}")
+                _bounded_string(advisory, "concept_id", 1, 64, prefix=f"payload.advisories.{index}")
                 _one_of(
                     advisory,
                     "advisory_type",
@@ -118,6 +120,12 @@ class CEPEvent(BaseModel):
                     prefix=f"payload.advisories.{index}",
                 )
                 _bounded_string(advisory, "term", 1, 255, prefix=f"payload.advisories.{index}")
+                _one_of(
+                    advisory,
+                    "execution_status",
+                    {"pending"},
+                    prefix=f"payload.advisories.{index}",
+                )
                 if not isinstance(advisory.get("configuration"), dict):
                     raise ValueError(f"payload.advisories.{index}.configuration must be an object")
         elif self.event_type == "response.log":

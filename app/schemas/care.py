@@ -39,7 +39,7 @@ class ValueWarning(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     condition: Literal["more_than", "less_than", "at_least", "at_most", "equal_to"]
-    threshold_value: float
+    threshold_value: float = Field(..., ge=-1000000, le=1000000)
     measurement_unit: str = Field(..., min_length=1, max_length=24)
     notification: Notification = "immediate"
 
@@ -62,13 +62,13 @@ class BaseConfiguration(BaseModel):
 
 
 class MedicationConfiguration(BaseConfiguration):
-    dose: str = Field(..., min_length=1, max_length=80)
+    dose_value: float = Field(..., gt=0, le=1000000)
+    dose_unit: Literal["mcg", "mg", "g", "mL", "tablet", "capsule", "drop", "puff", "unit"]
     route: Literal["oral", "topical", "inhaled", "injection", "other"]
 
 
 class MeasurementConfiguration(BaseConfiguration):
     measurement_unit: str = Field(..., min_length=1, max_length=24)
-    target_value: str = Field(..., min_length=1, max_length=80)
     value_warning: Optional[ValueWarning] = None
 
     @model_validator(mode="after")
@@ -80,11 +80,10 @@ class MeasurementConfiguration(BaseConfiguration):
 
 class InvestigationConfiguration(BaseConfiguration):
     priority: Literal["routine", "urgent", "stat"]
-    attachment_required: bool = True
 
 
 class RecommendationConfiguration(BaseConfiguration):
-    instruction: str = Field(..., min_length=2, max_length=500)
+    pass
 
 
 class AllergyCreateRequest(BaseModel):
@@ -96,7 +95,12 @@ class AllergyCreateRequest(BaseModel):
 class AdvisoryCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    concept_id: str = Field(..., min_length=1, max_length=64)
+    concept_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+    )
     term: str = Field(..., min_length=1, max_length=255)
     tag: Literal["medication", "measurement", "recommendation", "investigation"]
     configuration: dict

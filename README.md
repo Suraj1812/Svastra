@@ -4,6 +4,14 @@ End-to-end identity, RBAC, patient-controlled consent, healthcare relationships,
 PostOffice CEP delivery, API Event Monitor, care-plan authoring, advisory publication,
 terminology, allergy warnings, and patient advisory display.
 
+Friday v1.2 is implemented as a complete advisory path: the provider selects an
+approved human-readable term, the server supplies and validates type-specific
+controls, publication creates an immutable `advisory.publish` CEP with
+`execution_status: pending`, PostOffice routes and acknowledges it, and both the
+patient view and API Event Monitor display the pending execution state. Task
+generation, scheduling, response capture and warning/alert engines remain later
+phase work by design.
+
 ## Backend
 
 ```bash
@@ -76,6 +84,7 @@ performance controls and incident checks.
 - `GET /me/permissions`
 - `GET/POST/DELETE /relationships/...`
 - `GET /terminology/provider-terms`
+- `GET /terminology/provider-terms/{concept_id}/advisory-options`
 - `GET/POST/PUT/DELETE /care-plans/...`
 - `POST /care-plans/{id}/advisories`
 - `POST /care-plans/{id}/advisories/{advisory_id}/publish`
@@ -92,6 +101,10 @@ performance controls and incident checks.
 - Raw session tokens are stored only as SHA-256 hashes.
 - CEP IDs and payloads are immutable; reusing an ID with different content is rejected.
 - CEP payloads have strict event-specific validation and a 64 KiB ceiling.
+- Advisory CEPs are cross-checked against stored plan ownership, active consent,
+  published status, concept, term, type, and Week 3 execution state.
+- Medication controls can be narrowed by the approved IDE drug-catalog metadata;
+  internal concept identifiers are not rendered in clinical screens.
 - API request bodies are capped at 1 MiB before request parsing.
 - PostOffice retries are bounded and audited.
 - Monitor pagination uses signed, filter-bound keyset cursors.

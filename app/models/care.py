@@ -35,6 +35,10 @@ class Advisory(Base):
             name="ck_advisories_type",
         ),
         CheckConstraint("status in ('DRAFT', 'PUBLISHED')", name="ck_advisories_status"),
+        CheckConstraint(
+            "execution_status in ('pending')",
+            name="ck_advisories_execution_status",
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -47,6 +51,7 @@ class Advisory(Base):
     tag = Column(String(32), nullable=False)
     configuration_json = Column(Text, nullable=False)
     status = Column(String(20), nullable=False, default="DRAFT", index=True)
+    execution_status = Column(String(20), nullable=False, default="pending", index=True)
     published_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())

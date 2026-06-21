@@ -44,6 +44,7 @@ _PREVIEW_KEYS = {
     "care_plan_id",
     "consent_id",
     "consent_type",
+    "execution_status",
     "message_id",
     "new_state",
     "previous_state",

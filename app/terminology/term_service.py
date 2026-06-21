@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -18,10 +21,60 @@ DEMO_TERMS = (
 )
 SUPPORTED_TAGS = ("medication", "measurement", "recommendation", "investigation")
 
+COMMON_OPTIONS = {
+    "frequencies": [
+        {"value": "once_daily", "label": "Once daily"},
+        {"value": "twice_daily", "label": "Twice daily"},
+        {"value": "three_times_daily", "label": "Three times daily"},
+        {"value": "four_times_daily", "label": "Four times daily"},
+        {"value": "every_4_hours", "label": "Every 4 hours"},
+        {"value": "every_6_hours", "label": "Every 6 hours"},
+        {"value": "weekly", "label": "Weekly"},
+        {"value": "monthly", "label": "Monthly"},
+        {"value": "as_needed", "label": "As needed"},
+    ],
+    "duration_units": ["hours", "days", "weeks", "months"],
+    "notifications": ["immediate", "daily_summary", "both", "none"],
+}
+
+TAG_OPTIONS = {
+    "medication": {
+        "dose_units": ["mcg", "mg", "g", "mL", "tablet", "capsule", "drop", "puff", "unit"],
+        "routes": ["oral", "topical", "inhaled", "injection", "other"],
+    },
+    "measurement": {
+        "comparators": ["more_than", "less_than", "at_least", "at_most", "equal_to"],
+    },
+    "investigation": {"priorities": ["routine", "urgent", "stat"]},
+    "recommendation": {},
+}
+
+TERM_OPTIONS = {
+    "demo_term_body_temperature": {"measurement_units": ["°C", "°F"]},
+    "demo_term_temperature": {"measurement_units": ["°C", "°F"]},
+    "demo_term_blood_pressure": {"measurement_units": ["mmHg"]},
+}
+
+DRUG_CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "svp_ide_drug_catalog_details_sample.json"
+
+
+def _drug_catalog():
+    try:
+        data = json.loads(DRUG_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("Approved medication catalog could not be loaded") from error
+    if not isinstance(data, dict):
+        raise RuntimeError("Approved medication catalog must be a JSON object")
+    return data
+
 
 def seed_demo_terms(db: Session):
     changed = False
-    for concept_id, display_term, tag in DEMO_TERMS:
+    catalog_terms = tuple(
+        (concept_id, item["term"], "medication")
+        for concept_id, item in _drug_catalog().items()
+    )
+    for concept_id, display_term, tag in (*DEMO_TERMS, *catalog_terms):
         term = db.query(Term).options(joinedload(Term.tags)).filter(Term.concept_id == concept_id).first()
         if term is None:
             term = Term(concept_id=concept_id, term=display_term, language="en")
@@ -83,3 +136,32 @@ def get_term(db: Session, *, concept_id: str):
 
 def get_tags(db: Session, *, concept_id: str):
     return get_term(db, concept_id=concept_id)["tag"]
+
+
+def get_advisory_options(db: Session, *, concept_id: str):
+    """Return the only values the API accepts for a selected approved term."""
+    term = get_term(db, concept_id=concept_id)
+    tag = term["tag"]
+    options = {
+        **COMMON_OPTIONS,
+        **TAG_OPTIONS[tag],
+        **TERM_OPTIONS.get(concept_id, {}),
+    }
+    catalog_item = _drug_catalog().get(concept_id)
+    if catalog_item:
+        dose_form = str(catalog_item.get("dose_form", "")).strip().lower()
+        route = str(catalog_item.get("route", "")).strip().lower()
+        if dose_form in TAG_OPTIONS["medication"]["dose_units"]:
+            options["dose_units"] = [dose_form]
+        if route in TAG_OPTIONS["medication"]["routes"]:
+            options["routes"] = [route]
+        options["medication_details"] = {
+            "generic": catalog_item.get("generic"),
+            "strength": catalog_item.get("strength"),
+            "dose_form": catalog_item.get("dose_form"),
+            "route": catalog_item.get("route"),
+            "supplier_name": catalog_item.get("supplier_name"),
+        }
+    if tag == "measurement" and not options.get("measurement_units"):
+        raise ValueError("The selected measurement has no approved unit metadata")
+    return {"term": term, "options": options}

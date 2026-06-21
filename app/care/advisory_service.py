@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import json
 
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.care.tag_resolver import resolve_tag
+from app.audit.audit_service import record_audit_event
 from app.care.allergy_service import check_medication_allergies
+from app.care.tag_resolver import resolve_tag
 from app.models.care import Advisory, CarePlan
 from app.models.user import User
 from app.schemas.care import (
@@ -13,6 +16,7 @@ from app.schemas.care import (
     MedicationConfiguration,
     RecommendationConfiguration,
 )
+from app.terminology.term_service import get_advisory_options
 
 
 CONFIGURATION_MODELS = {
@@ -22,14 +26,9 @@ CONFIGURATION_MODELS = {
     "investigation": InvestigationConfiguration,
 }
 
-ALLOWED_MEASUREMENT_UNITS = {
-    "demo_term_temperature": {"°C", "°F"},
-    "demo_term_body_temperature": {"°C", "°F"},
-    "demo_term_blood_pressure": {"mmHg"},
-}
-
-
-def validate_advisory_configuration(*, tag: str, concept_id: str, configuration: dict):
+def validate_advisory_configuration(
+    db: Session, *, tag: str, concept_id: str, configuration: dict
+):
     model = CONFIGURATION_MODELS.get(tag)
     if model is None:
         raise ValueError("Unsupported advisory type")
@@ -41,12 +40,18 @@ def validate_advisory_configuration(*, tag: str, concept_id: str, configuration:
         )
         raise ValueError(f"Invalid {tag} configuration: {messages}") from error
 
+    options = get_advisory_options(db, concept_id=concept_id)["options"]
     if tag == "measurement":
-        allowed_units = ALLOWED_MEASUREMENT_UNITS.get(concept_id)
-        if allowed_units and validated.measurement_unit not in allowed_units:
+        allowed_units = set(options["measurement_units"])
+        if validated.measurement_unit not in allowed_units:
             raise ValueError(
                 f"Measurement unit must be one of: {', '.join(sorted(allowed_units))}"
             )
+    elif tag == "medication":
+        if validated.dose_unit not in set(options["dose_units"]):
+            raise ValueError(f"Dose unit must be one of: {', '.join(options['dose_units'])}")
+        if validated.route not in set(options["routes"]):
+            raise ValueError(f"Route must be one of: {', '.join(options['routes'])}")
     return validated.model_dump(mode="json", exclude_none=True)
 
 
@@ -59,6 +64,7 @@ def add_advisory(
     term: str,
     tag: str,
     configuration: dict,
+    ip_address: str | None = None,
 ):
     if care_plan.provider_id != provider.id:
         raise PermissionError("Only the owning provider may edit this care plan")
@@ -66,6 +72,7 @@ def add_advisory(
         raise ValueError("Archived care plans are read-only")
     resolve_tag(db, concept_id=concept_id, term=term, tag=tag)
     validated_configuration = validate_advisory_configuration(
+        db,
         tag=tag,
         concept_id=concept_id,
         configuration=configuration,
@@ -94,10 +101,25 @@ def add_advisory(
         tag=tag,
         configuration_json=json.dumps(validated_configuration, sort_keys=True),
         status="DRAFT",
+        execution_status="pending",
     )
     db.add(advisory)
     db.commit()
     db.refresh(advisory)
+    record_audit_event(
+        db,
+        action="advisory.created",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata={
+            "advisory_id": advisory.id,
+            "care_plan_id": care_plan.id,
+            "patient_id": care_plan.patient_id,
+            "advisory_type": tag,
+        },
+    )
     return advisory
 
 
@@ -110,6 +132,7 @@ def serialize_advisory(advisory: Advisory):
         "configuration": json.loads(advisory.configuration_json),
         "allergy_warnings": json.loads(advisory.configuration_json).get("allergy_warnings", []),
         "status": advisory.status,
+        "execution_status": advisory.execution_status,
         "published_at": advisory.published_at,
         "created_at": advisory.created_at,
     }

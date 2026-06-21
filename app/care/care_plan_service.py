@@ -143,12 +143,15 @@ def _advisory_publish_payload(plan: CarePlan, advisory: Advisory, provider: User
         "care_plan_id": plan.id,
         "title": plan.title,
         "diagnosis": plan.diagnosis,
+        "execution_status": advisory.execution_status,
         "advisories": [
             {
                 "advisory_id": advisory.id,
                 "advisory_type": advisory.advisory_type,
+                "concept_id": advisory.concept_id,
                 "term": advisory.term,
                 "tag": advisory.tag,
+                "execution_status": advisory.execution_status,
                 "configuration": serialize_advisory(advisory)["configuration"],
             }
         ],

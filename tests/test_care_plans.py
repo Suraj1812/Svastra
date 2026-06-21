@@ -1,3 +1,5 @@
+import json
+
 from app.models.audit import AuditLog
 from app.models.postoffice import OutboundEvent, PostOfficeAcknowledgement, ReceivedEvent, TimelineEvent
 from tests.helpers import grant_provider_access, headers, register_patient, register_provider
@@ -8,7 +10,6 @@ VALID_MEASUREMENT_CONFIG = {
     "duration_value": 5,
     "duration_unit": "days",
     "measurement_unit": "°F",
-    "target_value": "98.6",
     "additional_instructions": "Record after resting for five minutes",
 }
 
@@ -52,6 +53,18 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
         "Body Temperature",
         "Temperature",
     }
+    options = integration_client.get(
+        "/terminology/provider-terms/demo_term_temperature/advisory-options",
+        headers=headers(provider),
+    )
+    assert options.status_code == 200
+    assert options.json()["data"]["options"]["measurement_units"] == ["°C", "°F"]
+
+    drug_search = integration_client.get(
+        "/terminology/provider-terms?query=levaz", headers=headers(provider)
+    )
+    assert drug_search.status_code == 200
+    assert drug_search.json()["data"]["terms"][0]["term"] == "Levaz 500 mg oral tablet"
 
     tampered = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
@@ -94,6 +107,7 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
     )
     assert valid.status_code == 201
     assert valid.json()["data"]["advisory_type"] == "measurement"
+    assert valid.json()["data"]["execution_status"] == "pending"
 
 
 def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
@@ -121,6 +135,7 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
     body = published.json()["data"]
     assert body["status"] == "ACTIVE"
     assert body["advisories"][0]["status"] == "PUBLISHED"
+    assert body["advisories"][0]["execution_status"] == "pending"
     assert body["event_id"].startswith("evt_")
 
     republish = integration_client.post(
@@ -140,7 +155,7 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
                 "frequency": "once_daily",
                 "duration_value": 7,
                 "duration_unit": "days",
-                "instruction": "Walk for 20 minutes after breakfast",
+                "additional_instructions": "Walk for 20 minutes after breakfast",
             },
         },
         headers=headers(provider),
@@ -151,18 +166,25 @@ def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
     assert patient_view.status_code == 200
     patient_advisory = patient_view.json()["data"]["advisories"][0]
     assert patient_advisory["advisory"] == "Temperature"
-    assert "Target: 98.6" in patient_advisory["instruction"]
     assert "Record after resting for five minutes" in patient_advisory["instruction"]
+    assert patient_advisory["execution_status"] == "pending"
 
     db = integration_client.testing_session_local()
     try:
-        assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "advisory.publish").count() == 1
+        timeline = db.query(TimelineEvent).filter(
+            TimelineEvent.event_type == "advisory.publish"
+        ).one()
+        cep_payload = json.loads(timeline.payload_json)["payload"]
+        assert cep_payload["execution_status"] == "pending"
+        assert cep_payload["advisories"][0]["execution_status"] == "pending"
+        assert cep_payload["advisories"][0]["concept_id"] == "demo_term_temperature"
         assert db.query(OutboundEvent).filter(OutboundEvent.event_id == body["event_id"]).count() == 0
         assert db.query(ReceivedEvent).filter(ReceivedEvent.event_id == body["event_id"]).count() == 1
         assert db.query(PostOfficeAcknowledgement).filter(
             PostOfficeAcknowledgement.event_id == body["event_id"]
         ).count() == 1
         assert db.query(AuditLog).filter(AuditLog.action == "advisory.published").count() == 1
+        assert db.query(AuditLog).filter(AuditLog.action == "advisory.created").count() == 2
     finally:
         db.close()
 
@@ -192,7 +214,8 @@ def test_medication_allergy_warning_is_non_blocking_and_visible(integration_clie
             "term": "Paracetamol",
             "tag": "medication",
             "configuration": {
-                "dose": "500 mg",
+                "dose_value": 500,
+                "dose_unit": "mg",
                 "route": "oral",
                 "frequency": "once_daily",
                 "duration_value": 3,
@@ -242,3 +265,112 @@ def test_care_plan_update_and_archive_are_owner_scoped(integration_client):
         headers=headers(provider),
     )
     assert blocked_edit.status_code == 400
+
+
+def test_type_specific_advisory_rules_reject_forged_fields_and_units(integration_client):
+    patient = register_patient(integration_client, "9876501251")
+    provider = register_provider(integration_client, "9876501252")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+
+    mismatched_warning_unit = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_temperature",
+            "term": "Temperature",
+            "tag": "measurement",
+            "configuration": {
+                **VALID_MEASUREMENT_CONFIG,
+                "value_warning": {
+                    "condition": "more_than",
+                    "threshold_value": 100.4,
+                    "measurement_unit": "°C",
+                    "notification": "immediate",
+                },
+            },
+        },
+        headers=headers(provider),
+    )
+    assert mismatched_warning_unit.status_code == 400
+
+    forged_catalog_unit = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "2647801000189105",
+            "term": "Levaz 500 mg oral tablet",
+            "tag": "medication",
+            "configuration": {
+                "dose_value": 1,
+                "dose_unit": "mg",
+                "route": "oral",
+                "frequency": "once_daily",
+                "duration_value": 5,
+                "duration_unit": "days",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert forged_catalog_unit.status_code == 400
+
+    extra_investigation_field = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_hba1c",
+            "term": "HbA1c",
+            "tag": "investigation",
+            "configuration": {
+                "priority": "routine",
+                "attachment_required": True,
+                "frequency": "monthly",
+                "duration_value": 3,
+                "duration_unit": "months",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert extra_investigation_field.status_code == 400
+
+    valid_recommendation = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_walking_exercise",
+            "term": "Walking Exercise",
+            "tag": "recommendation",
+            "configuration": {
+                "frequency": "once_daily",
+                "duration_value": 4,
+                "duration_unit": "weeks",
+                "non_response_warning": {
+                    "clinical_grace_minutes": 90,
+                    "notification": "daily_summary",
+                },
+            },
+        },
+        headers=headers(provider),
+    )
+    assert valid_recommendation.status_code == 201
+    assert valid_recommendation.json()["data"]["execution_status"] == "pending"
+
+
+def test_advisory_execution_status_is_server_owned(integration_client):
+    patient = register_patient(integration_client, "9876501261")
+    provider = register_provider(integration_client, "9876501262")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+
+    response = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_exercise",
+            "term": "Exercise",
+            "tag": "recommendation",
+            "execution_status": "completed",
+            "configuration": {
+                "frequency": "once_daily",
+                "duration_value": 7,
+                "duration_unit": "days",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert response.status_code == 422

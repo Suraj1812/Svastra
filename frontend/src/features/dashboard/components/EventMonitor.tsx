@@ -332,6 +332,7 @@ export function EventMonitor({ role, sessionToken, userId }: EventMonitorProps) 
                 </Stack>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   <Chip size="small" color={statusColor(item.delivery_status)} label={humanize(item.delivery_status)} />
+                  {item.payload_preview.execution_status === "pending" ? <Chip size="small" color="info" variant="outlined" label="Execution: Pending" /> : null}
                   <Chip size="small" color={item.integrity_status === "verified" ? "success" : "warning"} variant="outlined" label={`Integrity: ${humanize(item.integrity_status)}`} />
                 </Stack>
               </Stack>

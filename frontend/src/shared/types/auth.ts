@@ -143,6 +143,29 @@ export type ProviderTerm = {
   tag: "medication" | "measurement" | "recommendation" | "investigation";
 };
 
+export type AdvisoryConfigurationOptions = {
+  frequencies: Array<{ value: string; label: string }>;
+  duration_units: string[];
+  notifications: string[];
+  dose_units?: string[];
+  routes?: string[];
+  measurement_units?: string[];
+  comparators?: string[];
+  priorities?: string[];
+  medication_details?: {
+    generic: string;
+    strength: string;
+    dose_form: string;
+    route: string;
+    supplier_name: string;
+  };
+};
+
+export type AdvisoryOptionsResult = {
+  term: ProviderTerm;
+  options: AdvisoryConfigurationOptions;
+};
+
 export type AdvisorySummary = {
   id: number;
   advisory_type: ProviderTerm["tag"];
@@ -157,6 +180,7 @@ export type AdvisorySummary = {
     blocking: false;
   }>;
   status: "DRAFT" | "PUBLISHED";
+  execution_status: "pending";
   published_at: string | null;
   created_at: string;
 };
@@ -181,6 +205,7 @@ export type PatientAdvisory = {
   advisory: string;
   instruction: string;
   status: "PUBLISHED";
+  execution_status: "pending";
   created_at: string;
   published_at: string;
   care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE" };
