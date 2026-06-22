@@ -25,6 +25,18 @@ def test_consent_grant_creates_both_relationship_types_and_lists_them(integratio
 
     assert provider_list.status_code == 200
     assert provider_list.json()["data"]["relationships"][0]["relationship_status"] == "ACTIVE"
+    assert "mobile_number" not in provider_list.json()["data"]["relationships"][0]
+    provider_picker = integration_client.get(
+        "/relationships/patients?status=ACTIVE&include_mobile=true",
+        headers=headers(provider),
+    )
+    assert provider_picker.status_code == 200
+    assert provider_picker.json()["data"]["relationships"][0]["mobile_number"] == patient["user"]["mobile_number"]
+    caregiver_mobile_denied = integration_client.get(
+        "/relationships/patients?status=ACTIVE&include_mobile=true",
+        headers=headers(caregiver),
+    )
+    assert caregiver_mobile_denied.status_code == 403
     assert caregiver_list.json()["data"]["relationships"][0]["relationship_type"] == "patient_caregiver"
     assert patient_providers.json()["data"]["relationships"][0]["alias"] == "Dr Meera"
     assert patient_caregivers.json()["data"]["relationships"][0]["linked_user"]["role"] == "caregiver"

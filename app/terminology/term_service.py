@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.terminology import Term, TermTag
@@ -124,6 +124,12 @@ def search_provider_terms(db: Session, *, query: str, tag: str | None = None, li
 
     query_builder = db.query(Term).options(joinedload(Term.tags)).join(TermTag)
     query_builder = query_builder.filter(TermTag.tag.in_(SUPPORTED_TAGS))
+    query_builder = query_builder.filter(
+        or_(
+            TermTag.tag != "medication",
+            Term.concept_id.in_(tuple(_drug_catalog().keys())),
+        )
+    )
     query_builder = query_builder.filter(func.lower(Term.term).contains(cleaned.lower(), autoescape=True))
     if tag is not None:
         query_builder = query_builder.filter(TermTag.tag == tag)
@@ -166,6 +172,8 @@ def get_advisory_options(db: Session, *, concept_id: str):
         **TERM_OPTIONS.get(concept_id, {}),
     }
     catalog_item = _drug_catalog().get(concept_id)
+    if tag == "medication" and catalog_item is None:
+        raise ValueError("Medication is not in the approved drug catalogue")
     if catalog_item:
         dose_form = str(catalog_item.get("dose_form", "")).strip().lower()
         route = str(catalog_item.get("route", "")).strip().lower()

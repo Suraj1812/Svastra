@@ -39,12 +39,17 @@ def add_patient_allergy(db: Session, *, patient_id: int, allergen_term: str):
     return allergy, True
 
 
-def check_medication_allergies(db: Session, *, patient_id: int, medication_term: str):
-    medication = _normalise(medication_term)
+def check_medication_allergies(
+    db: Session, *, patient_id: int, medication_terms: list[str]
+):
+    medications = [_normalise(item) for item in medication_terms if _normalise(item)]
     warnings = []
     for allergy in get_active_allergies(db, patient_id=patient_id):
         allergen = _normalise(allergy.allergen_term)
-        if allergen and (allergen in medication or medication in allergen):
+        if allergen and any(
+            allergen in medication or medication in allergen
+            for medication in medications
+        ):
             warnings.append(
                 {
                     "code": "POTENTIAL_ALLERGY",

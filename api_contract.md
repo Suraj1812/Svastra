@@ -202,7 +202,7 @@ Registration dropdown values must be sent exactly as supplied by `data/svp_entry
 | `advisory_type` / `tag` | enum | Resolved advisory category. |
 | `term` | string | Approved clinical term. |
 | `configuration` | object | Validated, type-specific configuration. |
-| `allergy_warnings` | array | Non-blocking medication allergy warnings. |
+| `allergy_warnings` | array | Blocking medication allergy warnings. |
 | `status` | enum | `DRAFT` or `PUBLISHED`. |
 | `published_at` | ISO datetime or null | Publication time. |
 | `created_at` | ISO datetime | Creation time. |
@@ -604,8 +604,11 @@ Authentication: provider or caregiver.
 | Query | Values | Default |
 | --- | --- | --- |
 | `status` | `ACTIVE`, `INACTIVE`, `ALL` | `ALL` |
+| `include_mobile` | `true`, `false` | `false` |
 
 Response: `{"relationships":[HealthcareRelationship]}` for the authenticated linked user.
+
+`include_mobile=true` is provider-only and requires `status=ACTIVE`. It returns the linked patient's registered mobile number for identity disambiguation in clinical patient selectors. Caregivers cannot use this option, inactive/all-relationship queries cannot expose mobile numbers, and the default response remains privacy-minimized.
 
 ### GET /relationships/providers
 
@@ -777,15 +780,15 @@ Common configuration fields:
 | `duration_value` | integer | Yes | 1–365. |
 | `duration_unit` | enum | Yes | `hours`, `days`, `weeks`, `months`. |
 | `additional_instructions` | string | No | Up to 500 chars. |
-| `non_response_warning` | object | No | Future-ready settings only: `clinical_grace_minutes` 1–1440 and `notification`. Friday stores this object but does not run a warning engine. |
+| `non_response_warning` | object | No | `clinical_grace_minutes` 1–1440, optional `notification`, and optional `severity`. The overdue evaluator runs this rule and suppresses duplicate alerts. |
 
 Medication adds:
 
 | Field | Type | Required | Validation |
 | --- | --- | --- | --- |
 | `dose_value` | number | Yes | Finite, greater than 0, maximum 1,000,000. Booleans, text, zero, negative, infinity and NaN fail. |
-| `dose_unit` | enum | Yes | `mcg`, `mg`, `g`, `mL`, `tablet`, `capsule`, `drop`, `puff`, or `unit`; a catalog drug may narrow this list. |
-| `route` | enum | Yes | `oral`, `topical`, `inhaled`, `injection`, `other`. |
+| `dose_unit` | enum | Yes | Must equal the approved drug-catalogue dose form for the selected medication. |
+| `route` | enum | Yes | Must equal the approved drug-catalogue route for the selected medication. |
 
 ```json
 {
@@ -803,16 +806,16 @@ Medication adds:
 }
 ```
 
-Medication creation checks the patient's ACTIVE allergy list. A match returns a blocking `allergy_warnings` entry. Publication then creates a critical `allergy_conflict` alert and `alert.trigger` CEP, writes an audit entry, and rejects publication. No schedule, task or `advisory.publish` event is created for the unsafe medicine.
+Only medication concepts present in the approved local drug catalogue are returned by provider search or accepted for new medication advisories. Dose form, route and administration method are catalogue-derived. Medication creation checks the patient's ACTIVE allergy list against both the product term and its catalogue generic ingredient names. A match returns a blocking `allergy_warnings` entry. Publication then creates a critical `allergy_conflict` alert and `alert.trigger` CEP, writes an audit entry, and rejects publication. No schedule, task or `advisory.publish` event is created for the unsafe medicine.
 
 Measurement adds:
 
 | Field | Type | Required | Validation |
 | --- | --- | --- | --- |
 | `measurement_unit` | string | Yes | Constrained by selected term: temperature `°C/°F`, blood pressure `mmHg`. |
-| `value_warning` | object | No | `condition`, numeric `threshold_value`, same `measurement_unit`, and `notification`. |
+| `value_warning` | object | No | `condition`, numeric `threshold_value`, same `measurement_unit`, optional `notification`, and optional `severity`. |
 
-Allowed `condition`: `more_than`, `less_than`, `at_least`, `at_most`, `equal_to`. Allowed `notification`: `immediate`, `daily_summary`, `both`, `none`. A value warning using a different unit from the selected measurement is rejected.
+Allowed `condition`: `more_than`, `less_than`, `at_least`, `at_most`, `equal_to`. Allowed `notification`: `immediate`, `daily_summary`, `both`, `none`; it defaults to `immediate`. Allowed `severity`: `low`, `medium`, `high`, `critical`; value warnings default to `high` and non-response warnings default to `medium`. A value warning using a different unit from the selected measurement is rejected.
 
 Recommendation adds no forced duplicate instruction field: the selected approved term is the recommendation. The provider may add `additional_instructions` in the common fields.
 
@@ -837,7 +840,7 @@ Created advisory response fields:
 | `advisory_type`, `tag` | enum | Resolved clinical category. |
 | `term` | string | Human-readable approved term. |
 | `configuration` | object | Normalized validated configuration; unknown fields are absent because they are rejected. |
-| `allergy_warnings` | array | Non-blocking medication warnings; empty for no match/non-medication. |
+| `allergy_warnings` | array | Blocking medication warnings; empty for no match/non-medication. |
 | `status` | enum | `DRAFT` or `PUBLISHED`. |
 | `execution_status` | enum | Server-owned: `pending`, `completed`, `completed_late`, or `missed`. Clients cannot submit or directly alter it. |
 | `created_at`, `published_at` | datetime/null | Server timestamps. |
@@ -1350,6 +1353,10 @@ The frontend must:
 16. Keep patient task actions short and obvious: Taken, Missed, Done, Save, Choose report, Upload.
 17. Never accept a free-text medication-miss reason; submit the selected coded reason.
 18. Send uploads as multipart without a JSON `Content-Type` header.
+19. Show only one care-plan send action; keep the single-advisory publish API available for integrations, not as a duplicate provider button.
+20. For catalog medications, display dose form, route and method as trusted read-only metadata. Do not ask the provider to re-enter them.
+21. Show investigation priority as a small constrained choice group and show that report upload is required.
+22. Keep notification routing defaults out of the clinical form; the provider chooses the clinical rule and severity, while the backend applies the documented delivery default.
 
 ## 19. End-to-end acceptance example
 

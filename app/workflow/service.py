@@ -616,7 +616,7 @@ def record_task_response(
             advisory=task.advisory,
             task=task,
             alert_type="value_threshold",
-            severity="high",
+            severity=value_rule.get("severity", "high"),
             message=f"{task.advisory.term} value {numeric_value} {measurement_unit} crossed the configured threshold",
             notification_mode=value_rule.get("notification", "immediate"),
         )
@@ -831,7 +831,9 @@ def evaluate_overdue_tasks(
                 advisory=task.advisory,
                 task=task,
                 alert_type="non_response",
-                severity="high" if task.task_type == "investigation" else "medium",
+                severity=(configuration.get("non_response_warning") or {}).get(
+                    "severity", "high" if task.task_type == "investigation" else "medium"
+                ),
                 message=f"No response received for {task.advisory.term} before the clinical grace period expired",
                 notification_mode=notification_mode,
             )

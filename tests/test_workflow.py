@@ -62,10 +62,10 @@ def test_publication_generates_schedule_task_and_coded_medication_response(integ
         integration_client,
         plan,
         provider,
-        concept_id="demo_term_paracetamol",
-        term="Paracetamol",
+        concept_id="2647801000189105",
+        term="Levaz 500 mg oral tablet",
         tag="medication",
-        configuration=_common(dose_value=500, dose_unit="mg", route="oral"),
+        configuration=_common(dose_value=1, dose_unit="tablet", route="oral"),
     )
 
     published = _publish(integration_client, plan, advisory, provider)
@@ -141,7 +141,7 @@ def test_allergy_conflict_blocks_publication_and_generates_alert(integration_cli
     provider = register_provider(integration_client, "9876501412")
     integration_client.post(
         "/me/allergies",
-        json={"allergen_term": "Paracetamol"},
+        json={"allergen_term": "Levofloxacin"},
         headers=headers(patient),
     )
     grant_provider_access(integration_client, patient, provider)
@@ -150,10 +150,10 @@ def test_allergy_conflict_blocks_publication_and_generates_alert(integration_cli
         integration_client,
         plan,
         provider,
-        concept_id="demo_term_paracetamol",
-        term="Paracetamol",
+        concept_id="2647801000189105",
+        term="Levaz 500 mg oral tablet",
         tag="medication",
-        configuration=_common(dose_value=500, dose_unit="mg", route="oral"),
+        configuration=_common(dose_value=1, dose_unit="tablet", route="oral"),
     )
     blocked = integration_client.post(
         f"/care-plans/{plan['id']}/advisories/{advisory['id']}/publish",
@@ -197,6 +197,7 @@ def test_measurement_threshold_generates_provider_alert(integration_client):
                 "threshold_value": 100.4,
                 "measurement_unit": "°F",
                 "notification": "immediate",
+                "severity": "critical",
             },
         ),
     )
@@ -219,6 +220,7 @@ def test_measurement_threshold_generates_provider_alert(integration_client):
     assert len(response.json()["data"]["deliveries"]) == 2
     alerts = integration_client.get("/provider/alerts?alert_status=OPEN", headers=headers(provider))
     assert alerts.json()["data"]["alerts"][0]["alert_type"] == "value_threshold"
+    assert alerts.json()["data"]["alerts"][0]["severity"] == "critical"
 
 
 def test_investigation_report_upload_is_private_validated_and_hash_verified(

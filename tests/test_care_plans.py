@@ -74,6 +74,17 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
     assert drug_options.json()["data"]["options"]["routes"] == ["oral"]
     assert drug_options.json()["data"]["options"]["medication_details"]["generic"] == "Levofloxacin"
 
+    legacy_drug_search = integration_client.get(
+        "/terminology/provider-terms?query=para", headers=headers(provider)
+    )
+    assert legacy_drug_search.status_code == 200
+    assert legacy_drug_search.json()["data"]["terms"] == []
+    legacy_drug_options = integration_client.get(
+        "/terminology/provider-terms/demo_term_paracetamol/advisory-options",
+        headers=headers(provider),
+    )
+    assert legacy_drug_options.status_code == 400
+
     tampered = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
         json={
@@ -212,7 +223,7 @@ def test_medication_allergy_warning_is_blocking_and_visible(integration_client):
     provider = register_provider(integration_client, "9876501232")
     allergy = integration_client.post(
         "/me/allergies",
-        json={"allergen_term": "Paracetamol"},
+        json={"allergen_term": "Levofloxacin"},
         headers=headers(patient),
     )
     assert allergy.status_code == 201
@@ -228,12 +239,12 @@ def test_medication_allergy_warning_is_blocking_and_visible(integration_client):
     advisory = integration_client.post(
         f"/care-plans/{plan['id']}/advisories",
         json={
-            "concept_id": "demo_term_paracetamol",
-            "term": "Paracetamol",
+            "concept_id": "2647801000189105",
+            "term": "Levaz 500 mg oral tablet",
             "tag": "medication",
             "configuration": {
-                "dose_value": 500,
-                "dose_unit": "mg",
+                "dose_value": 1,
+                "dose_unit": "tablet",
                 "route": "oral",
                 "frequency": "once_daily",
                 "duration_value": 3,

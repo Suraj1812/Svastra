@@ -115,9 +115,20 @@ def patient_caregivers(
 @router.get("/patients")
 def linked_patients(
     relationship_status: str = Query("ALL", alias="status", pattern="^(ACTIVE|INACTIVE|ALL)$"),
+    include_mobile: bool = Query(False),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if include_mobile and current_user.role != "provider":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only providers may request patient mobile numbers",
+        )
+    if include_mobile and relationship_status != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Patient mobile numbers require an ACTIVE relationship filter",
+        )
     if current_user.role == "provider":
         links = get_provider_patients(
             db,
@@ -138,7 +149,16 @@ def linked_patients(
     if relationship_status == "INACTIVE":
         links = [link for link in links if link.status == "ended"]
     return success_response(
-        {"relationships": [serialize_relationship(link, viewer_id=current_user.id) for link in links]}
+        {
+            "relationships": [
+                serialize_relationship(
+                    link,
+                    viewer_id=current_user.id,
+                    include_mobile=include_mobile,
+                )
+                for link in links
+            ]
+        }
     )
 
 

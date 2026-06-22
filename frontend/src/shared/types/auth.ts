@@ -147,6 +147,7 @@ export type AdvisoryConfigurationOptions = {
   frequencies: Array<{ value: string; label: string }>;
   duration_units: string[];
   notifications: string[];
+  instruction_suggestions?: string[];
   dose_units?: string[];
   routes?: string[];
   measurement_units?: string[];

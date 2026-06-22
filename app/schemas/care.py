@@ -43,13 +43,15 @@ class ValueWarning(BaseModel):
     threshold_value: float = Field(..., ge=-1000000, le=1000000)
     measurement_unit: str = Field(..., min_length=1, max_length=24)
     notification: Notification = "immediate"
+    severity: Literal["low", "medium", "high", "critical"] = "high"
 
 
 class NonResponseWarning(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     clinical_grace_minutes: int = Field(..., ge=1, le=1440)
-    notification: Notification
+    notification: Notification = "immediate"
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
 
 
 class BaseConfiguration(BaseModel):

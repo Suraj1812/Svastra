@@ -18,7 +18,7 @@ The provider-to-patient advisory flow is implemented end to end. Week 3 executio
 | Internal concept IDs hidden from clinical UI | Pass | Search results render only term and category |
 | Server-resolved advisory category | Pass | Concept, exact term and tag are checked against terminology storage |
 | Medication controls | Pass | Positive numeric dose, approved dose unit, route, frequency, duration and instructions |
-| Drug catalog integration | Pass | Levaz and Loxof OZ are searchable; catalog metadata narrows tablet/oral controls |
+| Drug catalog integration | Pass | Only approved catalog medications are searchable for new advice; form, route and method are server-enforced |
 | Measurement controls | Pass | Term-specific unit metadata and optional same-unit value warning |
 | Investigation controls | Pass | Frequency, duration, instructions and priority; no forced Friday attachment |
 | Recommendation controls | Pass | Selected recommendation term plus common controls; no duplicate forced instruction |

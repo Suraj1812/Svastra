@@ -78,10 +78,13 @@ def add_advisory(
         configuration=configuration,
     )
     if tag == "medication":
+        medication_details = get_advisory_options(db, concept_id=concept_id)["options"][
+            "medication_details"
+        ]
         validated_configuration["allergy_warnings"] = check_medication_allergies(
             db,
             patient_id=care_plan.patient_id,
-            medication_term=term,
+            medication_terms=[term, medication_details["generic"]],
         )
     duplicate = db.query(Advisory).filter(
         Advisory.care_plan_id == care_plan.id,

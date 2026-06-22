@@ -111,7 +111,7 @@ performance controls and incident checks.
 - CEP payloads have strict event-specific validation and a 64 KiB ceiling.
 - Advisory CEPs are cross-checked against stored plan ownership, active consent,
   published status, concept, term, type, and Week 3 execution state.
-- Medication controls can be narrowed by the approved IDE drug-catalog metadata;
+- New medication advisories accept only approved IDE drug-catalog concepts; dose form, route and administration method are server-derived;
   internal concept identifiers are not rendered in clinical screens.
 - Task generation is capped at 500 per advisory.
 - Medication-miss reasons must use exact approved coded terminology.
