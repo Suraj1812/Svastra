@@ -62,6 +62,10 @@ confirmation body: `{"confirmed": true}`. No second OTP is requested.
 See [api_contract.md](./api_contract.md) for every endpoint, request/response
 field, validation rule, role boundary, CEP route, and frontend integration flow.
 
+See [docs/care-plan-builder-advisory-payload-guide.md](./docs/care-plan-builder-advisory-payload-guide.md)
+for the practical Care Plan Builder handoff: screen behavior, situations,
+payload examples, responses, validation rules, and QA checks.
+
 See [docs/api-event-monitor-operations.md](./docs/api-event-monitor-operations.md)
 for monitor architecture, privacy rules, filters, status interpretation,
 performance controls and incident checks.

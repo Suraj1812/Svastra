@@ -7,6 +7,8 @@ Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
 
+For a practical frontend/backend handoff of the Care Plan Builder, including screen behavior, situations, exact advisory payloads, patient task responses, upload examples, and QA checks, see `docs/care-plan-builder-advisory-payload-guide.md`.
+
 ## 1. What the backend does
 
 In ordinary language, the backend enforces this sequence:
