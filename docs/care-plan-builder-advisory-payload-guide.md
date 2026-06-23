@@ -29,7 +29,7 @@ The screen has only two modes.
 | Mode | UI fields/buttons | Backend source |
 | --- | --- | --- |
 | Existing plan | `Search or select care plan` dropdown, `New care plan` button. Dropdown label should be `care plan name — patient name — mobile`. | `GET /care-plans` and `GET /relationships/patients?status=ACTIVE&include_mobile=true` |
-| New care plan | `Linked patient`, `Care plan name`, `Create`, `Cancel`. Patient dropdown label should be `patient name — mobile`. | `POST /care-plans` |
+| New care plan | `Linked patient`, `Care plan name`, `Diagnosis`, `SNOMED / concept ID`, optional `Notes`, `Create`, `Cancel`. Patient dropdown label should be `patient name — mobile`. | `POST /care-plans` |
 
 Do not show provider name as an editable/read-only field. The backend already knows the provider from `X-Session-Token`.
 
@@ -56,6 +56,8 @@ The frontend must not invent fields. It should first call advisory options and r
 | Published advisories | Already sent advisories; immutable from the authoring UI. |
 
 If any draft advisory has `allergy_warnings`, disable send and show the warning. Backend will also block publication.
+
+Draft advisories in `Ready to send` can be edited or deleted. Published advisories must not show edit/delete controls, and backend rejects edit/delete attempts for them.
 
 ## 4. End-to-end situation flow
 
@@ -219,7 +221,11 @@ Sample response:
         },
         "provider_id": 2,
         "title": "Fever plan",
-        "diagnosis": null,
+        "diagnosis": {
+          "conceptId": "54150009",
+          "term": "Upper Respiratory Tract Infection",
+          "notes": "Cough and fever monitoring"
+        },
         "status": "DRAFT",
         "archived_at": null,
         "advisories": [],
@@ -247,7 +253,11 @@ Content-Type: application/json
 {
   "patient_id": 10,
   "title": "Fever plan",
-  "diagnosis": null
+  "diagnosis": {
+    "conceptId": "54150009",
+    "term": "Upper Respiratory Tract Infection",
+    "notes": "Cough and fever monitoring"
+  }
 }
 ```
 
@@ -257,7 +267,7 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- |
 | `patient_id` | integer | Yes | Greater than 0; patient must have ACTIVE provider-patient relationship with current provider. | Frontend from linked-patient dropdown. |
 | `title` | string | Yes | 3 to 160 characters. | Provider. |
-| `diagnosis` | string/null | No | Max 255 characters. Current simple UI can send `null`. | Optional. |
+| `diagnosis` | object | Yes for Week 4 UI | `{conceptId, term, notes}`. `conceptId` is 1–64 safe chars, `term` is 2–160 chars, `notes` is optional up to 500 chars. | Provider. |
 
 Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `created_at`, or `updated_at`.
 
@@ -274,7 +284,11 @@ Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `creat
     },
     "provider_id": 2,
     "title": "Fever plan",
-    "diagnosis": null,
+    "diagnosis": {
+      "conceptId": "54150009",
+      "term": "Upper Respiratory Tract Infection",
+      "notes": "Cough and fever monitoring"
+    },
     "status": "DRAFT",
     "archived_at": null,
     "advisories": [],
@@ -294,6 +308,62 @@ Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `creat
 | Patient ID is missing/0/string | `422` |
 | Title is too short/too long | `422` |
 | Extra field sent | `422` |
+
+## 7.1 Edit or delete a Ready-to-send advisory
+
+Only draft advisories can be changed. In the UI these are the cards under `Ready to send`.
+
+### Edit draft advisory
+
+```http
+PUT /care-plans/{care_plan_id}/advisories/{advisory_id}
+X-Session-Token: <provider-session>
+Content-Type: application/json
+```
+
+Body is the same as Add advisory:
+
+```json
+{
+  "concept_id": "demo_term_temperature",
+  "term": "Temperature",
+  "tag": "measurement",
+  "configuration": {
+    "frequency": "four_times_daily",
+    "duration_value": 2,
+    "duration_unit": "days",
+    "measurement_unit": "°C"
+  }
+}
+```
+
+Success response returns the updated advisory and message `Draft advisory updated`.
+
+### Delete draft advisory
+
+```http
+DELETE /care-plans/{care_plan_id}/advisories/{advisory_id}
+X-Session-Token: <provider-session>
+```
+
+Success response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "advisory_id": 51,
+    "care_plan_id": 25,
+    "patient_id": 10,
+    "advisory_type": "measurement",
+    "deleted": true
+  },
+  "message": "Draft advisory deleted",
+  "error": null
+}
+```
+
+Published advisories return `400` with `Published advisories are read-only`.
 
 ## 8. Search approved clinical terms
 
@@ -841,7 +911,11 @@ No other fields are accepted.
     },
     "provider_id": 2,
     "title": "Fever plan",
-    "diagnosis": null,
+    "diagnosis": {
+      "conceptId": "54150009",
+      "term": "Upper Respiratory Tract Infection",
+      "notes": "Cough and fever monitoring"
+    },
     "status": "ACTIVE",
     "archived_at": null,
     "advisories": [
@@ -1508,7 +1582,10 @@ Do not send these from the Care Plan Builder:
 | --- | --- |
 | Provider with ACTIVE patient relationship opens builder | Patient dropdown shows `name — mobile`; care-plan dropdown shows `plan — name — mobile`. |
 | Provider without linked patients | Builder shows active relationship warning and create is disabled. |
-| New care plan sends only `patient_id`, `title`, `diagnosis` | Backend returns `DRAFT` plan. |
+| New care plan sends only `patient_id`, `title`, structured `diagnosis` | Backend returns `DRAFT` plan with `{conceptId, term, notes}` diagnosis. |
+| Ready-to-send draft edit | Backend updates the draft advisory; audit has `advisory.updated`. |
+| Ready-to-send draft delete | Backend deletes the draft advisory; audit has `advisory.deleted`. |
+| Published advisory edit/delete | No UI buttons; direct API tampering returns `400 Published advisories are read-only`. |
 | Search term under 3 characters | No API search or backend rejects. |
 | Search medication not in catalog | No result / options rejected. |
 | Tamper concept-term-tag mismatch | Backend returns `400`. |
@@ -1530,7 +1607,7 @@ Do not send these from the Care Plan Builder:
 1. On builder load, call linked patients and care plans together.
 2. If no plans exist, open new-plan mode.
 3. If plans exist, show existing plan selector and `New care plan`.
-4. On new plan create, call `POST /care-plans`, reload plans, select the created plan.
+4. On new plan create, send linked patient, care-plan name, and structured diagnosis, then reload plans and select the created plan.
 5. In Add advice, search only after 3 characters.
 6. After selecting a term, call advisory-options.
 7. Render only fields for that type.
@@ -1538,7 +1615,8 @@ Do not send these from the Care Plan Builder:
 9. Send the exact type payload to `POST /care-plans/{id}/advisories`.
 10. Reload plan list after add.
 11. In Advisories section, show draft and published groups.
-12. Disable send if draft advisory has blocking allergy warning.
-13. On send, call publish with `{"confirmed": true}` only.
+12. Draft `Ready to send` cards show Edit/Delete; published cards are read-only.
+13. Disable send if draft advisory has blocking allergy warning.
+14. On send, call publish with `{"confirmed": true}` only.
 
 This keeps the UI simple for kids, older people, and non-technical users while keeping backend security strict.

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.audit.audit_service import record_audit_event
 from app.care.advisory_service import serialize_advisory
+from app.care.diagnosis import diagnosis_columns, serialize_diagnosis
 from app.models.care import Advisory, CarePlan
 from app.models.user import User
 from app.relationships.relationship_validator import has_active_provider_relationship
@@ -43,11 +44,12 @@ def create_care_plan(
         patient_id=patient_id,
     ):
         raise PermissionError("Only a consent-backed linked provider can create a care plan")
+    normalized_diagnosis = diagnosis_columns(diagnosis)
     plan = CarePlan(
         provider_id=provider.id,
         patient_id=patient_id,
         title=title,
-        diagnosis=diagnosis,
+        **normalized_diagnosis,
         status="DRAFT",
     )
     db.add(plan)
@@ -77,8 +79,12 @@ def update_care_plan(
     plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)
     if plan.is_archived:
         raise ValueError("Archived care plans cannot be updated")
+    normalized_diagnosis = diagnosis_columns(diagnosis)
     plan.title = title
-    plan.diagnosis = diagnosis
+    plan.diagnosis = normalized_diagnosis["diagnosis"]
+    plan.diagnosis_concept_id = normalized_diagnosis["diagnosis_concept_id"]
+    plan.diagnosis_term = normalized_diagnosis["diagnosis_term"]
+    plan.diagnosis_notes = normalized_diagnosis["diagnosis_notes"]
     db.commit()
     db.refresh(plan)
     record_audit_event(
@@ -141,7 +147,7 @@ def _advisory_publish_payload(plan: CarePlan, advisory: Advisory, provider: User
         "patient_id": plan.patient_id,
         "care_plan_id": plan.id,
         "title": plan.title,
-        "diagnosis": plan.diagnosis,
+        "diagnosis": serialize_diagnosis(plan),
         "execution_status": advisory.execution_status,
         "advisories": [
             {
@@ -287,7 +293,7 @@ def serialize_care_plan(plan: CarePlan):
         "patient": {"id": plan.patient.id, "full_name": plan.patient.full_name},
         "provider_id": plan.provider_id,
         "title": plan.title,
-        "diagnosis": plan.diagnosis,
+        "diagnosis": serialize_diagnosis(plan),
         "status": "INACTIVE" if plan.is_archived else plan.status,
         "archived_at": plan.archived_at,
         "advisories": [serialize_advisory(advisory) for advisory in plan.advisories],

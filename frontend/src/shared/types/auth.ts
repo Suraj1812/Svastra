@@ -228,6 +228,7 @@ export type AdvisoryOptionsResult = {
 
 export type AdvisorySummary = {
   id: number;
+  concept_id: string;
   advisory_type: ProviderTerm["tag"];
   term: string;
   tag: ProviderTerm["tag"];
@@ -245,12 +246,18 @@ export type AdvisorySummary = {
   created_at: string;
 };
 
+export type DiagnosisSummary = {
+  conceptId: string;
+  term: string;
+  notes: string | null;
+};
+
 export type CarePlanSummary = {
   id: number;
   patient: { id: number; full_name: string };
   provider_id: number;
   title: string;
-  diagnosis: string | null;
+  diagnosis: DiagnosisSummary | string | null;
   status: "DRAFT" | "ACTIVE" | "INACTIVE";
   archived_at: string | null;
   advisories: AdvisorySummary[];
@@ -268,7 +275,7 @@ export type PatientAdvisory = {
   execution_status: TaskExecutionStatus;
   created_at: string;
   published_at: string;
-  care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE" };
+  care_plan: { id: number; title: string; status: "ACTIVE" | "INACTIVE"; diagnosis: DiagnosisSummary | string | null };
 };
 
 export type EventDeliveryStatus = "pending" | "sent" | "acknowledged" | "failed" | "untracked";

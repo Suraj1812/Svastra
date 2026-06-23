@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -21,19 +21,46 @@ DurationUnit = Literal["hours", "days", "weeks", "months"]
 Notification = Literal["immediate", "daily_summary", "both", "none"]
 
 
+class DiagnosisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    conceptId: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+    )
+    term: str = Field(..., min_length=2, max_length=160)
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+
 class CarePlanCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     patient_id: int = Field(..., gt=0)
     title: str = Field(..., min_length=3, max_length=160)
-    diagnosis: Optional[str] = Field(default=None, max_length=255)
+    diagnosis: Optional[Union[DiagnosisRequest, str]] = None
+
+    @field_validator("diagnosis")
+    @classmethod
+    def legacy_diagnosis_length(cls, value):
+        if isinstance(value, str) and len(value) > 255:
+            raise ValueError("Diagnosis must be 255 characters or fewer")
+        return value
 
 
 class CarePlanUpdateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     title: str = Field(..., min_length=3, max_length=160)
-    diagnosis: Optional[str] = Field(default=None, max_length=255)
+    diagnosis: Optional[Union[DiagnosisRequest, str]] = None
+
+    @field_validator("diagnosis")
+    @classmethod
+    def legacy_diagnosis_length(cls, value):
+        if isinstance(value, str) and len(value) > 255:
+            raise ValueError("Diagnosis must be 255 characters or fewer")
+        return value
 
 
 class ValueWarning(BaseModel):

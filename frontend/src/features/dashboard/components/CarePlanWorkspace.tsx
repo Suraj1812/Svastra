@@ -23,14 +23,18 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import RemoveIcon from "@mui/icons-material/Remove";
 import SearchIcon from "@mui/icons-material/Search";
 
 import {
+  deleteJsonWithSession,
   getJsonWithSession,
   postJsonWithSession,
+  putJsonWithSession,
 } from "../../../shared/api/client";
 import type {
   AdvisorySummary,
@@ -59,6 +63,12 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function diagnosisLabel(diagnosis: CarePlanSummary["diagnosis"]) {
+  if (!diagnosis) return "";
+  if (typeof diagnosis === "string") return diagnosis;
+  return diagnosis.notes ? `${diagnosis.term} · ${diagnosis.notes}` : diagnosis.term;
+}
+
 function NumberStepper({ label, value, onChange, min = 1, max = 365, step = 1 }: { label: string; value: string; onChange: (value: string) => void; min?: number; max?: number; step?: number }) {
   const numeric = Number(value);
   const update = (next: number) => onChange(String(Math.min(max, Math.max(min, next))));
@@ -80,7 +90,7 @@ function NumberStepper({ label, value, onChange, min = 1, max = 365, step = 1 }:
   );
 }
 
-function AdvisoryCard({ advisory }: { advisory: AdvisorySummary }) {
+function AdvisoryCard({ advisory, onEdit, onDelete }: { advisory: AdvisorySummary; onEdit?: () => void; onDelete?: () => void }) {
   return (
     <Paper variant="outlined" sx={{ p: 2.25 }}>
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={1.5}>
@@ -88,7 +98,11 @@ function AdvisoryCard({ advisory }: { advisory: AdvisorySummary }) {
           <Typography variant="h3">{advisory.term}</Typography>
           <Typography color="text.secondary">{tagLabel(advisory.tag)}</Typography>
         </Stack>
-        <Chip color={advisory.status === "PUBLISHED" ? "success" : "warning"} label={optionLabel(advisory.status)} />
+        <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+          <Chip color={advisory.status === "PUBLISHED" ? "success" : "warning"} label={optionLabel(advisory.status)} />
+          {onEdit ? <Button size="small" variant="outlined" startIcon={<EditOutlinedIcon />} onClick={onEdit}>Edit</Button> : null}
+          {onDelete ? <Button size="small" color="error" variant="outlined" startIcon={<DeleteOutlineIcon />} onClick={onDelete}>Delete</Button> : null}
+        </Stack>
       </Stack>
       {advisory.allergy_warnings?.map((warning) => (
         <Alert key={`${warning.code}-${warning.allergen}`} severity="warning" sx={{ mt: 1.5 }}>
@@ -117,6 +131,9 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
 
   const [patientId, setPatientId] = useState("");
   const [title, setTitle] = useState("");
+  const [diagnosisTerm, setDiagnosisTerm] = useState("");
+  const [diagnosisConceptId, setDiagnosisConceptId] = useState("");
+  const [diagnosisNotes, setDiagnosisNotes] = useState("");
 
   const [search, setSearch] = useState("");
   const [terms, setTerms] = useState<ProviderTerm[]>([]);
@@ -149,6 +166,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
   const [nonResponseNotification, setNonResponseNotification] = useState("immediate");
   const [allergyWarning, setAllergyWarning] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [editingAdvisoryId, setEditingAdvisoryId] = useState<number | null>(null);
   const optionRequest = useRef(0);
   const searchRequest = useRef(0);
 
@@ -183,6 +201,46 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     void load();
   }, [load]);
 
+  function clearAdvisoryEditor() {
+    optionRequest.current += 1;
+    setEditingAdvisoryId(null);
+    setSelectedTerm(null);
+    setOptions(null);
+    setSearch("");
+    setTerms([]);
+    setInstructions("");
+    setDoseValue("");
+    setValueWarningEnabled(false);
+    setWarningThreshold("");
+    setNonResponseEnabled(false);
+    setAllergyWarning(null);
+  }
+
+  function applyConfiguration(configuration: Record<string, unknown>, loadedOptions: AdvisoryConfigurationOptions) {
+    setFrequency(String(configuration.frequency || loadedOptions.frequencies[0]?.value || "once_daily"));
+    setDurationValue(String(configuration.duration_value || "7"));
+    setDurationUnit(String(configuration.duration_unit || loadedOptions.duration_units[1] || loadedOptions.duration_units[0] || "days"));
+    setInstructions(String(configuration.additional_instructions || ""));
+    setDoseValue(configuration.dose_value == null ? "" : String(configuration.dose_value));
+    setDoseUnit(String(configuration.dose_unit || loadedOptions.dose_units?.[0] || "mg"));
+    setRoute(String(configuration.route || loadedOptions.routes?.[0] || "oral"));
+    setMeasurementUnit(String(configuration.measurement_unit || loadedOptions.measurement_units?.[0] || ""));
+    setPriority(String(configuration.priority || loadedOptions.priorities?.[0] || "routine"));
+    setDueDate(String(configuration.due_date || dueDate));
+    setAlertIfNotUploaded(configuration.alert_if_not_uploaded !== false);
+    setGraceDays(String(configuration.grace_period_value ?? "2"));
+    const valueWarning = configuration.value_warning as Record<string, unknown> | undefined;
+    setValueWarningEnabled(Boolean(valueWarning));
+    setWarningCondition(String(valueWarning?.condition || loadedOptions.comparators?.[0] || "more_than"));
+    setWarningThreshold(valueWarning?.threshold_value == null ? "" : String(valueWarning.threshold_value));
+    setWarningNotification(String(valueWarning?.notification || loadedOptions.notifications[0] || "immediate"));
+    setWarningSeverity(String(valueWarning?.severity || "high"));
+    const nonResponse = configuration.non_response_warning as Record<string, unknown> | undefined;
+    setNonResponseEnabled(Boolean(nonResponse));
+    setClinicalGraceMinutes(String(nonResponse?.clinical_grace_minutes || "60"));
+    setNonResponseNotification(String(nonResponse?.notification || loadedOptions.notifications[0] || "immediate"));
+  }
+
   useEffect(() => {
     if (search.trim().length < 3 || selectedTerm?.term === search) {
       searchRequest.current += 1;
@@ -212,6 +270,10 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       setError("Select a linked patient and enter a care-plan title of at least 3 characters.");
       return;
     }
+    if (diagnosisTerm.trim().length < 2 || diagnosisConceptId.trim().length < 1) {
+      setError("Enter the diagnosis name and SNOMED/concept ID.");
+      return;
+    }
     setWorking(true);
     setError(null);
     try {
@@ -220,12 +282,19 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
         {
           patient_id: Number(patientId),
           title: title.trim(),
-          diagnosis: null,
+          diagnosis: {
+            conceptId: diagnosisConceptId.trim(),
+            term: diagnosisTerm.trim(),
+            notes: diagnosisNotes.trim() || null,
+          },
         },
         sessionToken,
       );
       setNotice("Care-plan draft created. Add a clinical advisory next.");
       setTitle("");
+      setDiagnosisTerm("");
+      setDiagnosisConceptId("");
+      setDiagnosisNotes("");
       await load();
       setSelectedPlanId(plan.id);
       setCreatingPlan(false);
@@ -236,13 +305,15 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     }
   }
 
-  async function selectTerm(term: ProviderTerm) {
+  async function selectTerm(term: ProviderTerm, existingConfiguration?: Record<string, unknown>) {
     const requestId = ++optionRequest.current;
     setSelectedTerm(term);
     setSearch(term.term);
     setTerms([]);
     setOptions(null);
     setDoseValue("");
+    setDurationValue("7");
+    setInstructions("");
     setValueWarningEnabled(false);
     setWarningThreshold("");
     setNonResponseEnabled(false);
@@ -253,16 +324,20 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       );
       if (requestId !== optionRequest.current) return;
       setOptions(result.options);
-      setFrequency(result.options.frequencies[0]?.value || "once_daily");
-      setDurationUnit(result.options.duration_units[1] || result.options.duration_units[0] || "days");
-      setDoseUnit(result.options.dose_units?.[1] || result.options.dose_units?.[0] || "mg");
-      setRoute(result.options.routes?.[0] || "oral");
-      if (result.options.medication_details) setDoseValue("1");
-      setMeasurementUnit(result.options.measurement_units?.[0] || "");
-      setPriority(result.options.priorities?.[0] || "routine");
-      setWarningCondition(result.options.comparators?.[0] || "more_than");
-      setWarningNotification(result.options.notifications[0] || "immediate");
-      setNonResponseNotification(result.options.notifications[0] || "immediate");
+      if (existingConfiguration) {
+        applyConfiguration(existingConfiguration, result.options);
+      } else {
+        setFrequency(result.options.frequencies[0]?.value || "once_daily");
+        setDurationUnit(result.options.duration_units[1] || result.options.duration_units[0] || "days");
+        setDoseUnit(result.options.dose_units?.[1] || result.options.dose_units?.[0] || "mg");
+        setRoute(result.options.routes?.[0] || "oral");
+        if (result.options.medication_details) setDoseValue("1");
+        setMeasurementUnit(result.options.measurement_units?.[0] || "");
+        setPriority(result.options.priorities?.[0] || "routine");
+        setWarningCondition(result.options.comparators?.[0] || "more_than");
+        setWarningNotification(result.options.notifications[0] || "immediate");
+        setNonResponseNotification(result.options.notifications[0] || "immediate");
+      }
     } catch (optionsError) {
       if (requestId !== optionRequest.current) return;
       setSelectedTerm(null);
@@ -305,7 +380,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     return common;
   }, [alertIfNotUploaded, clinicalGraceMinutes, doseUnit, doseValue, dueDate, durationUnit, durationValue, frequency, graceDays, instructions, measurementUnit, nonResponseEnabled, nonResponseNotification, priority, route, selectedTerm?.tag, valueWarningEnabled, warningCondition, warningNotification, warningSeverity, warningThreshold]);
 
-  async function addAdvisory() {
+  async function saveAdvisory() {
     if (!selectedPlan || !selectedTerm) {
       setError("Choose a draft and select an approved clinical term.");
       return;
@@ -341,24 +416,63 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
     setWorking(true);
     setError(null);
     try {
-      const created = await postJsonWithSession<AdvisorySummary>(
-        `/care-plans/${selectedPlan.id}/advisories`,
-        {
-          concept_id: selectedTerm.conceptId,
-          term: selectedTerm.term,
-          tag: selectedTerm.tag,
-          configuration: advisoryConfiguration,
-        },
-        sessionToken,
-      );
-      setNotice(`${selectedTerm.term} added to the care plan.`);
-      setAllergyWarning(created.allergy_warnings?.[0]?.message || null);
-      setSelectedTerm(null);
-      setSearch("");
-      setInstructions("");
+      const payload = {
+        concept_id: selectedTerm.conceptId,
+        term: selectedTerm.term,
+        tag: selectedTerm.tag,
+        configuration: advisoryConfiguration,
+      };
+      const saved = editingAdvisoryId
+        ? await putJsonWithSession<AdvisorySummary>(
+          `/care-plans/${selectedPlan.id}/advisories/${editingAdvisoryId}`,
+          payload,
+          sessionToken,
+        )
+        : await postJsonWithSession<AdvisorySummary>(
+          `/care-plans/${selectedPlan.id}/advisories`,
+          payload,
+          sessionToken,
+        );
+      setNotice(`${selectedTerm.term} ${editingAdvisoryId ? "updated" : "added"} in the care plan.`);
+      setAllergyWarning(saved.allergy_warnings?.[0]?.message || null);
+      clearAdvisoryEditor();
       await load();
     } catch (advisoryError) {
-      setError(advisoryError instanceof Error ? advisoryError.message : "Advisory could not be added");
+      setError(advisoryError instanceof Error ? advisoryError.message : "Advisory could not be saved");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function startEditAdvisory(advisory: AdvisorySummary) {
+    setEditingAdvisoryId(advisory.id);
+    setError(null);
+    await selectTerm(
+      {
+        conceptId: advisory.concept_id,
+        term: advisory.term,
+        tag: advisory.tag,
+      },
+      advisory.configuration,
+    );
+  }
+
+  async function deleteDraftAdvisory(advisory: AdvisorySummary) {
+    if (!selectedPlan) return;
+    const confirmed = window.confirm(`Delete ${advisory.term} from Ready to send?`);
+    if (!confirmed) return;
+    setWorking(true);
+    setError(null);
+    try {
+      await deleteJsonWithSession(
+        `/care-plans/${selectedPlan.id}/advisories/${advisory.id}`,
+        sessionToken,
+      );
+      if (editingAdvisoryId === advisory.id) clearAdvisoryEditor();
+      setNotice(`${advisory.term} deleted.`);
+      await load();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Advisory could not be deleted");
     } finally {
       setWorking(false);
     }
@@ -418,6 +532,15 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField fullWidth label="Care plan name" value={title} onChange={(event) => setTitle(event.target.value)} inputProps={{ maxLength: 160 }} />
               </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField fullWidth label="Diagnosis" value={diagnosisTerm} onChange={(event) => setDiagnosisTerm(event.target.value)} inputProps={{ maxLength: 160 }} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField fullWidth label="SNOMED / concept ID" value={diagnosisConceptId} onChange={(event) => setDiagnosisConceptId(event.target.value)} inputProps={{ maxLength: 64 }} />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField fullWidth label="Notes (optional)" value={diagnosisNotes} onChange={(event) => setDiagnosisNotes(event.target.value)} inputProps={{ maxLength: 500 }} />
+              </Grid>
             </Grid>
           ) : (
             <Autocomplete
@@ -432,7 +555,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
           {creatingPlan ? (
             <Stack direction="row" spacing={1}>
               <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={createDraft} disabled={working || activeRelationships.length === 0}>Create</Button>
-              {plans.length > 0 ? <Button onClick={() => { setCreatingPlan(false); setPatientId(""); setTitle(""); }}>Cancel</Button> : null}
+              {plans.length > 0 ? <Button onClick={() => { setCreatingPlan(false); setPatientId(""); setTitle(""); setDiagnosisTerm(""); setDiagnosisConceptId(""); setDiagnosisNotes(""); }}>Cancel</Button> : null}
             </Stack>
           ) : null}
         </Stack>
@@ -442,7 +565,10 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
         <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={2.5}>
             <Typography variant="h3">2. Add advice</Typography>
-            <Typography color="text.secondary">{selectedPlan.title} · {selectedPlan.patient.full_name}</Typography>
+            <Typography color="text.secondary">
+              {selectedPlan.title} · {selectedPlan.patient.full_name}
+              {diagnosisLabel(selectedPlan.diagnosis) ? ` · ${diagnosisLabel(selectedPlan.diagnosis)}` : ""}
+            </Typography>
             <TextField
               label="Search clinical term"
               value={search}
@@ -547,7 +673,12 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
                     </Stack>
                   </Grid> : null}
                 </Grid>
-                <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={addAdvisory} disabled={working} sx={{ alignSelf: "flex-start" }}>Add Advisory</Button>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={saveAdvisory} disabled={working}>
+                    {editingAdvisoryId ? "Save changes" : "Add advisory"}
+                  </Button>
+                  {editingAdvisoryId ? <Button onClick={clearAdvisoryEditor} disabled={working}>Cancel edit</Button> : null}
+                </Stack>
               </Stack>
             ) : selectedTerm ? <Alert severity="info">Loading approved controls…</Alert> : null}
           </Stack>
@@ -565,7 +696,14 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
                   <Typography variant="h4">Ready to send</Typography>
                   {selectedPlan.status !== "INACTIVE" ? <Button variant="contained" color="success" startIcon={<PublishOutlinedIcon />} onClick={() => setPublishOpen(true)} disabled={draftAdvisories.some((item) => item.allergy_warnings.length > 0)}>Send care plan</Button> : null}
                 </Stack>
-                {draftAdvisories.map((advisory) => <AdvisoryCard key={advisory.id} advisory={advisory} />)}
+                {draftAdvisories.map((advisory) => (
+                  <AdvisoryCard
+                    key={advisory.id}
+                    advisory={advisory}
+                    onEdit={() => void startEditAdvisory(advisory)}
+                    onDelete={() => void deleteDraftAdvisory(advisory)}
+                  />
+                ))}
               </Stack>
             ) : null}
             {publishedAdvisories.length > 0 ? (

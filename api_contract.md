@@ -217,7 +217,7 @@ Registration dropdown values must be sent exactly as supplied by `data/svp_entry
 | `patient` | object | Patient `id` and `full_name`. |
 | `provider_id` | positive integer | Owning provider. |
 | `title` | string, 3–160 chars | Care-plan name. |
-| `diagnosis` | string up to 255 or null | Clinical context. |
+| `diagnosis` | object, string, or null | Structured diagnosis `{conceptId, term, notes}` for Week 4 flows. Legacy string is still accepted for older local data. |
 | `status` | enum | `DRAFT`, `ACTIVE`, or `INACTIVE` when archived. |
 | `archived_at` | ISO datetime or null | Archive time. |
 | `advisories` | Advisory array | Draft and published advisories. |
@@ -297,6 +297,8 @@ message.send
 | Care plans | `PUT /care-plans/{id}` | Provider owner |
 | Care plans | `DELETE /care-plans/{id}` | Provider owner |
 | Advisories | `POST /care-plans/{id}/advisories` | Provider owner |
+| Advisories | `PUT /care-plans/{id}/advisories/{advisory_id}` | Provider owner, DRAFT only |
+| Advisories | `DELETE /care-plans/{id}/advisories/{advisory_id}` | Provider owner, DRAFT only |
 | Advisories | `POST /care-plans/{id}/advisories/{advisory_id}/publish` | Linked provider owner |
 | Advisories | `POST /care-plans/{id}/publish` | Linked provider owner |
 | Patient care | `GET /me/advisories` | Patient |
@@ -724,7 +726,7 @@ Authentication: provider with an ACTIVE consent-backed link to the patient.
 | --- | --- | --- | --- |
 | `patient_id` | positive integer | Yes | Must be actively linked to provider. |
 | `title` | string | Yes | 3–160 chars. |
-| `diagnosis` | string or null | No | Up to 255 chars. |
+| `diagnosis` | object, string, or null | No | Preferred Week 4 object: `{conceptId, term, notes}`. `conceptId` is 1–64 safe chars, `term` is 2–160 chars, `notes` is optional up to 500 chars. Legacy string remains accepted up to 255 chars. |
 
 Response: `201` CarePlan with `DRAFT` status.
 
@@ -747,7 +749,11 @@ Body:
 ```json
 {
   "title": "Post-operative monitoring",
-  "diagnosis": "Post appendicectomy"
+  "diagnosis": {
+    "conceptId": "54150009",
+    "term": "Upper Respiratory Tract Infection",
+    "notes": "Cough and fever monitoring"
+  }
 }
 ```
 
@@ -839,6 +845,7 @@ Created advisory response fields:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | positive integer | Internal advisory reference. |
+| `concept_id` | string | Internal approved terminology identifier returned for draft edit plumbing; do not show to normal users. |
 | `advisory_type`, `tag` | enum | Resolved clinical category. |
 | `term` | string | Human-readable approved term. |
 | `configuration` | object | Normalized validated configuration; unknown fields are absent because they are rejected. |
@@ -847,7 +854,31 @@ Created advisory response fields:
 | `execution_status` | enum | Server-owned: `pending`, `completed`, `completed_late`, or `missed`. Clients cannot submit or directly alter it. |
 | `created_at`, `published_at` | datetime/null | Server timestamps. |
 
-Security and consistency checks occur twice: when the advisory is authored and again when its CEP is published. The server rechecks plan ownership, non-archived state, active consent-backed relationship, terminology identity, type-specific schema, units, duplicate concept, stored advisory ownership, publication state, and immutable event fields. Creation and publication each write an audit entry.
+Security and consistency checks occur when the advisory is authored, updated, deleted, and again when its CEP is published. The server rechecks plan ownership, non-archived state, active consent-backed relationship, terminology identity, type-specific schema, units, duplicate concept, stored advisory ownership, publication state, and immutable event fields. Creation, draft update, draft delete, and publication each write an audit entry.
+
+### PUT /care-plans/{care_plan_id}/advisories/{advisory_id}
+
+Authentication: owning provider. Only `DRAFT` advisories can be edited. Published advisories are read-only and return `400`.
+
+Body is the same as `POST /care-plans/{care_plan_id}/advisories`, using the selected approved `concept_id`, exact `term`, exact `tag`, and type-specific `configuration`.
+
+This endpoint exists for the Care Plan Builder `Ready to send` section. It must not be used for already sent/published advisories.
+
+### DELETE /care-plans/{care_plan_id}/advisories/{advisory_id}
+
+Authentication: owning provider. Only `DRAFT` advisories can be deleted. Published advisories are read-only and return `400`.
+
+Response:
+
+```json
+{
+  "advisory_id": 8,
+  "care_plan_id": 3,
+  "patient_id": 41,
+  "advisory_type": "measurement",
+  "deleted": true
+}
+```
 
 ### POST /care-plans/{care_plan_id}/advisories/{advisory_id}/publish
 
@@ -879,7 +910,11 @@ Exact `advisory.publish` CEP body stored in the immutable timeline:
     "patient_id": 41,
     "care_plan_id": 3,
     "title": "Recovery monitoring",
-    "diagnosis": "Post appendicectomy",
+    "diagnosis": {
+      "conceptId": "54150009",
+      "term": "Upper Respiratory Tract Infection",
+      "notes": "Cough and fever monitoring"
+    },
     "execution_status": "pending",
     "advisories": [
       {

@@ -5,6 +5,12 @@ import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { getJsonWithSession } from "../../../shared/api/client";
 import type { PatientAdvisory } from "../../../shared/types/auth";
 
+function diagnosisLabel(diagnosis: PatientAdvisory["care_plan"]["diagnosis"]) {
+  if (!diagnosis) return "";
+  if (typeof diagnosis === "string") return diagnosis;
+  return diagnosis.notes ? `${diagnosis.term} · ${diagnosis.notes}` : diagnosis.term;
+}
+
 export function PatientAdvisories({ sessionToken }: { sessionToken: string }) {
   const [advisories, setAdvisories] = useState<PatientAdvisory[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +46,9 @@ export function PatientAdvisories({ sessionToken }: { sessionToken: string }) {
                     <Box><Typography variant="caption" color="text.secondary">{item.care_plan.title}</Typography><Typography variant="h3">{item.advisory}</Typography></Box>
                     <AssignmentTurnedInIcon color="primary" />
                   </Stack>
+                  {diagnosisLabel(item.care_plan.diagnosis) ? (
+                    <Alert severity="info">Diagnosis: {diagnosisLabel(item.care_plan.diagnosis)}</Alert>
+                  ) : null}
                   <Typography>{item.instruction}</Typography>
                   <Stack direction="row" spacing={1}>
                     <Chip size="small" label={item.advisory_type} />

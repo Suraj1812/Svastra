@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.api.serializers import client_ip
-from app.care.advisory_service import add_advisory, serialize_advisory
+from app.care.advisory_service import add_advisory, delete_advisory, serialize_advisory, update_advisory
 from app.care.allergy_service import add_patient_allergy, get_active_allergies, serialize_allergy
+from app.care.diagnosis import serialize_diagnosis
 from app.care.care_plan_service import (
     create_care_plan,
     archive_care_plan,
@@ -213,6 +214,57 @@ def create_advisory(
     return success_response(serialize_advisory(advisory), "Advisory added")
 
 
+@router.put("/care-plans/{care_plan_id}/advisories/{advisory_id}")
+def update_draft_advisory(
+    care_plan_id: int,
+    advisory_id: int,
+    payload: AdvisoryCreateRequest,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=current_user)
+        advisory = update_advisory(
+            db,
+            care_plan=plan,
+            provider=current_user,
+            advisory_id=advisory_id,
+            concept_id=payload.concept_id,
+            term=payload.term,
+            tag=payload.tag,
+            configuration=payload.configuration,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _care_error(error)
+    return success_response(serialize_advisory(advisory), "Draft advisory updated")
+
+
+@router.delete("/care-plans/{care_plan_id}/advisories/{advisory_id}")
+def delete_draft_advisory(
+    care_plan_id: int,
+    advisory_id: int,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _require_provider(current_user)
+    try:
+        plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=current_user)
+        deleted = delete_advisory(
+            db,
+            care_plan=plan,
+            provider=current_user,
+            advisory_id=advisory_id,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _care_error(error)
+    return success_response({**deleted, "deleted": True}, "Draft advisory deleted")
+
+
 @router.post("/care-plans/{care_plan_id}/publish")
 def publish_plan(
     care_plan_id: int,
@@ -319,6 +371,7 @@ def _patient_instruction(advisory: Advisory):
         "care_plan": {
             "id": advisory.care_plan.id,
             "title": advisory.care_plan.title,
+            "diagnosis": serialize_diagnosis(advisory.care_plan),
             "status": "INACTIVE" if advisory.care_plan.is_archived else advisory.care_plan.status,
         },
     }

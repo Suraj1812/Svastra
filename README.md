@@ -66,6 +66,9 @@ See [docs/care-plan-builder-advisory-payload-guide.md](./docs/care-plan-builder-
 for the practical Care Plan Builder handoff: screen behavior, situations,
 payload examples, responses, validation rules, and QA checks.
 
+See [docs/week4-monday-tuesday-compliance-report.md](./docs/week4-monday-tuesday-compliance-report.md)
+for the Week 4 Monday/Tuesday orchestration completion report.
+
 See [docs/api-event-monitor-operations.md](./docs/api-event-monitor-operations.md)
 for monitor architecture, privacy rules, filters, status interpretation,
 performance controls and incident checks.

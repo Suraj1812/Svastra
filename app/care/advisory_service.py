@@ -126,9 +126,123 @@ def add_advisory(
     return advisory
 
 
+def update_advisory(
+    db: Session,
+    *,
+    care_plan: CarePlan,
+    provider: User,
+    advisory_id: int,
+    concept_id: str,
+    term: str,
+    tag: str,
+    configuration: dict,
+    ip_address: str | None = None,
+):
+    if care_plan.provider_id != provider.id:
+        raise PermissionError("Only the owning provider may edit this care plan")
+    if care_plan.is_archived:
+        raise ValueError("Archived care plans are read-only")
+    advisory = db.query(Advisory).filter(
+        Advisory.id == advisory_id,
+        Advisory.care_plan_id == care_plan.id,
+    ).first()
+    if advisory is None:
+        raise ValueError("Advisory not found in this care plan")
+    if advisory.status != "DRAFT":
+        raise ValueError("Published advisories are read-only")
+    resolve_tag(db, concept_id=concept_id, term=term, tag=tag)
+    validated_configuration = validate_advisory_configuration(
+        db,
+        tag=tag,
+        concept_id=concept_id,
+        configuration=configuration,
+    )
+    if tag == "medication":
+        medication_details = get_advisory_options(db, concept_id=concept_id)["options"][
+            "medication_details"
+        ]
+        validated_configuration["allergy_warnings"] = check_medication_allergies(
+            db,
+            patient_id=care_plan.patient_id,
+            medication_terms=[term, medication_details["generic"]],
+        )
+    duplicate = db.query(Advisory).filter(
+        Advisory.care_plan_id == care_plan.id,
+        Advisory.concept_id == concept_id,
+        Advisory.advisory_type == tag,
+        Advisory.id != advisory.id,
+    ).first()
+    if duplicate is not None:
+        raise ValueError("This advisory already exists in the care plan")
+
+    advisory.concept_id = concept_id
+    advisory.term = term
+    advisory.tag = tag
+    advisory.advisory_type = tag
+    advisory.configuration_json = json.dumps(validated_configuration, sort_keys=True)
+    db.commit()
+    db.refresh(advisory)
+    record_audit_event(
+        db,
+        action="advisory.updated",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata={
+            "advisory_id": advisory.id,
+            "care_plan_id": care_plan.id,
+            "patient_id": care_plan.patient_id,
+            "advisory_type": tag,
+        },
+    )
+    return advisory
+
+
+def delete_advisory(
+    db: Session,
+    *,
+    care_plan: CarePlan,
+    provider: User,
+    advisory_id: int,
+    ip_address: str | None = None,
+):
+    if care_plan.provider_id != provider.id:
+        raise PermissionError("Only the owning provider may edit this care plan")
+    if care_plan.is_archived:
+        raise ValueError("Archived care plans are read-only")
+    advisory = db.query(Advisory).filter(
+        Advisory.id == advisory_id,
+        Advisory.care_plan_id == care_plan.id,
+    ).first()
+    if advisory is None:
+        raise ValueError("Advisory not found in this care plan")
+    if advisory.status != "DRAFT":
+        raise ValueError("Published advisories are read-only")
+    metadata = {
+        "advisory_id": advisory.id,
+        "care_plan_id": care_plan.id,
+        "patient_id": care_plan.patient_id,
+        "advisory_type": advisory.advisory_type,
+    }
+    db.delete(advisory)
+    db.commit()
+    record_audit_event(
+        db,
+        action="advisory.deleted",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata=metadata,
+    )
+    return metadata
+
+
 def serialize_advisory(advisory: Advisory):
     return {
         "id": advisory.id,
+        "concept_id": advisory.concept_id,
         "advisory_type": advisory.advisory_type,
         "term": advisory.term,
         "tag": advisory.tag,

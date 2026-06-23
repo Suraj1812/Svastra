@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.audit.audit_service import record_audit_event
+from app.care.diagnosis import serialize_diagnosis
 from app.config import settings
 from app.models.care import Advisory, CarePlan
 from app.models.consent import RelationshipConsent
@@ -123,7 +124,7 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
         ).first()
         if relationship is None or relationship.source_consent.status != "ACTIVE":
             raise PermissionError("An active consent-backed provider relationship is required")
-        if event.payload.get("title") != plan.title or event.payload.get("diagnosis") != plan.diagnosis:
+        if event.payload.get("title") != plan.title or event.payload.get("diagnosis") != serialize_diagnosis(plan):
             raise CEPValidationError("CEP care-plan context does not match stored state")
         advisory_ids: set[int] = set()
         for item in event.payload["advisories"]:

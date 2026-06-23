@@ -44,6 +44,16 @@ def _ensure_schema_compatibility():
                 )
             if "archived_at" not in columns:
                 connection.execute(text("ALTER TABLE care_plans ADD COLUMN archived_at DATETIME"))
+            if "diagnosis_concept_id" not in columns:
+                connection.execute(
+                    text("ALTER TABLE care_plans ADD COLUMN diagnosis_concept_id VARCHAR(64)")
+                )
+            if "diagnosis_term" not in columns:
+                connection.execute(
+                    text("ALTER TABLE care_plans ADD COLUMN diagnosis_term VARCHAR(160)")
+                )
+            if "diagnosis_notes" not in columns:
+                connection.execute(text("ALTER TABLE care_plans ADD COLUMN diagnosis_notes TEXT"))
 
         if "advisories" in tables:
             columns = {column["name"] for column in inspector.get_columns("advisories")}

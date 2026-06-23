@@ -39,6 +39,66 @@ def test_care_plan_requires_active_provider_relationship(integration_client):
     assert denied.status_code == 403
 
 
+def test_structured_diagnosis_flows_to_publish_event_and_patient_view(integration_client):
+    patient = register_patient(integration_client, "9876501271")
+    provider = register_provider(integration_client, "9876501272")
+    grant_provider_access(integration_client, patient, provider)
+    response = integration_client.post(
+        "/care-plans",
+        json={
+            "patient_id": patient["user"]["id"],
+            "title": "URTI plan",
+            "diagnosis": {
+                "conceptId": "54150009",
+                "term": "Upper Respiratory Tract Infection",
+                "notes": "Cough and fever monitoring",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert response.status_code == 201, response.text
+    plan = response.json()["data"]
+    assert plan["diagnosis"]["conceptId"] == "54150009"
+    assert plan["diagnosis"]["term"] == "Upper Respiratory Tract Infection"
+
+    integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_temperature",
+            "term": "Temperature",
+            "tag": "measurement",
+            "configuration": VALID_MEASUREMENT_CONFIG,
+        },
+        headers=headers(provider),
+    )
+    published = integration_client.post(
+        f"/care-plans/{plan['id']}/publish",
+        json={"confirmed": True},
+        headers=headers(provider),
+    )
+    assert published.status_code == 200
+    patient_view = integration_client.get("/me/advisories", headers=headers(patient))
+    assert patient_view.status_code == 200
+    patient_plan = patient_view.json()["data"]["advisories"][0]["care_plan"]
+    assert patient_plan["diagnosis"]["term"] == "Upper Respiratory Tract Infection"
+
+    db = integration_client.testing_session_local()
+    try:
+        payload = json.loads(
+            db.query(TimelineEvent)
+            .filter(TimelineEvent.event_type == "advisory.publish")
+            .one()
+            .payload_json
+        )["payload"]
+        assert payload["diagnosis"] == {
+            "conceptId": "54150009",
+            "term": "Upper Respiratory Tract Infection",
+            "notes": "Cough and fever monitoring",
+        }
+    finally:
+        db.close()
+
+
 def test_terminology_tag_and_advisory_configuration_are_server_validated(integration_client):
     patient = register_patient(integration_client, "9876501211")
     provider = register_provider(integration_client, "9876501212")
@@ -127,6 +187,100 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
     assert valid.status_code == 201
     assert valid.json()["data"]["advisory_type"] == "measurement"
     assert valid.json()["data"]["execution_status"] == "pending"
+
+
+def test_ready_to_send_advisory_can_edit_delete_but_published_is_read_only(integration_client):
+    patient = register_patient(integration_client, "9876501281")
+    provider = register_provider(integration_client, "9876501282")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+
+    created = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_temperature",
+            "term": "Temperature",
+            "tag": "measurement",
+            "configuration": VALID_MEASUREMENT_CONFIG,
+        },
+        headers=headers(provider),
+    )
+    assert created.status_code == 201
+    advisory = created.json()["data"]
+
+    updated = integration_client.put(
+        f"/care-plans/{plan['id']}/advisories/{advisory['id']}",
+        json={
+            "concept_id": "demo_term_temperature",
+            "term": "Temperature",
+            "tag": "measurement",
+            "configuration": {
+                **VALID_MEASUREMENT_CONFIG,
+                "duration_value": 2,
+                "measurement_unit": "°C",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["data"]["configuration"]["duration_value"] == 2
+    assert updated.json()["data"]["configuration"]["measurement_unit"] == "°C"
+
+    removable = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": "demo_term_walking_exercise",
+            "term": "Walking Exercise",
+            "tag": "recommendation",
+            "configuration": {
+                "frequency": "once_daily",
+                "duration_value": 3,
+                "duration_unit": "days",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert removable.status_code == 201
+    deleted = integration_client.delete(
+        f"/care-plans/{plan['id']}/advisories/{removable.json()['data']['id']}",
+        headers=headers(provider),
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["data"]["deleted"] is True
+
+    published = integration_client.post(
+        f"/care-plans/{plan['id']}/publish",
+        json={"confirmed": True},
+        headers=headers(provider),
+    )
+    assert published.status_code == 200
+
+    edit_published = integration_client.put(
+        f"/care-plans/{plan['id']}/advisories/{advisory['id']}",
+        json={
+            "concept_id": "demo_term_temperature",
+            "term": "Temperature",
+            "tag": "measurement",
+            "configuration": VALID_MEASUREMENT_CONFIG,
+        },
+        headers=headers(provider),
+    )
+    assert edit_published.status_code == 400
+    assert "read-only" in edit_published.json()["error"]["message"]
+
+    delete_published = integration_client.delete(
+        f"/care-plans/{plan['id']}/advisories/{advisory['id']}",
+        headers=headers(provider),
+    )
+    assert delete_published.status_code == 400
+    assert "read-only" in delete_published.json()["error"]["message"]
+
+    db = integration_client.testing_session_local()
+    try:
+        assert db.query(AuditLog).filter(AuditLog.action == "advisory.updated").count() == 1
+        assert db.query(AuditLog).filter(AuditLog.action == "advisory.deleted").count() == 1
+    finally:
+        db.close()
 
 
 def test_publish_is_immutable_and_generates_advisory_cep(integration_client):
