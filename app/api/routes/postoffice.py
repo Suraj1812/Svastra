@@ -1,4 +1,3 @@
-import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
@@ -24,6 +23,7 @@ from app.postoffice.monitor_service import (
     list_monitor_events,
     monitor_summary,
 )
+from app.postoffice.timeline_service import serialize_timeline_event
 from app.postoffice.validators import AcknowledgementRequest, CEPEvent, CEPValidationError
 from app.schemas.monitor import EventMonitorQuery, EventMonitorSummaryQuery
 from app.relationships.relationship_validator import validate_patient_scope
@@ -167,13 +167,7 @@ def get_timeline_events(
     return success_response(
         {
             "events": [
-                {
-                    "event_id": event.event_id,
-                    "event_type": event.event_type,
-                    "timestamp": event.occurred_at,
-                    "source": event.source_app,
-                    "payload": json.loads(event.payload_json)["payload"],
-                }
+                serialize_timeline_event(db, event, role=current_user.role)
                 for event in events
             ]
         }

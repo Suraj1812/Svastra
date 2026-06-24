@@ -223,6 +223,79 @@ def test_measurement_threshold_generates_provider_alert(integration_client):
     assert alerts.json()["data"]["alerts"][0]["severity"] == "critical"
 
 
+def test_wednesday_timeline_and_dashboard_feed_show_threshold_alert(integration_client):
+    patient = register_patient(integration_client, "9876501425")
+    provider = register_provider(integration_client, "9876501426")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _plan(integration_client, patient, provider, title="Temperature Monitoring")
+    advisory = _add(
+        integration_client,
+        plan,
+        provider,
+        concept_id="demo_term_temperature",
+        term="Temperature",
+        tag="measurement",
+        configuration=_common(
+            measurement_unit="°F",
+            non_response_warning={
+                "clinical_grace_minutes": 90,
+                "notification": "immediate",
+                "severity": "medium",
+            },
+            value_warning={
+                "condition": "more_than",
+                "threshold_value": 101,
+                "measurement_unit": "°F",
+                "notification": "immediate",
+                "severity": "critical",
+            },
+        ),
+    )
+    _publish(integration_client, plan, advisory, provider)
+    task = integration_client.get("/me/tasks", headers=headers(patient)).json()["data"]["tasks"][0]
+
+    response = integration_client.post(
+        f"/tasks/{task['task_id']}/responses",
+        json={"response_status": "recorded", "numeric_value": 102.5, "measurement_unit": "°F"},
+        headers=headers(patient),
+    )
+    assert response.status_code == 201
+
+    provider_timeline = integration_client.get(
+        f"/postoffice/timeline?patient_id={patient['user']['id']}",
+        headers=headers(provider),
+    )
+    assert provider_timeline.status_code == 200
+    events = provider_timeline.json()["data"]["events"]
+    labels = [event["label"] for event in events]
+    assert "Advisory Published" in labels
+    assert "Care Plan Delivered" in labels
+    assert "Temperature Received" in labels
+    assert "Temperature Above Threshold" in labels
+    alert_event = next(event for event in events if event["label"] == "Temperature Above Threshold")
+    assert alert_event["event_type"] == "event.alert.trigger"
+    assert set(alert_event["cep"]) == {"header", "context", "body"}
+    assert alert_event["cep"]["body"]["reason"] == "threshold_exceeded"
+    assert alert_event["cep"]["body"]["recorded_value"] == "102.5 °F"
+
+    patient_timeline = integration_client.get(
+        f"/postoffice/timeline?patient_id={patient['user']['id']}",
+        headers=headers(patient),
+    )
+    patient_labels = [event["label"] for event in patient_timeline.json()["data"]["events"]]
+    assert "Care Plan Received" in patient_labels
+    assert "Temperature Submitted" in patient_labels
+
+    feed = integration_client.get("/provider/dashboard-feed", headers=headers(provider))
+    assert feed.status_code == 200
+    data = feed.json()["data"]
+    assert data["active_alerts"][0]["display"]["title"] == "Temperature Above Threshold"
+    assert data["active_alerts"][0]["display"]["recorded_value"] == "102.5 °F"
+    assert data["patient_status"][0]["label"] == "Alert Present"
+    assert data["patient_status"][0]["color"] == "red"
+    assert data["recent_responses"][0]["response"]["value"]["numeric_value"] == 102.5
+
+
 def test_investigation_report_upload_is_private_validated_and_hash_verified(
     integration_client, tmp_path
 ):
@@ -292,10 +365,60 @@ def test_investigation_report_upload_is_private_validated_and_hash_verified(
             attachment = db.query(ClinicalAttachment).one()
             assert attachment.storage_path.startswith(str(settings.attachment_storage_path))
             assert db.query(TaskResponse).one().response_status == "uploaded"
+            assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "attachment.upload").count() == 1
+            assert db.query(ClinicalAlert).count() == 0
         finally:
             db.close()
     finally:
         settings.attachment_storage_path = original_storage
+
+
+def test_investigation_overdue_is_passive_and_does_not_alert(integration_client):
+    patient = register_patient(integration_client, "9876501435")
+    provider = register_provider(integration_client, "9876501436")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _plan(integration_client, patient, provider)
+    advisory = _add(
+        integration_client,
+        plan,
+        provider,
+        concept_id="demo_term_cbc",
+        term="CBC",
+        tag="investigation",
+        configuration=_common(
+            priority="urgent",
+            due_date=(date.today() + timedelta(days=1)).isoformat(),
+            upload_required=True,
+            alert_if_not_uploaded=True,
+            grace_period_value=2,
+            grace_period_unit="days",
+        ),
+    )
+    _publish(integration_client, plan, advisory, provider)
+    db = integration_client.testing_session_local()
+    try:
+        task = db.query(CareTask).one()
+        task.grace_expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.commit()
+    finally:
+        db.close()
+
+    evaluated = integration_client.post(
+        "/provider/tasks/evaluate-overdue",
+        json={"patient_id": patient["user"]["id"]},
+        headers=headers(provider),
+    )
+    assert evaluated.status_code == 200
+    assert evaluated.json()["data"]["evaluated"] == 1
+    assert evaluated.json()["data"]["alerts"] == []
+
+    db = integration_client.testing_session_local()
+    try:
+        assert db.query(ClinicalAlert).count() == 0
+        assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "alert.trigger").count() == 0
+        assert db.query(CareTask).one().execution_status == "missed"
+    finally:
+        db.close()
 
 
 def test_overdue_evaluation_marks_missed_alerts_once_and_provider_acknowledges(

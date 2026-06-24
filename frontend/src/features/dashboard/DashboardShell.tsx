@@ -38,7 +38,7 @@ import { DashboardEmptyState } from "./components/DashboardEmptyState";
 import { PermissionDenied } from "./components/PermissionDenied";
 import { RelationshipWorkspace } from "./components/RelationshipWorkspace";
 import { PatientAdvisories } from "./components/PatientAdvisories";
-import { EventMonitor } from "./components/EventMonitor";
+import { ClinicalTimeline } from "./components/ClinicalTimeline";
 import { PatientTasks } from "./components/PatientTasks";
 import { ProviderAlerts } from "./components/ProviderAlerts";
 import { ProviderTasks } from "./components/ProviderTasks";
@@ -293,7 +293,7 @@ export function DashboardShell({ auth, onLogout, loggingOut }: DashboardShellPro
           ) : selectedItem === "My Advisories" && auth.user.role === "patient" ? (
             <PatientAdvisories sessionToken={auth.session.session_token} />
           ) : selectedItem === "Timeline" ? (
-            <EventMonitor
+            <ClinicalTimeline
               role={auth.user.role}
               sessionToken={auth.session.session_token}
               userId={auth.user.id}

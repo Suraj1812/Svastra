@@ -94,13 +94,21 @@ def _new_alert(
     return alert
 
 
-def _alert_event(alert: ClinicalAlert, *, actor: User):
+def _alert_event(
+    alert: ClinicalAlert,
+    *,
+    actor: User,
+    reason: str,
+    concept: str,
+    recorded_value: str | None = None,
+):
     event = create_event(
         event_type="alert.trigger",
         source={"provider": "mantrana_mitra", "patient": "rogi_mitra"}[actor.role],
         payload={
             "actor_id": actor.id,
             "patient_id": alert.patient_id,
+            "provider_id": alert.provider_id,
             "alert_id": alert.alert_uid,
             "advisory_id": alert.advisory_id,
             "task_id": alert.task.task_uid if alert.task else None,
@@ -108,6 +116,9 @@ def _alert_event(alert: ClinicalAlert, *, actor: User):
             "severity": alert.severity,
             "message": alert.message,
             "notification_mode": alert.notification_mode,
+            "reason": reason,
+            "concept": concept,
+            "recorded_value": recorded_value,
         },
     )
     alert.event_id = event.event_id
@@ -143,7 +154,13 @@ def enforce_prepublication_safety(
             f"{warning.get('allergen', 'unknown')}"
         ),
     )
-    event = _alert_event(alert, actor=provider)
+    event = _alert_event(
+        alert,
+        actor=provider,
+        reason="allergy_conflict",
+        concept=advisory.term,
+        recorded_value=warning.get("allergen"),
+    )
     db.flush()
     send_event(db, event, actor_user=provider, commit=False)
     db.commit()
@@ -399,6 +416,36 @@ def serialize_attachment(attachment: ClinicalAttachment):
     }
 
 
+def _alert_display(alert: ClinicalAlert):
+    if alert.alert_type == "value_threshold":
+        recorded_value = None
+        marker = " value "
+        if marker in alert.message and " crossed" in alert.message:
+            recorded_value = alert.message.split(marker, 1)[1].split(" crossed", 1)[0]
+        return {
+            "title": f"{alert.advisory.term} Above Threshold",
+            "reason": "threshold_exceeded",
+            "concept": alert.advisory.term,
+            "recorded_value": recorded_value,
+            "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+        }
+    if alert.alert_type == "non_response":
+        return {
+            "title": f"{alert.advisory.term} Response Overdue",
+            "reason": "non_response",
+            "concept": alert.advisory.term,
+            "recorded_value": None,
+            "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+        }
+    return {
+        "title": "Allergy Conflict",
+        "reason": "allergy_conflict",
+        "concept": alert.advisory.term,
+        "recorded_value": None,
+        "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+    }
+
+
 def serialize_alert(alert: ClinicalAlert):
     return {
         "alert_id": alert.alert_uid,
@@ -411,6 +458,7 @@ def serialize_alert(alert: ClinicalAlert):
         "message": alert.message,
         "notification_mode": alert.notification_mode,
         "status": alert.status,
+        "display": _alert_display(alert),
         "event_id": alert.event_id,
         "acknowledged_at": alert.acknowledged_at,
         "created_at": alert.created_at,
@@ -620,7 +668,13 @@ def record_task_response(
             message=f"{task.advisory.term} value {numeric_value} {measurement_unit} crossed the configured threshold",
             notification_mode=value_rule.get("notification", "immediate"),
         )
-        alert_event = _alert_event(alert, actor=patient)
+        alert_event = _alert_event(
+            alert,
+            actor=patient,
+            reason="threshold_exceeded",
+            concept=task.advisory.term,
+            recorded_value=f"{numeric_value} {measurement_unit}",
+        )
         db.flush()
         send_event(db, alert_event, actor_user=patient, commit=False)
         events.append(alert_event)
@@ -745,16 +799,35 @@ def upload_investigation_report(
             "execution_status": execution_status,
         },
     )
+    attachment_event = create_event(
+        event_type="attachment.upload",
+        source="rogi_mitra",
+        payload={
+            "actor_id": patient.id,
+            "patient_id": patient.id,
+            "provider_id": task.provider_id,
+            "task_id": task.task_uid,
+            "advisory_id": task.advisory_id,
+            "attachment_id": attachment_uid,
+            "filename": safe_name,
+            "content_type": content_type,
+            "size_bytes": len(content),
+            "sha256": attachment.sha256,
+            "response_type": "investigation",
+            "execution_status": execution_status,
+        },
+    )
     response.response_event_id = event.event_id
     db.flush()
     try:
         send_event(db, event, actor_user=patient, commit=False)
+        send_event(db, attachment_event, actor_user=patient, commit=False)
         db.commit()
     except Exception:
         db.rollback()
         storage_path.unlink(missing_ok=True)
         raise
-    delivery = _delivery_result(db, event, actor=patient)
+    deliveries = [_delivery_result(db, item, actor=patient) for item in (event, attachment_event)]
     record_audit_event(
         db,
         action="investigation.report_uploaded",
@@ -768,12 +841,13 @@ def upload_investigation_report(
             "sha256": attachment.sha256,
             "size_bytes": len(content),
             "event_id": event.event_id,
+            "attachment_event_id": attachment_event.event_id,
         },
     )
     db.refresh(task)
     db.refresh(response)
     db.refresh(attachment)
-    return task, response, attachment, delivery
+    return task, response, attachment, deliveries
 
 
 def evaluate_overdue_tasks(
@@ -815,12 +889,10 @@ def evaluate_overdue_tasks(
         touched_advisories.add(task.advisory_id)
         configuration = _configuration(task.advisory)
         notification_mode = "immediate"
-        should_alert = (
-            configuration.get("alert_if_not_uploaded", False)
-            if task.task_type == "investigation"
-            else bool(configuration.get("non_response_warning"))
+        should_alert = task.task_type in {"measurement", "recommendation"} and bool(
+            configuration.get("non_response_warning")
         )
-        if task.task_type != "investigation":
+        if should_alert:
             notification_mode = (configuration.get("non_response_warning") or {}).get(
                 "notification", "immediate"
             )
@@ -837,7 +909,13 @@ def evaluate_overdue_tasks(
                 message=f"No response received for {task.advisory.term} before the clinical grace period expired",
                 notification_mode=notification_mode,
             )
-            event = _alert_event(alert, actor=provider)
+            event = _alert_event(
+                alert,
+                actor=provider,
+                reason="non_response",
+                concept=task.advisory.term,
+                recorded_value=None,
+            )
             db.flush()
             send_event(db, event, actor_user=provider, commit=False)
             alerts.append(alert)
@@ -889,6 +967,104 @@ def get_provider_alerts(
     if status:
         query = query.filter(ClinicalAlert.status == status)
     return query.order_by(ClinicalAlert.created_at.desc()).limit(500).all()
+
+
+def get_provider_dashboard_feed(
+    db: Session,
+    *,
+    provider_id: int,
+    patient_id: int | None = None,
+):
+    if patient_id and not has_active_provider_relationship(
+        db, provider_id=provider_id, patient_id=patient_id
+    ):
+        raise PermissionError("Active provider-patient relationship is required")
+
+    active_alerts = get_provider_alerts(
+        db,
+        provider_id=provider_id,
+        patient_id=patient_id,
+        status="OPEN",
+    )
+    responses_query = db.query(CareTask).options(
+        joinedload(CareTask.advisory),
+        joinedload(CareTask.patient),
+        joinedload(CareTask.response).joinedload(TaskResponse.attachment),
+    ).join(
+        ProviderPatientLink,
+        (ProviderPatientLink.provider_id == CareTask.provider_id)
+        & (ProviderPatientLink.patient_id == CareTask.patient_id),
+    ).join(
+        RelationshipConsent,
+        RelationshipConsent.id == ProviderPatientLink.source_consent_id,
+    ).filter(
+        CareTask.provider_id == provider_id,
+        CareTask.response.has(),
+        ProviderPatientLink.status == "active",
+        RelationshipConsent.status == "ACTIVE",
+    )
+    if patient_id:
+        responses_query = responses_query.filter(CareTask.patient_id == patient_id)
+    recent_responses = responses_query.order_by(
+        CareTask.completed_at.desc(), CareTask.id.desc()
+    ).limit(25).all()
+
+    link_query = db.query(ProviderPatientLink).options(
+        joinedload(ProviderPatientLink.patient)
+    ).join(
+        RelationshipConsent,
+        RelationshipConsent.id == ProviderPatientLink.source_consent_id,
+    ).filter(
+        ProviderPatientLink.provider_id == provider_id,
+        ProviderPatientLink.status == "active",
+        RelationshipConsent.status == "ACTIVE",
+    )
+    if patient_id:
+        link_query = link_query.filter(ProviderPatientLink.patient_id == patient_id)
+    links = link_query.order_by(ProviderPatientLink.created_at.desc()).limit(500).all()
+
+    now = _utcnow()
+    patient_status = []
+    for link in links:
+        open_alert_count = db.query(ClinicalAlert).filter(
+            ClinicalAlert.provider_id == provider_id,
+            ClinicalAlert.patient_id == link.patient_id,
+            ClinicalAlert.status == "OPEN",
+        ).count()
+        recent_response_count = db.query(CareTask).filter(
+            CareTask.provider_id == provider_id,
+            CareTask.patient_id == link.patient_id,
+            CareTask.response.has(),
+        ).count()
+        overdue_pending_count = db.query(CareTask).filter(
+            CareTask.provider_id == provider_id,
+            CareTask.patient_id == link.patient_id,
+            CareTask.execution_status == "pending",
+            CareTask.grace_expires_at < now,
+        ).count()
+        if open_alert_count:
+            status_code, label, color = "alert_present", "Alert Present", "red"
+        elif overdue_pending_count or recent_response_count:
+            status_code, label, color = "pending_review", "Pending Review", "yellow"
+        else:
+            status_code, label, color = "stable", "Stable", "green"
+        patient_status.append(
+            {
+                "patient": {"id": link.patient.id, "full_name": link.patient.full_name},
+                "status": status_code,
+                "label": label,
+                "color": color,
+                "open_alert_count": open_alert_count,
+                "recent_response_count": recent_response_count,
+                "overdue_pending_count": overdue_pending_count,
+            }
+        )
+
+    return {
+        "active_alerts": [serialize_alert(alert) for alert in active_alerts],
+        "recent_responses": [serialize_task(task) for task in recent_responses],
+        "patient_status": patient_status,
+    }
 
 
 def acknowledge_alert(

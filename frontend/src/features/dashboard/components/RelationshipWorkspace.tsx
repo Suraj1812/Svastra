@@ -29,6 +29,8 @@ import type {
   HealthcareRelationship,
   LinkablePatientsResult,
   PatientSearchResult,
+  PatientStatusSummary,
+  ProviderDashboardFeed,
   RelationshipListResult,
   Role,
 } from "../../../shared/types/auth";
@@ -59,6 +61,7 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
   const [deactivateTarget, setDeactivateTarget] = useState<HealthcareRelationship | null>(null);
   const [mobileNumber, setMobileNumber] = useState("");
   const [searchResult, setSearchResult] = useState<PatientSearchResult | null>(null);
+  const [patientStatuses, setPatientStatuses] = useState<Record<number, PatientStatusSummary>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,13 +74,20 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
         ]);
         setRelationships([...providers.relationships, ...caregivers.relationships]);
         setLinkable([]);
+        setPatientStatuses({});
       } else {
-        const [linked, available] = await Promise.all([
+        const [linked, available, feed] = await Promise.all([
           getJsonWithSession<RelationshipListResult>("/relationships/patients?status=ALL", sessionToken),
           getJsonWithSession<LinkablePatientsResult>("/relationships/linkable", sessionToken),
+          role === "provider"
+            ? getJsonWithSession<ProviderDashboardFeed>("/provider/dashboard-feed", sessionToken)
+            : Promise.resolve<ProviderDashboardFeed>({ active_alerts: [], recent_responses: [], patient_status: [] }),
         ]);
         setRelationships(linked.relationships);
         setLinkable(available.patients);
+        setPatientStatuses(
+          Object.fromEntries(feed.patient_status.map((item) => [item.patient.id, item])),
+        );
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Relationships could not be loaded");
@@ -184,6 +194,15 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
     } finally {
       setWorking(false);
     }
+  }
+
+  function statusChip(item: HealthcareRelationship) {
+    if (role !== "provider") return null;
+    const status = patientStatuses[item.patient.id];
+    if (!status) return null;
+    const color: "success" | "warning" | "error" =
+      status.color === "red" ? "error" : status.color === "yellow" ? "warning" : "success";
+    return <Chip size="small" color={color} label={status.label} />;
   }
 
   return (
@@ -302,7 +321,10 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
                 </Grid>
                 <Grid size={{ xs: 6, md: 2 }}>
                   <Typography variant="caption" color="text.secondary">Status</Typography>
-                  <Box sx={{ mt: 0.5 }}><Chip size="small" color={item.relationship_status === "ACTIVE" ? "success" : "default"} label={item.relationship_status} /></Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                    <Chip size="small" color={item.relationship_status === "ACTIVE" ? "success" : "default"} label={item.relationship_status} />
+                    {statusChip(item)}
+                  </Stack>
                 </Grid>
                 <Grid size={{ xs: 6, md: 2 }}>
                   <Typography variant="caption" color="text.secondary">Created</Typography>

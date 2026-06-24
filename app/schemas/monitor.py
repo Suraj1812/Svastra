@@ -20,6 +20,7 @@ MonitorEventType = Literal[
     "advisory.publish",
     "task.generate",
     "response.log",
+    "attachment.upload",
     "alert.trigger",
     "message.send",
 ]

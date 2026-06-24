@@ -1,9 +1,9 @@
 # SVASTRA+ MVP API Contract
 
-Version: 4.0 — Advisory, Task and Response Workflow
+Version: 4.1 — Timeline Ledger, Event Registry and Alert Dashboard
 
-Updated: 21 June 2026
-Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory scheduling, patient tasks, coded responses, investigation uploads, clinical alerts, PostOffice and API Event Monitor.
+Updated: 24 June 2026
+Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory scheduling, patient tasks, coded responses, investigation uploads, timeline ledger, clinical alerts, provider dashboard feed, PostOffice and API Event Monitor.
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
 
@@ -225,7 +225,7 @@ Registration dropdown values must be sent exactly as supplied by `data/svp_entry
 
 ### CEPEvent
 
-All events sent to PostOffice use this exact top-level structure.
+Events accepted by `POST /postoffice/send` and internal workflow services use this input structure.
 
 | Field | Type | Validation |
 | --- | --- | --- |
@@ -235,7 +235,34 @@ All events sent to PostOffice use this exact top-level structure.
 | `source` | string, 2–64 chars | Application/service name. |
 | `payload` | object, max 64 KiB | Event-specific fields; must include positive `patient_id` and `actor_id`. |
 
-Supported event types:
+Stored timeline rows preserve the above fields for backward compatibility and also store the canonical Week 4 CEP envelope:
+
+```json
+{
+  "header": {
+    "event_id": "evt_abc123",
+    "event_type": "event.response.log",
+    "internal_event_type": "response.log",
+    "timestamp": "2026-06-24T10:05:00+05:30",
+    "source": "rogi_mitra"
+  },
+  "context": {
+    "patient_id": 41,
+    "actor_id": 41,
+    "provider_id": 12,
+    "episode_id": "care_plan:77",
+    "encounter_id": "task:task_abcd",
+    "target_app": "mantrana_mitra"
+  },
+  "body": {
+    "task_id": "task_abcd",
+    "response_type": "measurement",
+    "response_status": "recorded"
+  }
+}
+```
+
+Registered input event types:
 
 ```text
 consent.request
@@ -248,9 +275,21 @@ schedule.generate
 advisory.publish
 task.generate
 response.log
+attachment.upload
 alert.trigger
 message.send
 ```
+
+Documented canonical Week 4 event names:
+
+| Canonical name | Internal event type | Meaning |
+| --- | --- | --- |
+| `event.advisory.publish` | `advisory.publish` | Provider published an advisory/care plan item. |
+| `event.schedule.generate` | `schedule.generate` | Backend generated task due times and grace window. |
+| `event.task.generate` | `task.generate` | Patient-facing care tasks were delivered. |
+| `event.response.log` | `response.log` | Patient submitted a medication, measurement, recommendation or missed response. |
+| `event.attachment.upload` | `attachment.upload` | Patient uploaded an investigation report. Passive in MVP; it never creates an alert by itself. |
+| `event.alert.trigger` | `alert.trigger` | Rule engine created a clinical alert. |
 
 ## 5. Endpoint index
 
@@ -309,6 +348,7 @@ message.send
 | Reports | `POST /tasks/{task_uid}/upload` | Assigned patient |
 | Reports | `GET /attachments/{attachment_uid}` | Assigned patient or ACTIVE linked provider |
 | Workflow | `POST /provider/tasks/evaluate-overdue` | Provider owner |
+| Dashboard | `GET /provider/dashboard-feed` | Provider owner with ACTIVE relationship |
 | Alerts | `GET /provider/alerts` | Provider owner with ACTIVE relationship |
 | Alerts | `POST /provider/alerts/{alert_uid}/acknowledge` | Provider owner |
 | Allergies | `GET /me/allergies` | Patient |
@@ -1101,7 +1141,7 @@ Validation:
 | Storage | Private directory, random server filename, `0600` permission |
 | Integrity | SHA-256 recorded and returned in `X-Content-SHA256` on download |
 
-The database write, `response.log` event and file are coordinated. If event/database persistence fails, the new private file is removed.
+The database write, `response.log`, `attachment.upload` event and file are coordinated. If event/database persistence fails, the new private file is removed. Investigation upload is passive in the MVP: upload success or upload absence does not create a clinical alert unless a future document explicitly adds that rule.
 
 ### GET /attachments/{attachment_uid}
 
@@ -1115,7 +1155,67 @@ Authentication: provider. Body:
 {"patient_id": 41}
 ```
 
-`patient_id` may be null to evaluate all actively linked patients. At most 500 overdue pending tasks are evaluated per call. Each becomes `missed`. Configured non-response/investigation rules create one stored alert and `alert.trigger`; a second evaluation does not duplicate terminal tasks or alerts.
+`patient_id` may be null to evaluate all actively linked patients. At most 500 overdue pending tasks are evaluated per call. Each becomes `missed`. Only measurement and recommendation tasks can create non-response alerts today. Investigation tasks remain passive in the MVP, even when `alert_if_not_uploaded` exists in older payloads. A second evaluation does not duplicate terminal tasks or alerts.
+
+### GET /provider/dashboard-feed
+
+Authentication: provider. Optional query: `patient_id`.
+
+Purpose: one lightweight provider dashboard feed for status indicators and summary cards.
+
+Response `data`:
+
+```json
+{
+  "active_alerts": [
+    {
+      "alert_id": "alert_123",
+      "alert_type": "value_threshold",
+      "severity": "critical",
+      "display": {
+        "title": "Temperature Above Threshold",
+        "reason": "threshold_exceeded",
+        "concept": "Temperature",
+        "recorded_value": "102.5 °F",
+        "status_label": "Open Alert"
+      }
+    }
+  ],
+  "recent_responses": [
+    {
+      "task_id": "task_abc",
+      "advisory": "Temperature",
+      "execution_status": "completed",
+      "response": {
+        "response_status": "recorded",
+        "value": {
+          "numeric_value": 102.5,
+          "measurement_unit": "°F"
+        }
+      }
+    }
+  ],
+  "patient_status": [
+    {
+      "patient": {"id": 41, "full_name": "Rahul Sharma"},
+      "status": "alert_present",
+      "label": "Alert Present",
+      "color": "red",
+      "open_alert_count": 1,
+      "recent_response_count": 1,
+      "overdue_pending_count": 0
+    }
+  ]
+}
+```
+
+Status indicator rules:
+
+| Label | Color | Meaning |
+| --- | --- | --- |
+| `Stable` | green | No open alert and nothing waiting for review. |
+| `Pending Review` | yellow | Recent response or overdue pending item exists but no open alert. |
+| `Alert Present` | red | At least one open alert exists for the patient. |
 
 ### GET /provider/alerts
 
@@ -1132,6 +1232,7 @@ Alert object fields:
 | `message` | Safe clinical summary. |
 | `notification_mode` | `immediate`, `daily_summary`, or `both`. `none` suppresses rule-generated alerts. |
 | `status` | `OPEN` or `ACKNOWLEDGED`. |
+| `display` | Non-technical alert UI helper: title, reason, concept, recorded value, and Open/Resolved label. |
 | `event_id`, timestamps | CEP and lifecycle references. |
 
 ### POST /provider/alerts/{alert_uid}/acknowledge
@@ -1226,11 +1327,64 @@ Required query: `patient_id` positive integer. Returns at most 100 newest pendin
 
 Required query: `patient_id`. Returns at most 100 newest immutable CEP history records visible to caller.
 
-This endpoint exposes the Week 3 event foundation, not the Week 4 Timeline Engine UI.
+This endpoint powers the Week 4 clinical Timeline UI. It returns human-friendly labels plus the canonical CEP for engineers.
+
+Provider example after Temperature `102.5 °F`:
+
+```json
+{
+  "events": [
+    {
+      "event_id": "evt_alert",
+      "event_type": "event.alert.trigger",
+      "internal_event_type": "alert.trigger",
+      "label": "Temperature Above Threshold",
+      "timestamp": "2026-06-24T10:06:00+05:30",
+      "source": "rogi_mitra",
+      "source_label": "Patient App",
+      "patient_id": 41,
+      "provider_id": 12,
+      "episode_id": "advisory:99",
+      "encounter_id": "alert:alert_123",
+      "details": {
+        "Event Type": "event.alert.trigger",
+        "Source": "Patient App",
+        "Reason": "threshold_exceeded",
+        "Concept": "Temperature",
+        "Recorded Value": "102.5 °F",
+        "Severity": "critical"
+      },
+      "cep": {
+        "header": {},
+        "context": {},
+        "body": {}
+      }
+    }
+  ]
+}
+```
+
+Role wording:
+
+| Same backend event | Provider label | Patient label |
+| --- | --- | --- |
+| `event.advisory.publish` | `Advisory Published` | `Care Plan Received` |
+| `event.task.generate` | `Care Plan Delivered` | `Care Plan Delivered` |
+| `event.response.log` measurement | `Temperature Received` | `Temperature Submitted` |
+| `event.attachment.upload` investigation | `CBC Uploaded` | `CBC Uploaded` |
+| `event.response.log` recommendation done | `Steam Inhalation Completed` | `Steam Inhalation Completed` |
+| `event.alert.trigger` threshold | `Temperature Above Threshold` | `Temperature Above Threshold` |
+
+Selecting an event in the UI shows only:
+
+- Event Type
+- Timestamp
+- Source
+- Event Details
 
 ## 16. API Event Monitor
 
-The API Event Monitor is the secured operational view behind the Timeline tab. It reports PostOffice transport state; it does not create healthcare tasks or make clinical decisions.
+The API Event Monitor is the secured technical operational view for engineers. The normal Timeline tab uses `GET /postoffice/timeline`; the monitor endpoints report PostOffice transport state, queue state, acknowledgement state, and payload integrity. They do not create healthcare tasks or make clinical decisions.
 
 ### Access boundary
 
@@ -1411,8 +1565,8 @@ Backend returns event_id + acknowledgement
 Backend records schedule.generate → advisory.publish → task.generate
 Patient GET /me/tasks
 Patient POST /tasks/{task_uid}/responses or /upload
-Backend records response.log and updates task/advisory execution status
+Backend records response.log, attachment.upload when applicable, and updates task/advisory execution status
 Backend optionally records alert.trigger for threshold/non-response rules
-Provider GET /provider/tasks and /provider/alerts
-Provider/patient opens API Event Monitor and sees the complete acknowledged lifecycle
+Provider GET /provider/dashboard-feed, /provider/tasks and /provider/alerts
+Provider/patient opens Timeline and sees the clinical lifecycle
 ```

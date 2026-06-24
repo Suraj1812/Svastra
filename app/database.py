@@ -77,34 +77,79 @@ def _ensure_schema_compatibility():
                 connection.execute(text("ALTER TABLE timeline_events ADD COLUMN payload_sha256 VARCHAR(64)"))
             if "related_user_id" not in columns:
                 connection.execute(text("ALTER TABLE timeline_events ADD COLUMN related_user_id INTEGER"))
+            if "provider_id" not in columns:
+                connection.execute(text("ALTER TABLE timeline_events ADD COLUMN provider_id INTEGER"))
+            if "episode_id" not in columns:
+                connection.execute(text("ALTER TABLE timeline_events ADD COLUMN episode_id VARCHAR(100)"))
+            if "encounter_id" not in columns:
+                connection.execute(text("ALTER TABLE timeline_events ADD COLUMN encounter_id VARCHAR(100)"))
             rows = connection.execute(
                 text(
-                    "SELECT id, patient_id, actor_id, payload_json, payload_sha256, related_user_id "
-                    "FROM timeline_events WHERE payload_sha256 IS NULL OR related_user_id IS NULL"
+                    "SELECT id, patient_id, actor_id, payload_json, payload_sha256, related_user_id, "
+                    "provider_id, episode_id, encounter_id "
+                    "FROM timeline_events WHERE payload_sha256 IS NULL OR related_user_id IS NULL "
+                    "OR provider_id IS NULL OR episode_id IS NULL OR encounter_id IS NULL"
                 )
             ).all()
-            for event_id, patient_id, actor_id, payload_json, stored_digest, stored_related in rows:
+            for (
+                event_id,
+                patient_id,
+                actor_id,
+                payload_json,
+                stored_digest,
+                stored_related,
+                stored_provider_id,
+                stored_episode_id,
+                stored_encounter_id,
+            ) in rows:
                 digest = stored_digest or sha256(payload_json.encode("utf-8")).hexdigest()
                 related_user_id = stored_related
+                provider_id = stored_provider_id
+                episode_id = stored_episode_id
+                encounter_id = stored_encounter_id
+                try:
+                    document = json.loads(payload_json)
+                    payload = document.get("payload") or document.get("body") or {}
+                except (TypeError, ValueError):
+                    payload = {}
                 if related_user_id is None:
-                    try:
-                        payload = json.loads(payload_json).get("payload", {})
-                    except (TypeError, ValueError):
-                        payload = {}
                     related_user_id = payload.get("requestor_id") or payload.get("linked_user_id")
                     if related_user_id is None and str(actor_id) != str(patient_id):
                         try:
                             related_user_id = int(actor_id)
                         except (TypeError, ValueError):
                             related_user_id = None
+                if provider_id is None:
+                    provider_id = payload.get("provider_id")
+                if episode_id is None:
+                    care_plan_id = payload.get("care_plan_id")
+                    advisory_id = payload.get("advisory_id")
+                    episode_id = (
+                        f"care_plan:{care_plan_id}"
+                        if care_plan_id
+                        else f"advisory:{advisory_id}" if advisory_id else None
+                    )
+                if encounter_id is None:
+                    task_id = payload.get("task_id")
+                    alert_id = payload.get("alert_id")
+                    encounter_id = (
+                        f"task:{task_id}"
+                        if task_id
+                        else f"alert:{alert_id}" if alert_id else None
+                    )
                 connection.execute(
                     text(
                         "UPDATE timeline_events SET payload_sha256 = :digest, "
-                        "related_user_id = :related_user_id WHERE id = :event_id"
+                        "related_user_id = :related_user_id, provider_id = :provider_id, "
+                        "episode_id = :episode_id, encounter_id = :encounter_id "
+                        "WHERE id = :event_id"
                     ),
                     {
                         "digest": digest,
                         "related_user_id": related_user_id,
+                        "provider_id": provider_id,
+                        "episode_id": episode_id,
+                        "encounter_id": encounter_id,
                         "event_id": event_id,
                     },
                 )
@@ -124,6 +169,12 @@ def _ensure_schema_compatibility():
                 text(
                     "CREATE INDEX IF NOT EXISTS idx_timeline_patient_related_occurred "
                     "ON timeline_events(patient_id, related_user_id, occurred_at DESC)"
+                )
+            )
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_timeline_patient_provider_occurred "
+                    "ON timeline_events(patient_id, provider_id, occurred_at DESC)"
                 )
             )
 

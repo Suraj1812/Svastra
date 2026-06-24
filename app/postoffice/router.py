@@ -20,6 +20,7 @@ ROUTES = {
     "advisory.publish": EventRoute("advisory_handler", "rogi_mitra"),
     "task.generate": EventRoute("task_handler", "rogi_mitra"),
     "response.log": EventRoute("response_handler", "mantrana_mitra"),
+    "attachment.upload": EventRoute("attachment_handler", "mantrana_mitra"),
     "alert.trigger": EventRoute("alert_handler", "mantrana_mitra"),
     "message.send": EventRoute("message_handler", "rogi_mitra"),
 }

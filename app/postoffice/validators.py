@@ -19,6 +19,7 @@ SUPPORTED_EVENT_TYPES = (
     "advisory.publish",
     "task.generate",
     "response.log",
+    "attachment.upload",
     "alert.trigger",
     "message.send",
 )
@@ -45,6 +46,7 @@ class CEPEvent(BaseModel):
         "advisory.publish",
         "task.generate",
         "response.log",
+        "attachment.upload",
         "alert.trigger",
         "message.send",
     ]
@@ -173,6 +175,14 @@ class CEPEvent(BaseModel):
                 "execution_status",
                 {"completed", "completed_late", "missed"},
             )
+        elif self.event_type == "attachment.upload":
+            _bounded_string(self.payload, "task_id", 1, 100)
+            _bounded_string(self.payload, "attachment_id", 1, 100)
+            _bounded_string(self.payload, "filename", 1, 180)
+            _bounded_string(self.payload, "content_type", 3, 64)
+            _bounded_string(self.payload, "sha256", 64, 64)
+            _one_of(self.payload, "response_type", {"investigation"})
+            _one_of(self.payload, "execution_status", {"completed", "completed_late"})
         elif self.event_type == "alert.trigger":
             _bounded_string(self.payload, "alert_id", 1, 100)
             _one_of(self.payload, "severity", {"low", "medium", "high", "critical"})

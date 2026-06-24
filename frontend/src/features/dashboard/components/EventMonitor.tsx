@@ -50,6 +50,7 @@ const eventTypes = [
   "advisory.publish",
   "task.generate",
   "response.log",
+  "attachment.upload",
   "alert.trigger",
   "message.send",
 ] as const;

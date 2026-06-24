@@ -11,12 +11,16 @@ class TimelineEvent(Base):
         Index("idx_timeline_patient_occurred_id", "patient_id", "occurred_at", "id"),
         Index("idx_timeline_patient_type_occurred", "patient_id", "event_type", "occurred_at"),
         Index("idx_timeline_patient_related_occurred", "patient_id", "related_user_id", "occurred_at"),
+        Index("idx_timeline_patient_provider_occurred", "patient_id", "provider_id", "occurred_at"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     event_id = Column(String(64), nullable=False, unique=True, index=True)
     event_type = Column(String(100), nullable=False, index=True)
     patient_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    provider_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    episode_id = Column(String(100), nullable=True, index=True)
+    encounter_id = Column(String(100), nullable=True, index=True)
     actor_id = Column(String(64), nullable=False, index=True)
     related_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     source_app = Column(String(64), nullable=False)
@@ -27,6 +31,7 @@ class TimelineEvent(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     patient = relationship("User", foreign_keys=[patient_id])
+    provider = relationship("User", foreign_keys=[provider_id])
 
 
 class OutboundEvent(Base):

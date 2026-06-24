@@ -15,6 +15,7 @@ DEMO_TERMS = (
     ("demo_term_body_temperature", "Body Temperature", "measurement"),
     ("demo_term_blood_pressure", "Blood Pressure", "measurement"),
     ("demo_term_walking_exercise", "Walking Exercise", "recommendation"),
+    ("demo_term_cbc", "CBC", "investigation"),
     ("demo_term_hba1c", "HbA1c", "investigation"),
     ("demo_term_dolo_650", "Dolo 650 mg oral tablet", "medication"),
     ("demo_term_temperature", "Temperature", "measurement"),

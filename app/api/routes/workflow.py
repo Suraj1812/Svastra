@@ -15,6 +15,7 @@ from app.terminology.term_service import search_response_reasons
 from app.workflow.service import (
     acknowledge_alert,
     evaluate_overdue_tasks,
+    get_provider_dashboard_feed,
     get_patient_tasks,
     get_provider_alerts,
     get_provider_tasks,
@@ -149,7 +150,7 @@ async def upload_task_report(
 ):
     try:
         content = await file.read()
-        task, response, attachment, delivery = upload_investigation_report(
+        task, response, attachment, deliveries = upload_investigation_report(
             db,
             task_uid=task_uid,
             patient=current_user,
@@ -167,7 +168,8 @@ async def upload_task_report(
             "task": serialize_task(task),
             "response": serialize_response(response),
             "attachment": serialize_attachment(attachment),
-            "delivery": delivery,
+            "delivery": deliveries[0],
+            "deliveries": deliveries,
         },
         "Report uploaded",
     )
@@ -238,6 +240,25 @@ def provider_alerts(
         status=alert_status,
     )
     return success_response({"alerts": [serialize_alert(alert) for alert in alerts]})
+
+
+@router.get("/provider/dashboard-feed")
+def provider_dashboard_feed(
+    patient_id: Optional[int] = Query(default=None, gt=0),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "provider":
+        raise HTTPException(status_code=403, detail="Provider role is required")
+    try:
+        feed = get_provider_dashboard_feed(
+            db,
+            provider_id=current_user.id,
+            patient_id=patient_id,
+        )
+    except PermissionError as error:
+        _workflow_error(error)
+    return success_response(feed, "Provider dashboard feed loaded")
 
 
 @router.post("/provider/alerts/{alert_uid}/acknowledge")

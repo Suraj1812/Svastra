@@ -43,6 +43,7 @@ _NON_PROVIDER_INTERNAL_FIELDS = {"concept_id"}
 _PREVIEW_KEYS = {
     "alert_id",
     "alert_type",
+    "attachment_id",
     "care_plan_id",
     "consent_id",
     "consent_type",

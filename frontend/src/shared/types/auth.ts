@@ -216,9 +216,52 @@ export type ClinicalAlert = {
   message: string;
   notification_mode: "immediate" | "daily_summary" | "both";
   status: "OPEN" | "ACKNOWLEDGED";
+  display: {
+    title: string;
+    reason: "allergy_conflict" | "non_response" | "threshold_exceeded";
+    concept: string;
+    recorded_value: string | null;
+    status_label: string;
+  };
   event_id: string;
   acknowledged_at: string | null;
   created_at: string;
+};
+
+export type PatientStatusSummary = {
+  patient: { id: number; full_name: string };
+  status: "stable" | "pending_review" | "alert_present";
+  label: "Stable" | "Pending Review" | "Alert Present";
+  color: "green" | "yellow" | "red";
+  open_alert_count: number;
+  recent_response_count: number;
+  overdue_pending_count: number;
+};
+
+export type ProviderDashboardFeed = {
+  active_alerts: ClinicalAlert[];
+  recent_responses: CareTask[];
+  patient_status: PatientStatusSummary[];
+};
+
+export type ClinicalTimelineEvent = {
+  event_id: string;
+  event_type: string;
+  internal_event_type: string;
+  label: string;
+  timestamp: string;
+  source: string;
+  source_label: string;
+  patient_id: number;
+  provider_id: number | null;
+  episode_id: string | null;
+  encounter_id: string | null;
+  details: Record<string, string | number | boolean | null>;
+  cep: {
+    header: Record<string, unknown>;
+    context: Record<string, unknown>;
+    body: Record<string, unknown>;
+  };
 };
 
 export type AdvisoryOptionsResult = {

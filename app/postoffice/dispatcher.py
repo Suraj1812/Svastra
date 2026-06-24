@@ -21,7 +21,8 @@ from app.models.postoffice import (
 )
 from app.models.relationship import PatientCaregiverLink, ProviderPatientLink
 from app.models.user import User
-from app.models.workflow import CareTask, ClinicalAlert, TaskResponse
+from app.models.workflow import CareTask, ClinicalAlert, ClinicalAttachment, TaskResponse
+from app.postoffice.event_registry import canonical_event_type
 from app.postoffice.router import route_event
 from app.postoffice.validators import CEPEvent, CEPValidationError, validate_event
 
@@ -165,6 +166,26 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
             or task.execution_status != event.payload["execution_status"]
         ):
             raise CEPValidationError("Response CEP does not match the immutable stored state")
+    elif event.event_type == "attachment.upload":
+        task = db.query(CareTask).filter(CareTask.task_uid == event.payload["task_id"]).first()
+        if task is None or task.patient_id != patient.id or actor_user.id != patient.id:
+            raise PermissionError("Only the assigned patient may send this attachment event")
+        if task.task_type != "investigation":
+            raise CEPValidationError("Attachment CEP must belong to an investigation task")
+        attachment = db.query(ClinicalAttachment).filter(
+            ClinicalAttachment.attachment_uid == event.payload["attachment_id"],
+            ClinicalAttachment.task_id == task.id,
+            ClinicalAttachment.patient_id == patient.id,
+        ).first()
+        if (
+            attachment is None
+            or attachment.attachment_uid != event.payload["attachment_id"]
+            or attachment.sha256 != event.payload["sha256"]
+            or attachment.original_filename != event.payload["filename"]
+            or attachment.content_type != event.payload["content_type"]
+            or task.execution_status != event.payload["execution_status"]
+        ):
+            raise CEPValidationError("Attachment CEP does not match the immutable stored attachment")
     elif event.event_type == "alert.trigger":
         alert = db.query(ClinicalAlert).filter(
             ClinicalAlert.alert_uid == event.payload["alert_id"],
@@ -200,14 +221,112 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
     return patient
 
 
-def _serialize_event(event: CEPEvent):
-    return json.dumps(event.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+def _context_id(prefix: str, value):
+    if value in (None, ""):
+        return None
+    return f"{prefix}:{value}"
 
 
-def _related_user_id(event: CEPEvent):
+def _provider_id(db: Session, event: CEPEvent, actor_user: User | None):
+    payload = event.payload
+    if actor_user is not None and actor_user.role == "provider":
+        return actor_user.id
+    explicit = payload.get("provider_id")
+    if isinstance(explicit, int) and explicit > 0:
+        return explicit
+    if payload.get("requestor_role") == "provider":
+        requestor_id = payload.get("requestor_id")
+        if isinstance(requestor_id, int) and requestor_id > 0:
+            return requestor_id
+    care_plan_id = payload.get("care_plan_id")
+    if isinstance(care_plan_id, int):
+        plan = db.query(CarePlan.provider_id).filter(CarePlan.id == care_plan_id).first()
+        if plan is not None:
+            return plan[0]
+    advisory_id = payload.get("advisory_id")
+    if isinstance(advisory_id, int):
+        advisory = db.query(Advisory.provider_id).filter(Advisory.id == advisory_id).first()
+        if advisory is not None:
+            return advisory[0]
+    task_id = payload.get("task_id")
+    if isinstance(task_id, str):
+        task = db.query(CareTask.provider_id).filter(CareTask.task_uid == task_id).first()
+        if task is not None:
+            return task[0]
+    alert_id = payload.get("alert_id")
+    if isinstance(alert_id, str):
+        alert = db.query(ClinicalAlert.provider_id).filter(
+            ClinicalAlert.alert_uid == alert_id
+        ).first()
+        if alert is not None:
+            return alert[0]
+    return None
+
+
+def _episode_id(event: CEPEvent):
+    payload = event.payload
+    explicit = payload.get("episode_id")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()[:100]
+    return (
+        _context_id("care_plan", payload.get("care_plan_id"))
+        or _context_id("advisory", payload.get("advisory_id"))
+        or _context_id("patient", payload.get("patient_id"))
+    )
+
+
+def _encounter_id(event: CEPEvent):
+    payload = event.payload
+    explicit = payload.get("encounter_id")
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()[:100]
+    return (
+        _context_id("task", payload.get("task_id"))
+        or _context_id("alert", payload.get("alert_id"))
+        or _context_id("consent", payload.get("consent_id"))
+        or _context_id("relationship", payload.get("relationship_id"))
+        or _context_id("advisory", payload.get("advisory_id"))
+    )
+
+
+def _serialize_event(
+    event: CEPEvent,
+    *,
+    target_app: str,
+    provider_id: int | None,
+    episode_id: str | None,
+    encounter_id: str | None,
+):
+    legacy = event.model_dump(mode="json")
+    payload = legacy["payload"]
+    canonical = {
+        **legacy,
+        "header": {
+            "event_id": event.event_id,
+            "event_type": canonical_event_type(event.event_type),
+            "internal_event_type": event.event_type,
+            "timestamp": event.timestamp.isoformat(),
+            "source": event.source,
+        },
+        "context": {
+            "patient_id": payload["patient_id"],
+            "actor_id": payload["actor_id"],
+            "provider_id": provider_id,
+            "episode_id": episode_id,
+            "encounter_id": encounter_id,
+            "target_app": target_app,
+        },
+        "body": payload,
+    }
+    return json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+
+
+def _related_user_id(event: CEPEvent, provider_id: int | None):
     related = event.payload.get("requestor_id") or event.payload.get("linked_user_id")
     if related is None and event.payload["actor_id"] != event.payload["patient_id"]:
         related = event.payload["actor_id"]
+    if related is None and provider_id is not None and provider_id != event.payload["patient_id"]:
+        related = provider_id
     return related
 
 
@@ -221,7 +340,16 @@ def send_event(
     event = validate_event(event)
     patient = _authorize_event(db, event, actor_user)
     route = route_event(event)
-    serialized = _serialize_event(event)
+    provider_id = _provider_id(db, event, actor_user)
+    episode_id = _episode_id(event)
+    encounter_id = _encounter_id(event)
+    serialized = _serialize_event(
+        event,
+        target_app=route.target_app,
+        provider_id=provider_id,
+        episode_id=episode_id,
+        encounter_id=encounter_id,
+    )
 
     existing = db.query(OutboundEvent).filter(OutboundEvent.event_id == event.event_id).first()
     if existing is not None:
@@ -236,8 +364,11 @@ def send_event(
         event_id=event.event_id,
         event_type=event.event_type,
         patient_id=patient.id,
+        provider_id=provider_id,
+        episode_id=episode_id,
+        encounter_id=encounter_id,
         actor_id=str(event.payload["actor_id"]),
-        related_user_id=_related_user_id(event),
+        related_user_id=_related_user_id(event, provider_id),
         source_app=event.source,
         target_app=route.target_app,
         payload_json=serialized,
