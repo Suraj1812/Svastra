@@ -11,11 +11,14 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.audit.audit_service import record_audit_event
 from app.config import settings
+from app.care.diagnosis import serialize_diagnosis
 from app.models.care import Advisory, CarePlan
 from app.models.consent import RelationshipConsent
+from app.models.postoffice import TimelineEvent
 from app.models.relationship import ProviderPatientLink
 from app.models.user import User
 from app.models.workflow import CareTask, ClinicalAlert, ClinicalAttachment, TaskResponse
+from app.postoffice.timeline_service import serialize_timeline_event
 from app.postoffice.dispatcher import (
     acknowledge_event,
     create_event,
@@ -87,7 +90,7 @@ def _new_alert(
         severity=severity,
         message=message[:500],
         notification_mode=notification_mode,
-        status="OPEN",
+        status="NEW",
     )
     db.add(alert)
     db.flush()
@@ -125,6 +128,35 @@ def _alert_event(
     return event
 
 
+def _alert_lifecycle_event(
+    alert: ClinicalAlert,
+    *,
+    actor: User,
+    event_type: str,
+    previous_status: str,
+    status_value: str,
+    reason: str,
+):
+    return create_event(
+        event_type=event_type,
+        source="mantrana_mitra",
+        payload={
+            "actor_id": actor.id,
+            "patient_id": alert.patient_id,
+            "provider_id": alert.provider_id,
+            "alert_id": alert.alert_uid,
+            "advisory_id": alert.advisory_id,
+            "task_id": alert.task.task_uid if alert.task else None,
+            "alert_type": alert.alert_type,
+            "previous_status": previous_status,
+            "status": status_value,
+            "reason": reason,
+            "concept": alert.advisory.term,
+            "recorded_value": _alert_display(alert).get("recorded_value"),
+        },
+    )
+
+
 def enforce_prepublication_safety(
     db: Session,
     *,
@@ -138,7 +170,7 @@ def enforce_prepublication_safety(
     existing = db.query(ClinicalAlert).filter(
         ClinicalAlert.advisory_id == advisory.id,
         ClinicalAlert.alert_type == "allergy_conflict",
-        ClinicalAlert.status == "OPEN",
+        ClinicalAlert.status.in_(("NEW", "ACKNOWLEDGED")),
     ).first()
     if existing is not None:
         raise ClinicalSafetyError(existing.message)
@@ -417,6 +449,12 @@ def serialize_attachment(attachment: ClinicalAttachment):
 
 
 def _alert_display(alert: ClinicalAlert):
+    status_label = {
+        "NEW": "Open Alert",
+        "ACKNOWLEDGED": "Acknowledged Alert",
+        "RESOLVED": "Resolved Alert",
+        "OPEN": "Open Alert",
+    }.get(alert.status, alert.status.title())
     if alert.alert_type == "value_threshold":
         recorded_value = None
         marker = " value "
@@ -427,7 +465,7 @@ def _alert_display(alert: ClinicalAlert):
             "reason": "threshold_exceeded",
             "concept": alert.advisory.term,
             "recorded_value": recorded_value,
-            "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+            "status_label": status_label,
         }
     if alert.alert_type == "non_response":
         return {
@@ -435,33 +473,50 @@ def _alert_display(alert: ClinicalAlert):
             "reason": "non_response",
             "concept": alert.advisory.term,
             "recorded_value": None,
-            "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+            "status_label": status_label,
         }
     return {
         "title": "Allergy Conflict",
         "reason": "allergy_conflict",
         "concept": alert.advisory.term,
         "recorded_value": None,
-        "status_label": "Open Alert" if alert.status == "OPEN" else "Resolved Alert",
+        "status_label": status_label,
     }
 
 
 def serialize_alert(alert: ClinicalAlert):
+    care_plan = alert.advisory.care_plan
+    display = _alert_display(alert)
     return {
         "alert_id": alert.alert_uid,
         "advisory_id": alert.advisory_id,
         "task_id": alert.task.task_uid if alert.task else None,
         "patient": {"id": alert.patient.id, "full_name": alert.patient.full_name},
         "advisory": alert.advisory.term,
+        "care_plan": {
+            "id": care_plan.id,
+            "title": care_plan.title,
+            "diagnosis": serialize_diagnosis(care_plan),
+        } if care_plan else None,
         "alert_type": alert.alert_type,
         "severity": alert.severity,
         "message": alert.message,
         "notification_mode": alert.notification_mode,
         "status": alert.status,
-        "display": _alert_display(alert),
+        "display": display,
+        "detail": {
+            "patient": alert.patient.full_name,
+            "diagnosis": serialize_diagnosis(care_plan) if care_plan else None,
+            "measurement": alert.advisory.term,
+            "recorded_value": display.get("recorded_value"),
+            "time_recorded": alert.task.completed_at if alert.task else alert.created_at,
+            "rule_triggered": display.get("reason"),
+        },
         "event_id": alert.event_id,
         "acknowledged_at": alert.acknowledged_at,
+        "resolved_at": alert.resolved_at,
         "created_at": alert.created_at,
+        "updated_at": alert.updated_at,
     }
 
 
@@ -965,6 +1020,7 @@ def get_provider_alerts(
     if patient_id:
         query = query.filter(ClinicalAlert.patient_id == patient_id)
     if status:
+        status = "NEW" if status == "OPEN" else status
         query = query.filter(ClinicalAlert.status == status)
     return query.order_by(ClinicalAlert.created_at.desc()).limit(500).all()
 
@@ -1023,13 +1079,41 @@ def get_provider_dashboard_feed(
         link_query = link_query.filter(ProviderPatientLink.patient_id == patient_id)
     links = link_query.order_by(ProviderPatientLink.created_at.desc()).limit(500).all()
 
+    timeline_query = db.query(TimelineEvent).join(
+        ProviderPatientLink,
+        (ProviderPatientLink.patient_id == TimelineEvent.patient_id)
+        & (ProviderPatientLink.provider_id == provider_id),
+    ).join(
+        RelationshipConsent,
+        RelationshipConsent.id == ProviderPatientLink.source_consent_id,
+    ).filter(
+        ProviderPatientLink.status == "active",
+        RelationshipConsent.status == "ACTIVE",
+        TimelineEvent.provider_id == provider_id,
+    )
+    if patient_id:
+        timeline_query = timeline_query.filter(TimelineEvent.patient_id == patient_id)
+    recent_timeline_events = timeline_query.order_by(
+        TimelineEvent.occurred_at.desc(), TimelineEvent.id.desc()
+    ).limit(25).all()
+
     now = _utcnow()
     patient_status = []
     for link in links:
         open_alert_count = db.query(ClinicalAlert).filter(
             ClinicalAlert.provider_id == provider_id,
             ClinicalAlert.patient_id == link.patient_id,
-            ClinicalAlert.status == "OPEN",
+            ClinicalAlert.status == "NEW",
+        ).count()
+        acknowledged_alert_count = db.query(ClinicalAlert).filter(
+            ClinicalAlert.provider_id == provider_id,
+            ClinicalAlert.patient_id == link.patient_id,
+            ClinicalAlert.status == "ACKNOWLEDGED",
+        ).count()
+        resolved_alert_count = db.query(ClinicalAlert).filter(
+            ClinicalAlert.provider_id == provider_id,
+            ClinicalAlert.patient_id == link.patient_id,
+            ClinicalAlert.status == "RESOLVED",
         ).count()
         recent_response_count = db.query(CareTask).filter(
             CareTask.provider_id == provider_id,
@@ -1042,7 +1126,16 @@ def get_provider_dashboard_feed(
             CareTask.execution_status == "pending",
             CareTask.grace_expires_at < now,
         ).count()
-        if open_alert_count:
+        latest_plan = db.query(CarePlan).filter(
+            CarePlan.provider_id == provider_id,
+            CarePlan.patient_id == link.patient_id,
+        ).order_by(CarePlan.updated_at.desc(), CarePlan.id.desc()).first()
+        latest_activity = db.query(TimelineEvent.occurred_at).filter(
+            TimelineEvent.patient_id == link.patient_id,
+            TimelineEvent.provider_id == provider_id,
+        ).order_by(TimelineEvent.occurred_at.desc(), TimelineEvent.id.desc()).first()
+
+        if open_alert_count or acknowledged_alert_count:
             status_code, label, color = "alert_present", "Alert Present", "red"
         elif overdue_pending_count or recent_response_count:
             status_code, label, color = "pending_review", "Pending Review", "yellow"
@@ -1055,8 +1148,12 @@ def get_provider_dashboard_feed(
                 "label": label,
                 "color": color,
                 "open_alert_count": open_alert_count,
+                "acknowledged_alert_count": acknowledged_alert_count,
+                "resolved_alert_count": resolved_alert_count,
                 "recent_response_count": recent_response_count,
                 "overdue_pending_count": overdue_pending_count,
+                "diagnosis": serialize_diagnosis(latest_plan) if latest_plan else None,
+                "last_activity_at": latest_activity[0] if latest_activity else None,
             }
         )
 
@@ -1064,6 +1161,10 @@ def get_provider_dashboard_feed(
         "active_alerts": [serialize_alert(alert) for alert in active_alerts],
         "recent_responses": [serialize_task(task) for task in recent_responses],
         "patient_status": patient_status,
+        "recent_timeline_events": [
+            serialize_timeline_event(db, event, role="provider")
+            for event in recent_timeline_events
+        ],
     }
 
 
@@ -1074,7 +1175,11 @@ def acknowledge_alert(
     provider: User,
     ip_address: str | None = None,
 ):
-    alert = db.query(ClinicalAlert).filter(ClinicalAlert.alert_uid == alert_uid).first()
+    alert = db.query(ClinicalAlert).options(
+        joinedload(ClinicalAlert.patient),
+        joinedload(ClinicalAlert.advisory),
+        joinedload(ClinicalAlert.task),
+    ).filter(ClinicalAlert.alert_uid == alert_uid).first()
     if alert is None:
         raise ValueError("Alert not found")
     if provider.role != "provider" or alert.provider_id != provider.id:
@@ -1083,11 +1188,26 @@ def acknowledge_alert(
         db, provider_id=provider.id, patient_id=alert.patient_id
     ):
         raise PermissionError("Active provider-patient relationship is required")
+    if alert.status == "RESOLVED":
+        return alert, False, None
     if alert.status == "ACKNOWLEDGED":
-        return alert, False
+        return alert, False, None
+    previous_status = alert.status
     alert.status = "ACKNOWLEDGED"
     alert.acknowledged_at = _utcnow()
+    alert.updated_at = alert.acknowledged_at
+    db.flush()
+    event = _alert_lifecycle_event(
+        alert,
+        actor=provider,
+        event_type="alert.acknowledge",
+        previous_status=previous_status,
+        status_value="ACKNOWLEDGED",
+        reason="provider_acknowledged",
+    )
+    send_event(db, event, actor_user=provider, commit=False)
     db.commit()
+    delivery = _delivery_result(db, event, actor=provider)
     db.refresh(alert)
     record_audit_event(
         db,
@@ -1098,7 +1218,60 @@ def acknowledge_alert(
         ip_address=ip_address,
         metadata={"alert_id": alert.alert_uid, "patient_id": alert.patient_id},
     )
-    return alert, True
+    return alert, True, delivery
+
+
+def resolve_alert(
+    db: Session,
+    *,
+    alert_uid: str,
+    provider: User,
+    ip_address: str | None = None,
+):
+    alert = db.query(ClinicalAlert).options(
+        joinedload(ClinicalAlert.patient),
+        joinedload(ClinicalAlert.advisory),
+        joinedload(ClinicalAlert.task),
+    ).filter(ClinicalAlert.alert_uid == alert_uid).first()
+    if alert is None:
+        raise ValueError("Alert not found")
+    if provider.role != "provider" or alert.provider_id != provider.id:
+        raise PermissionError("Only the owning provider may resolve this alert")
+    if not has_active_provider_relationship(
+        db, provider_id=provider.id, patient_id=alert.patient_id
+    ):
+        raise PermissionError("Active provider-patient relationship is required")
+    if alert.status == "RESOLVED":
+        return alert, False, None
+    if alert.status != "ACKNOWLEDGED":
+        raise ValueError("Alert must be acknowledged before it can be resolved")
+    previous_status = alert.status
+    alert.status = "RESOLVED"
+    alert.resolved_at = _utcnow()
+    alert.updated_at = alert.resolved_at
+    db.flush()
+    event = _alert_lifecycle_event(
+        alert,
+        actor=provider,
+        event_type="alert.resolve",
+        previous_status=previous_status,
+        status_value="RESOLVED",
+        reason="provider_resolved",
+    )
+    send_event(db, event, actor_user=provider, commit=False)
+    db.commit()
+    delivery = _delivery_result(db, event, actor=provider)
+    db.refresh(alert)
+    record_audit_event(
+        db,
+        action="alert.resolved",
+        actor_user_id=provider.id,
+        actor_role=provider.role,
+        mobile_number=provider.mobile_number,
+        ip_address=ip_address,
+        metadata={"alert_id": alert.alert_uid, "patient_id": alert.patient_id},
+    )
+    return alert, True, delivery
 
 
 def get_scoped_attachment(db: Session, *, attachment_uid: str, user: User):

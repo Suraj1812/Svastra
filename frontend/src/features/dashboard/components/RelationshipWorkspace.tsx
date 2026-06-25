@@ -81,7 +81,12 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
           getJsonWithSession<LinkablePatientsResult>("/relationships/linkable", sessionToken),
           role === "provider"
             ? getJsonWithSession<ProviderDashboardFeed>("/provider/dashboard-feed", sessionToken)
-            : Promise.resolve<ProviderDashboardFeed>({ active_alerts: [], recent_responses: [], patient_status: [] }),
+            : Promise.resolve<ProviderDashboardFeed>({
+                active_alerts: [],
+                recent_responses: [],
+                patient_status: [],
+                recent_timeline_events: [],
+              }),
         ]);
         setRelationships(linked.relationships);
         setLinkable(available.patients);
@@ -205,6 +210,17 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
     return <Chip size="small" color={color} label={status.label} />;
   }
 
+  function diagnosisText(status?: PatientStatusSummary) {
+    if (!status?.diagnosis) return "Diagnosis: Not recorded";
+    if (typeof status.diagnosis === "string") return `Diagnosis: ${status.diagnosis}`;
+    return `Diagnosis: ${status.diagnosis.term || "Not recorded"}`;
+  }
+
+  function lastActivityText(status?: PatientStatusSummary) {
+    if (!status?.last_activity_at) return "Last activity: Not recorded";
+    return `Last activity: ${formatDate(status.last_activity_at)}`;
+  }
+
   return (
     <Stack spacing={3}>
       <Stack spacing={0.5}>
@@ -314,6 +330,16 @@ export function RelationshipWorkspace({ role, sessionToken, pendingCount = 0 }: 
                     {role === "patient" ? "Alias" : "Patient"}
                   </Typography>
                   <Typography sx={{ mt: 0.5 }}>{item.alias}</Typography>
+                  {role === "provider" ? (
+                    <Stack spacing={0.25} sx={{ mt: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {diagnosisText(patientStatuses[item.patient.id])}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {lastActivityText(patientStatuses[item.patient.id])}
+                      </Typography>
+                    </Stack>
+                  ) : null}
                 </Grid>
                 <Grid size={{ xs: 6, md: 2 }}>
                   <Typography variant="caption" color="text.secondary">Role</Typography>

@@ -22,6 +22,8 @@ ROUTES = {
     "response.log": EventRoute("response_handler", "mantrana_mitra"),
     "attachment.upload": EventRoute("attachment_handler", "mantrana_mitra"),
     "alert.trigger": EventRoute("alert_handler", "mantrana_mitra"),
+    "alert.acknowledge": EventRoute("alert_handler", "rogi_mitra"),
+    "alert.resolve": EventRoute("alert_handler", "rogi_mitra"),
     "message.send": EventRoute("message_handler", "rogi_mitra"),
 }
 

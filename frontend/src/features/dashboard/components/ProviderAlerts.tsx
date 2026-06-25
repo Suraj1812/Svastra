@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Button, Chip, Grid, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 
 import { getJsonWithSession, postJsonWithSession } from "../../../shared/api/client";
 import type { ClinicalAlert } from "../../../shared/types/auth";
@@ -8,6 +20,7 @@ export function ProviderAlerts({ sessionToken }: { sessionToken: string }) {
   const [alerts, setAlerts] = useState<ClinicalAlert[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ClinicalAlert | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -38,17 +51,48 @@ export function ProviderAlerts({ sessionToken }: { sessionToken: string }) {
     }
   }
 
-  const openAlerts = alerts.filter((item) => item.status === "OPEN");
-  const resolvedAlerts = alerts.filter((item) => item.status !== "OPEN");
+  async function resolve(alert: ClinicalAlert) {
+    setWorking(alert.alert_id);
+    try {
+      await postJsonWithSession(`/provider/alerts/${alert.alert_id}/resolve`, { confirmed: true }, sessionToken);
+      await load();
+    } catch (resolveError) {
+      setError(resolveError instanceof Error ? resolveError.message : "Alert could not be resolved");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  function diagnosisText(alert: ClinicalAlert) {
+    const diagnosis = alert.detail.diagnosis || alert.care_plan?.diagnosis;
+    if (!diagnosis) return "Not recorded";
+    if (typeof diagnosis === "string") return diagnosis;
+    return diagnosis.term || "Not recorded";
+  }
+
+  function formatDate(value?: string | null) {
+    if (!value) return "Not recorded";
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  }
+
+  const openAlerts = alerts.filter((item) => item.status === "NEW" || item.status === "OPEN");
+  const acknowledgedAlerts = alerts.filter((item) => item.status === "ACKNOWLEDGED");
+  const resolvedAlerts = alerts.filter((item) => item.status === "RESOLVED");
 
   function renderAlertCard(item: ClinicalAlert) {
+    const isOpen = item.status === "NEW" || item.status === "OPEN";
     return (
       <Grid key={item.alert_id} size={{ xs: 12, md: 6 }}>
-        <Paper variant="outlined" sx={{ p: 2.25, height: "100%", borderColor: item.status === "OPEN" ? "error.light" : "divider" }}>
+        <Paper variant="outlined" sx={{ p: 2.25, height: "100%", borderColor: isOpen ? "error.light" : "divider" }}>
           <Stack spacing={1.5}>
             <Stack direction="row" justifyContent="space-between" gap={1}>
               <Typography variant="h3">⚠ {item.display.title}</Typography>
-              <Chip size="small" color={item.status === "OPEN" ? "error" : "default"} label={item.display.status_label} />
+              <Chip size="small" color={isOpen ? "error" : item.status === "ACKNOWLEDGED" ? "warning" : "success"} label={item.display.status_label} />
             </Stack>
             <Typography color="text.secondary">{item.patient.full_name}</Typography>
             {item.display.recorded_value ? (
@@ -58,11 +102,19 @@ export function ProviderAlerts({ sessionToken }: { sessionToken: string }) {
               </Stack>
             ) : null}
             <Typography>{item.message}</Typography>
-            {item.status === "OPEN" ? (
-              <Button variant="contained" onClick={() => void acknowledge(item)} disabled={working === item.alert_id}>
-                Mark reviewed
-              </Button>
-            ) : null}
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              <Button variant="outlined" onClick={() => setDetail(item)}>Details</Button>
+              {isOpen ? (
+                <Button variant="contained" onClick={() => void acknowledge(item)} disabled={working === item.alert_id}>
+                  Acknowledge
+                </Button>
+              ) : null}
+              {item.status === "ACKNOWLEDGED" ? (
+                <Button variant="contained" color="success" onClick={() => void resolve(item)} disabled={working === item.alert_id}>
+                  Resolve
+                </Button>
+              ) : null}
+            </Stack>
           </Stack>
         </Paper>
       </Grid>
@@ -91,6 +143,12 @@ export function ProviderAlerts({ sessionToken }: { sessionToken: string }) {
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
           <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography variant="caption" color="text.secondary">Acknowledged Alerts</Typography>
+            <Typography variant="h2">{acknowledgedAlerts.length}</Typography>
+          </Paper>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="caption" color="text.secondary">Resolved Alerts</Typography>
             <Typography variant="h2">{resolvedAlerts.length}</Typography>
           </Paper>
@@ -106,12 +164,46 @@ export function ProviderAlerts({ sessionToken }: { sessionToken: string }) {
         </Stack>
       ) : null}
 
+      {acknowledgedAlerts.length ? (
+        <Stack spacing={1.5}>
+          <Typography variant="h3">Acknowledged Alerts</Typography>
+          <Grid container spacing={2}>{acknowledgedAlerts.map(renderAlertCard)}</Grid>
+        </Stack>
+      ) : null}
+
       {resolvedAlerts.length ? (
         <Stack spacing={1.5}>
           <Typography variant="h3">Resolved Alerts</Typography>
           <Grid container spacing={2}>{resolvedAlerts.map(renderAlertCard)}</Grid>
         </Stack>
       ) : null}
+
+      <Dialog open={Boolean(detail)} onClose={() => setDetail(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Alert Details</DialogTitle>
+        <DialogContent>
+          {detail ? (
+            <Grid container spacing={2} sx={{ pt: 0.5 }}>
+              {[
+                ["Patient", detail.detail.patient],
+                ["Diagnosis", diagnosisText(detail)],
+                ["Measurement", detail.detail.measurement],
+                ["Recorded Value", detail.detail.recorded_value || "Not recorded"],
+                ["Time Recorded", formatDate(detail.detail.time_recorded)],
+                ["Rule Triggered", detail.detail.rule_triggered.replaceAll("_", " ")],
+                ["Alert Status", detail.display.status_label],
+              ].map(([label, value]) => (
+                <Grid key={label} size={{ xs: 12, sm: 6 }}>
+                  <Typography variant="caption" color="text.secondary">{label}</Typography>
+                  <Typography sx={{ mt: 0.25 }}>{value}</Typography>
+                </Grid>
+              ))}
+            </Grid>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetail(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }

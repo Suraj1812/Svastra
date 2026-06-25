@@ -22,6 +22,8 @@ MonitorEventType = Literal[
     "response.log",
     "attachment.upload",
     "alert.trigger",
+    "alert.acknowledge",
+    "alert.resolve",
     "message.send",
 ]
 

@@ -44,6 +44,7 @@ _PREVIEW_KEYS = {
     "alert_id",
     "alert_type",
     "attachment_id",
+    "previous_status",
     "care_plan_id",
     "consent_id",
     "consent_type",

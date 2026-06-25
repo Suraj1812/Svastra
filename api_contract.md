@@ -1,9 +1,9 @@
 # SVASTRA+ MVP API Contract
 
-Version: 4.1 — Timeline Ledger, Event Registry and Alert Dashboard
+Version: 4.2 — Alert Lifecycle and Demonstration Readiness
 
 Updated: 24 June 2026
-Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory scheduling, patient tasks, coded responses, investigation uploads, timeline ledger, clinical alerts, provider dashboard feed, PostOffice and API Event Monitor.
+Scope: identity, RBAC, consent, relationships, care plans, terminology, advisory scheduling, patient tasks, coded responses, investigation uploads, timeline ledger, clinical alert lifecycle, provider dashboard feed, PostOffice and API Event Monitor.
 
 This is the single source of truth shared by backend, frontend, QA, product, and non-technical reviewers.
 
@@ -277,6 +277,8 @@ task.generate
 response.log
 attachment.upload
 alert.trigger
+alert.acknowledge
+alert.resolve
 message.send
 ```
 
@@ -290,6 +292,8 @@ Documented canonical Week 4 event names:
 | `event.response.log` | `response.log` | Patient submitted a medication, measurement, recommendation or missed response. |
 | `event.attachment.upload` | `attachment.upload` | Patient uploaded an investigation report. Passive in MVP; it never creates an alert by itself. |
 | `event.alert.trigger` | `alert.trigger` | Rule engine created a clinical alert. |
+| `event.alert.acknowledge` | `alert.acknowledge` | Provider acknowledged alert review without deleting history. |
+| `event.alert.resolve` | `alert.resolve` | Provider resolved the alert while keeping it visible historically. |
 
 ## 5. Endpoint index
 
@@ -351,6 +355,7 @@ Documented canonical Week 4 event names:
 | Dashboard | `GET /provider/dashboard-feed` | Provider owner with ACTIVE relationship |
 | Alerts | `GET /provider/alerts` | Provider owner with ACTIVE relationship |
 | Alerts | `POST /provider/alerts/{alert_uid}/acknowledge` | Provider owner |
+| Alerts | `POST /provider/alerts/{alert_uid}/resolve` | Provider owner |
 | Allergies | `GET /me/allergies` | Patient |
 | Allergies | `POST /me/allergies` | Patient |
 | PostOffice | `POST /postoffice/send` | Authorized event actor |
@@ -1202,8 +1207,19 @@ Response `data`:
       "label": "Alert Present",
       "color": "red",
       "open_alert_count": 1,
+      "acknowledged_alert_count": 0,
+      "resolved_alert_count": 0,
       "recent_response_count": 1,
-      "overdue_pending_count": 0
+      "overdue_pending_count": 0,
+      "diagnosis": {"conceptId":"demo_urti","term":"Upper Respiratory Tract Infection","notes":null},
+      "last_activity_at": "2026-06-24T10:06:00+05:30"
+    }
+  ],
+  "recent_timeline_events": [
+    {
+      "event_type": "event.alert.trigger",
+      "label": "Temperature Above Threshold",
+      "timestamp": "2026-06-24T10:06:00+05:30"
     }
   ]
 }
@@ -1213,13 +1229,21 @@ Status indicator rules:
 
 | Label | Color | Meaning |
 | --- | --- | --- |
-| `Stable` | green | No open alert and nothing waiting for review. |
-| `Pending Review` | yellow | Recent response or overdue pending item exists but no open alert. |
-| `Alert Present` | red | At least one open alert exists for the patient. |
+| `Stable` | green | No active alert and nothing waiting for review. |
+| `Pending Review` | yellow | Recent response or overdue pending item exists but no active alert. |
+| `Alert Present` | red | At least one `NEW` or `ACKNOWLEDGED` alert exists for the patient. |
 
 ### GET /provider/alerts
 
-Authentication: provider. Optional `patient_id` and `alert_status=OPEN|ACKNOWLEDGED`. Only alerts within ACTIVE consent-backed relationships are returned.
+Authentication: provider. Optional `patient_id` and `alert_status=OPEN|NEW|ACKNOWLEDGED|RESOLVED`. `OPEN` is accepted as a backward-compatible alias for `NEW`. Only alerts within ACTIVE consent-backed relationships are returned.
+
+Alert state model:
+
+```text
+NEW → ACKNOWLEDGED → RESOLVED
+```
+
+No other stored alert states are valid.
 
 Alert object fields:
 
@@ -1231,13 +1255,37 @@ Alert object fields:
 | `severity` | `low`, `medium`, `high`, or `critical`. |
 | `message` | Safe clinical summary. |
 | `notification_mode` | `immediate`, `daily_summary`, or `both`. `none` suppresses rule-generated alerts. |
-| `status` | `OPEN` or `ACKNOWLEDGED`. |
-| `display` | Non-technical alert UI helper: title, reason, concept, recorded value, and Open/Resolved label. |
-| `event_id`, timestamps | CEP and lifecycle references. |
+| `status` | `NEW`, `ACKNOWLEDGED`, or `RESOLVED`. |
+| `display` | Non-technical alert UI helper: title, reason, concept, recorded value, and Open/Acknowledged/Resolved label. |
+| `detail` | Alert detail view helper: patient, diagnosis, measurement, recorded value, time recorded, and rule triggered. |
+| `event_id`, timestamps | Trigger CEP and lifecycle timestamps: created, updated, acknowledged, resolved. |
 
 ### POST /provider/alerts/{alert_uid}/acknowledge
 
-Authentication: owning provider with ACTIVE relationship. Body: `{"confirmed":true}`. Idempotent; returns `changed: false` when already acknowledged. Writes `alert.acknowledged` audit history.
+Authentication: owning provider with ACTIVE relationship. Body: `{"confirmed":true}`.
+
+Effect:
+
+1. Moves alert from `NEW` to `ACKNOWLEDGED`.
+2. Creates `event.alert.acknowledge` in the timeline.
+3. Keeps original trigger history.
+4. Writes `alert.acknowledged` audit history.
+
+Idempotent when already `ACKNOWLEDGED` or `RESOLVED`; returns `changed: false` without creating duplicate CEP events.
+
+### POST /provider/alerts/{alert_uid}/resolve
+
+Authentication: owning provider with ACTIVE relationship. Body: `{"confirmed":true}`.
+
+Effect:
+
+1. Requires current status `ACKNOWLEDGED`.
+2. Moves alert to `RESOLVED`.
+3. Creates `event.alert.resolve` in the timeline.
+4. Keeps alert visible historically under Resolved Alerts.
+5. Writes `alert.resolved` audit history.
+
+Calling resolve again is idempotent and returns `changed: false`. Calling resolve before acknowledgement returns `400`.
 
 ### Aggregate advisory status
 
@@ -1374,6 +1422,8 @@ Role wording:
 | `event.attachment.upload` investigation | `CBC Uploaded` | `CBC Uploaded` |
 | `event.response.log` recommendation done | `Steam Inhalation Completed` | `Steam Inhalation Completed` |
 | `event.alert.trigger` threshold | `Temperature Above Threshold` | `Temperature Above Threshold` |
+| `event.alert.acknowledge` | `Alert Acknowledged` | `Alert Acknowledged` |
+| `event.alert.resolve` | `Alert Resolved` | `Alert Resolved` |
 
 Selecting an event in the UI shows only:
 
@@ -1519,7 +1569,10 @@ Opening detail writes `postoffice.monitor_detail_viewed` to the audit log with a
 | `advisory.publish` | `care_plan_id`, top-level `execution_status=pending`, non-empty `advisories` array; every entry requires advisory ID/type, concept, term, `execution_status=pending`, configuration |
 | `task.generate` | `care_plan_id`, `advisory_id`, 1–500 unique task IDs |
 | `response.log` | `task_id`, response type/status, terminal execution status; must match stored immutable response |
+| `attachment.upload` | `task_id`, `attachment_id`, filename, content type, SHA-256, investigation response type |
 | `alert.trigger` | `alert_id`, `severity` |
+| `alert.acknowledge` | `alert_id`, `previous_status=NEW`, `status=ACKNOWLEDGED`, reason |
+| `alert.resolve` | `alert_id`, `previous_status=ACKNOWLEDGED`, `status=RESOLVED`, reason |
 | `message.send` | `message_id`, `message_text` |
 
 ## 18. Frontend integration checklist
@@ -1548,6 +1601,7 @@ The frontend must:
 20. For catalog medications, display dose form, route and method as trusted read-only metadata. Do not ask the provider to re-enter them.
 21. Show investigation priority as a small constrained choice group and show that report upload is required.
 22. Keep notification routing defaults out of the clinical form; the provider chooses the clinical rule and severity, while the backend applies the documented delivery default.
+23. For alert lifecycle actions, send only `{"confirmed":true}` to the business endpoints. Do not send CEP bodies from normal frontend screens; backend creates `event.alert.acknowledge` and `event.alert.resolve`.
 
 ## 19. End-to-end acceptance example
 
@@ -1567,6 +1621,10 @@ Patient GET /me/tasks
 Patient POST /tasks/{task_uid}/responses or /upload
 Backend records response.log, attachment.upload when applicable, and updates task/advisory execution status
 Backend optionally records alert.trigger for threshold/non-response rules
+Provider POST /provider/alerts/{alert_uid}/acknowledge {confirmed:true}
+Backend records alert.acknowledge and keeps trigger history
+Provider POST /provider/alerts/{alert_uid}/resolve {confirmed:true}
+Backend records alert.resolve and keeps alert visible historically
 Provider GET /provider/dashboard-feed, /provider/tasks and /provider/alerts
 Provider/patient opens Timeline and sees the clinical lifecycle
 ```

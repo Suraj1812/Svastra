@@ -55,6 +55,20 @@ MVP_EVENT_REGISTRY: dict[str, EventRegistryEntry] = {
         description="Clinical rule evaluation created an alert for provider review.",
         category="alert",
     ),
+    "alert.acknowledge": EventRegistryEntry(
+        internal_type="alert.acknowledge",
+        canonical_type="event.alert.acknowledge",
+        label="Alert Acknowledged",
+        description="Provider acknowledged a clinical alert without deleting history.",
+        category="alert",
+    ),
+    "alert.resolve": EventRegistryEntry(
+        internal_type="alert.resolve",
+        canonical_type="event.alert.resolve",
+        label="Alert Resolved",
+        description="Provider resolved a clinical alert while keeping it visible historically.",
+        category="alert",
+    ),
     "consent.request": EventRegistryEntry(
         internal_type="consent.request",
         canonical_type="event.consent.request",
@@ -114,6 +128,8 @@ DOCUMENTED_MVP_EVENT_TYPES = tuple(
         "response.log",
         "attachment.upload",
         "alert.trigger",
+        "alert.acknowledge",
+        "alert.resolve",
     )
 ) + ("event.attachment.upload",)
 

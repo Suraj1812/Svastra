@@ -186,18 +186,25 @@ def _authorize_event(db: Session, event: CEPEvent, actor_user: User | None):
             or task.execution_status != event.payload["execution_status"]
         ):
             raise CEPValidationError("Attachment CEP does not match the immutable stored attachment")
-    elif event.event_type == "alert.trigger":
+    elif event.event_type.startswith("alert."):
         alert = db.query(ClinicalAlert).filter(
             ClinicalAlert.alert_uid == event.payload["alert_id"],
-            ClinicalAlert.event_id == event.event_id,
             ClinicalAlert.patient_id == patient.id,
         ).first()
         if alert is None:
             raise CEPValidationError("Alert CEP does not match a stored clinical alert")
-        if actor_user.id not in {alert.provider_id, alert.patient_id}:
-            raise PermissionError("Alert actor is outside the clinical relationship")
-        if alert.severity != event.payload["severity"]:
-            raise CEPValidationError("Alert severity does not match stored state")
+        if event.event_type == "alert.trigger":
+            if alert.event_id != event.event_id:
+                raise CEPValidationError("Alert trigger CEP does not match stored alert event")
+            if actor_user.id not in {alert.provider_id, alert.patient_id}:
+                raise PermissionError("Alert actor is outside the clinical relationship")
+            if alert.severity != event.payload["severity"]:
+                raise CEPValidationError("Alert severity does not match stored state")
+        else:
+            if actor_user.id != alert.provider_id:
+                raise PermissionError("Only the owning provider may send alert lifecycle events")
+            if alert.status != event.payload["status"]:
+                raise CEPValidationError("Alert lifecycle CEP does not match stored status")
     elif actor_user.role == "patient":
         if actor_user.id != patient.id:
             raise PermissionError("Patients may send events only for themselves")

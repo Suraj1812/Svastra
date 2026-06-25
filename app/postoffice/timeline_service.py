@@ -209,6 +209,21 @@ def _timeline_label_and_details(db: Session, event: TimelineEvent, role: str):
         )
         return label, details
 
+    if event.event_type in {"alert.acknowledge", "alert.resolve"}:
+        alert = _alert(db, body.get("alert_id"))
+        concept = body.get("concept") or (alert.advisory.term if alert else "Clinical")
+        label = "Alert Acknowledged" if event.event_type == "alert.acknowledge" else "Alert Resolved"
+        details.update(
+            {
+                "Alert": concept,
+                "Previous Status": body.get("previous_status"),
+                "Status": body.get("status"),
+                "Reason": body.get("reason"),
+                "Recorded Value": body.get("recorded_value"),
+            }
+        )
+        return label, details
+
     details["Details"] = body
     return entry.label, details
 

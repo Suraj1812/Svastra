@@ -117,7 +117,7 @@ class ClinicalAlert(Base):
             name="ck_clinical_alerts_severity",
         ),
         CheckConstraint(
-            "status in ('OPEN', 'ACKNOWLEDGED')",
+            "status in ('NEW', 'ACKNOWLEDGED', 'RESOLVED')",
             name="ck_clinical_alerts_status",
         ),
         CheckConstraint(
@@ -137,10 +137,12 @@ class ClinicalAlert(Base):
     severity = Column(String(20), nullable=False)
     message = Column(String(500), nullable=False)
     notification_mode = Column(String(32), nullable=False, default="immediate")
-    status = Column(String(20), nullable=False, default="OPEN", index=True)
+    status = Column(String(20), nullable=False, default="NEW", index=True)
     event_id = Column(String(64), nullable=True, unique=True, index=True)
     acknowledged_at = Column(DateTime, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     advisory = relationship("Advisory")
     task = relationship("CareTask")

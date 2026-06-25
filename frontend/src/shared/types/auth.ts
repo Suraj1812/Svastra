@@ -211,11 +211,16 @@ export type ClinicalAlert = {
   task_id: string | null;
   patient: { id: number; full_name: string };
   advisory: string;
+  care_plan: null | {
+    id: number;
+    title: string;
+    diagnosis: DiagnosisSummary | string | null;
+  };
   alert_type: "allergy_conflict" | "non_response" | "value_threshold";
   severity: "low" | "medium" | "high" | "critical";
   message: string;
   notification_mode: "immediate" | "daily_summary" | "both";
-  status: "OPEN" | "ACKNOWLEDGED";
+  status: "OPEN" | "NEW" | "ACKNOWLEDGED" | "RESOLVED";
   display: {
     title: string;
     reason: "allergy_conflict" | "non_response" | "threshold_exceeded";
@@ -223,9 +228,19 @@ export type ClinicalAlert = {
     recorded_value: string | null;
     status_label: string;
   };
+  detail: {
+    patient: string;
+    diagnosis: DiagnosisSummary | string | null;
+    measurement: string;
+    recorded_value: string | null;
+    time_recorded: string | null;
+    rule_triggered: string;
+  };
   event_id: string;
   acknowledged_at: string | null;
+  resolved_at: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 export type PatientStatusSummary = {
@@ -234,14 +249,19 @@ export type PatientStatusSummary = {
   label: "Stable" | "Pending Review" | "Alert Present";
   color: "green" | "yellow" | "red";
   open_alert_count: number;
+  acknowledged_alert_count: number;
+  resolved_alert_count: number;
   recent_response_count: number;
   overdue_pending_count: number;
+  diagnosis: DiagnosisSummary | string | null;
+  last_activity_at: string | null;
 };
 
 export type ProviderDashboardFeed = {
   active_alerts: ClinicalAlert[];
   recent_responses: CareTask[];
   patient_status: PatientStatusSummary[];
+  recent_timeline_events: ClinicalTimelineEvent[];
 };
 
 export type ClinicalTimelineEvent = {

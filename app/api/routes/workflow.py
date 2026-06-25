@@ -22,6 +22,7 @@ from app.workflow.service import (
     get_scoped_attachment,
     get_scoped_task,
     record_task_response,
+    resolve_alert,
     serialize_alert,
     serialize_attachment,
     serialize_response,
@@ -32,7 +33,7 @@ from app.workflow.service import (
 
 router = APIRouter(tags=["Task Workflow"])
 TaskStatusQuery = Literal["pending", "completed", "completed_late", "missed"]
-AlertStatusQuery = Literal["OPEN", "ACKNOWLEDGED"]
+AlertStatusQuery = Literal["OPEN", "NEW", "ACKNOWLEDGED", "RESOLVED"]
 TASK_ID_PATTERN = r"^task_[a-f0-9]{32}$"
 ALERT_ID_PATTERN = r"^alert_[a-f0-9]{32}$"
 ATTACHMENT_ID_PATTERN = r"^attachment_[a-f0-9]{32}$"
@@ -270,7 +271,7 @@ def acknowledge_provider_alert(
     db: Session = Depends(get_db),
 ):
     try:
-        alert, changed = acknowledge_alert(
+        alert, changed, delivery = acknowledge_alert(
             db,
             alert_uid=alert_uid,
             provider=current_user,
@@ -279,6 +280,29 @@ def acknowledge_provider_alert(
     except (ValueError, PermissionError) as error:
         _workflow_error(error)
     return success_response(
-        {**serialize_alert(alert), "changed": changed},
+        {**serialize_alert(alert), "changed": changed, "delivery": delivery},
         "Alert acknowledged" if changed else "Alert already acknowledged",
+    )
+
+
+@router.post("/provider/alerts/{alert_uid}/resolve")
+def resolve_provider_alert(
+    alert_uid: Annotated[str, Path(pattern=ALERT_ID_PATTERN)],
+    payload: AlertAcknowledgeRequest,
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        alert, changed, delivery = resolve_alert(
+            db,
+            alert_uid=alert_uid,
+            provider=current_user,
+            ip_address=client_ip(request),
+        )
+    except (ValueError, PermissionError) as error:
+        _workflow_error(error)
+    return success_response(
+        {**serialize_alert(alert), "changed": changed, "delivery": delivery},
+        "Alert resolved" if changed else "Alert already resolved",
     )

@@ -21,6 +21,8 @@ SUPPORTED_EVENT_TYPES = (
     "response.log",
     "attachment.upload",
     "alert.trigger",
+    "alert.acknowledge",
+    "alert.resolve",
     "message.send",
 )
 
@@ -48,6 +50,8 @@ class CEPEvent(BaseModel):
         "response.log",
         "attachment.upload",
         "alert.trigger",
+        "alert.acknowledge",
+        "alert.resolve",
         "message.send",
     ]
     event_id: str = Field(..., min_length=8, max_length=64)
@@ -186,6 +190,12 @@ class CEPEvent(BaseModel):
         elif self.event_type == "alert.trigger":
             _bounded_string(self.payload, "alert_id", 1, 100)
             _one_of(self.payload, "severity", {"low", "medium", "high", "critical"})
+        elif self.event_type in {"alert.acknowledge", "alert.resolve"}:
+            _bounded_string(self.payload, "alert_id", 1, 100)
+            _one_of(self.payload, "previous_status", {"NEW", "ACKNOWLEDGED"})
+            expected_status = "ACKNOWLEDGED" if self.event_type == "alert.acknowledge" else "RESOLVED"
+            _one_of(self.payload, "status", {expected_status})
+            _bounded_string(self.payload, "reason", 1, 100)
         elif self.event_type == "message.send":
             _bounded_string(self.payload, "message_id", 1, 100)
             _bounded_string(self.payload, "message_text", 1, 4000)

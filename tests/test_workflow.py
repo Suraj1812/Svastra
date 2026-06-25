@@ -296,6 +296,86 @@ def test_wednesday_timeline_and_dashboard_feed_show_threshold_alert(integration_
     assert data["recent_responses"][0]["response"]["value"]["numeric_value"] == 102.5
 
 
+def test_thursday_alert_acknowledge_resolve_lifecycle_generates_timeline_events(integration_client):
+    patient = register_patient(integration_client, "9876501427")
+    provider = register_provider(integration_client, "9876501428")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _plan(integration_client, patient, provider, title="URTI Monitoring")
+    advisory = _add(
+        integration_client,
+        plan,
+        provider,
+        concept_id="demo_term_temperature",
+        term="Temperature",
+        tag="measurement",
+        configuration=_common(
+            measurement_unit="°F",
+            value_warning={
+                "condition": "more_than",
+                "threshold_value": 101,
+                "measurement_unit": "°F",
+                "notification": "immediate",
+                "severity": "critical",
+            },
+        ),
+    )
+    _publish(integration_client, plan, advisory, provider)
+    task = integration_client.get("/me/tasks", headers=headers(patient)).json()["data"]["tasks"][0]
+    response = integration_client.post(
+        f"/tasks/{task['task_id']}/responses",
+        json={"response_status": "recorded", "numeric_value": 102.5, "measurement_unit": "°F"},
+        headers=headers(patient),
+    )
+    assert response.status_code == 201
+
+    open_alerts = integration_client.get("/provider/alerts?alert_status=OPEN", headers=headers(provider))
+    assert open_alerts.status_code == 200
+    alert = open_alerts.json()["data"]["alerts"][0]
+    assert alert["status"] == "NEW"
+
+    acknowledged = integration_client.post(
+        f"/provider/alerts/{alert['alert_id']}/acknowledge",
+        json={"confirmed": True},
+        headers=headers(provider),
+    )
+    assert acknowledged.status_code == 200, acknowledged.text
+    assert acknowledged.json()["data"]["status"] == "ACKNOWLEDGED"
+    assert acknowledged.json()["data"]["delivery"]["event_id"].startswith("evt_")
+
+    resolved = integration_client.post(
+        f"/provider/alerts/{alert['alert_id']}/resolve",
+        json={"confirmed": True},
+        headers=headers(provider),
+    )
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json()["data"]["status"] == "RESOLVED"
+    assert resolved.json()["data"]["delivery"]["event_id"].startswith("evt_")
+
+    repeated = integration_client.post(
+        f"/provider/alerts/{alert['alert_id']}/resolve",
+        json={"confirmed": True},
+        headers=headers(provider),
+    )
+    assert repeated.status_code == 200
+    assert repeated.json()["data"]["changed"] is False
+
+    timeline = integration_client.get(
+        f"/postoffice/timeline?patient_id={patient['user']['id']}",
+        headers=headers(provider),
+    )
+    labels = [event["label"] for event in timeline.json()["data"]["events"]]
+    assert "Temperature Above Threshold" in labels
+    assert "Alert Acknowledged" in labels
+    assert "Alert Resolved" in labels
+
+    db = integration_client.testing_session_local()
+    try:
+        assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "alert.acknowledge").count() == 1
+        assert db.query(TimelineEvent).filter(TimelineEvent.event_type == "alert.resolve").count() == 1
+    finally:
+        db.close()
+
+
 def test_investigation_report_upload_is_private_validated_and_hash_verified(
     integration_client, tmp_path
 ):

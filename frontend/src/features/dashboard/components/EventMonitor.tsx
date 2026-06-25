@@ -52,6 +52,8 @@ const eventTypes = [
   "response.log",
   "attachment.upload",
   "alert.trigger",
+  "alert.acknowledge",
+  "alert.resolve",
   "message.send",
 ] as const;
 
