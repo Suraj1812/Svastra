@@ -29,6 +29,10 @@ class Settings:
         "REFERENCE_TERMS_PATH",
         BASE_DIR / "data" / "svp_entry_terms.json",
     )
+    terminology_bundle_entry_terms_path = _path_from_env(
+        "SVASTRA_TERMINOLOGY_ENTRY_TERMS_PATH",
+        BASE_DIR / "svp_terminology_sqlitedb" / "svp_entry_terms.json",
+    )
     session_ttl_hours = int(os.getenv("SESSION_TTL_HOURS", "24"))
     otp_ttl_seconds = int(os.getenv("OTP_TTL_SECONDS", "300"))
     otp_resend_cooldown_seconds = int(os.getenv("OTP_RESEND_COOLDOWN_SECONDS", "30"))

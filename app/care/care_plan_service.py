@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -33,7 +34,7 @@ def create_care_plan(
     provider: User,
     patient_id: int,
     title: str,
-    diagnosis: str | None = None,
+    diagnosis: Any = None,
     ip_address: str | None = None,
 ):
     if provider.role != "provider":
@@ -73,7 +74,7 @@ def update_care_plan(
     care_plan_id: int,
     provider: User,
     title: str,
-    diagnosis: str | None,
+    diagnosis: Any,
     ip_address: str | None = None,
 ):
     plan = get_provider_care_plan(db, care_plan_id=care_plan_id, provider=provider)

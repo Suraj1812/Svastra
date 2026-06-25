@@ -1,7 +1,11 @@
 import json
+from datetime import date, timedelta
+
+import pytest
 
 from app.models.audit import AuditLog
 from app.models.postoffice import OutboundEvent, PostOfficeAcknowledgement, ReceivedEvent, TimelineEvent
+from app.terminology.svp_bundle import SVP_ENTRY_TERMS_PATH
 from tests.helpers import grant_provider_access, headers, register_patient, register_provider
 
 
@@ -99,6 +103,58 @@ def test_structured_diagnosis_flows_to_publish_event_and_patient_view(integratio
         db.close()
 
 
+def test_care_plan_diagnosis_can_be_created_without_concept_id(integration_client):
+    patient = register_patient(integration_client, "9876501291")
+    provider = register_provider(integration_client, "9876501292")
+    grant_provider_access(integration_client, patient, provider)
+
+    response = integration_client.post(
+        "/care-plans",
+        json={
+            "patient_id": patient["user"]["id"],
+            "title": "Fever home-care plan",
+            "diagnosis": {
+                "term": "Viral fever",
+                "notes": "Hydration and temperature watch",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert response.status_code == 201, response.text
+    plan = response.json()["data"]
+    assert plan["diagnosis"] == {
+        "conceptId": None,
+        "term": "Viral fever",
+        "notes": "Hydration and temperature watch",
+    }
+
+    update = integration_client.put(
+        f"/care-plans/{plan['id']}",
+        json={
+            "title": "Fever recovery plan",
+            "diagnosis": {
+                "conceptId": "",
+                "term": "Viral fever improving",
+                "notes": None,
+            },
+        },
+        headers=headers(provider),
+    )
+    assert update.status_code == 200, update.text
+    updated_plan = update.json()["data"]
+    assert updated_plan["diagnosis"] == {
+        "conceptId": None,
+        "term": "Viral fever improving",
+        "notes": None,
+    }
+
+    loaded = integration_client.get("/care-plans", headers=headers(provider))
+    assert loaded.status_code == 200
+    loaded_plan = next(item for item in loaded.json()["data"]["care_plans"] if item["id"] == plan["id"])
+    assert loaded_plan["diagnosis"]["conceptId"] is None
+    assert loaded_plan["diagnosis"]["term"] == "Viral fever improving"
+
+
 def test_terminology_tag_and_advisory_configuration_are_server_validated(integration_client):
     patient = register_patient(integration_client, "9876501211")
     provider = register_provider(integration_client, "9876501212")
@@ -138,7 +194,9 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
         "/terminology/provider-terms?query=para", headers=headers(provider)
     )
     assert legacy_drug_search.status_code == 200
-    assert legacy_drug_search.json()["data"]["terms"] == []
+    legacy_drug_terms = legacy_drug_search.json()["data"]["terms"]
+    assert not any(item["term"] == "Paracetamol" for item in legacy_drug_terms)
+    assert not any(item["tag"] == "medication" for item in legacy_drug_terms)
     legacy_drug_options = integration_client.get(
         "/terminology/provider-terms/demo_term_paracetamol/advisory-options",
         headers=headers(provider),
@@ -187,6 +245,58 @@ def test_terminology_tag_and_advisory_configuration_are_server_validated(integra
     assert valid.status_code == 201
     assert valid.json()["data"]["advisory_type"] == "measurement"
     assert valid.json()["data"]["execution_status"] == "pending"
+
+
+def test_svp_bundle_investigation_terms_can_be_selected_and_authored(integration_client):
+    if not SVP_ENTRY_TERMS_PATH.exists():
+        pytest.skip("SVP terminology bundle is not present in this checkout")
+    patient = register_patient(integration_client, "9876501293")
+    provider = register_provider(integration_client, "9876501294")
+    grant_provider_access(integration_client, patient, provider)
+    plan = _create_plan(integration_client, patient, provider)
+
+    search = integration_client.get(
+        "/terminology/provider-terms?query=complete%20blood&tag=investigation",
+        headers=headers(provider),
+    )
+    assert search.status_code == 200, search.text
+    selected = next(
+        item for item in search.json()["data"]["terms"]
+        if item["conceptId"] == "26604007" and item["term"] == "Complete blood count"
+    )
+    assert selected["tag"] == "investigation"
+
+    options = integration_client.get(
+        f"/terminology/provider-terms/{selected['conceptId']}/advisory-options",
+        headers=headers(provider),
+    )
+    assert options.status_code == 200, options.text
+    assert options.json()["data"]["term"]["tag"] == "investigation"
+    assert options.json()["data"]["options"]["priorities"] == ["routine", "urgent", "asap", "stat"]
+
+    created = integration_client.post(
+        f"/care-plans/{plan['id']}/advisories",
+        json={
+            "concept_id": selected["conceptId"],
+            "term": selected["term"],
+            "tag": selected["tag"],
+            "configuration": {
+                "frequency": "once_daily",
+                "duration_value": 3,
+                "duration_unit": "days",
+                "priority": "routine",
+                "due_date": (date.today() + timedelta(days=2)).isoformat(),
+                "upload_required": True,
+                "alert_if_not_uploaded": True,
+                "grace_period_value": 2,
+                "grace_period_unit": "days",
+            },
+        },
+        headers=headers(provider),
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["data"]["concept_id"] == "26604007"
+    assert created.json()["data"]["advisory_type"] == "investigation"
 
 
 def test_ready_to_send_advisory_can_edit_delete_but_published_is_read_only(integration_client):

@@ -8,6 +8,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.terminology import Term, TermTag
+from app.terminology.svp_bundle import find_svp_provider_term, search_svp_provider_terms
 
 
 DEMO_TERMS = (
@@ -135,17 +136,27 @@ def search_provider_terms(db: Session, *, query: str, tag: str | None = None, li
     if tag is not None:
         query_builder = query_builder.filter(TermTag.tag == tag)
     terms = query_builder.order_by(func.lower(Term.term)).limit(min(max(limit, 1), 20)).all()
-    return [_serialize_term(term) for term in terms]
+    serialized_terms = [_serialize_term(term) for term in terms]
+    if serialized_terms:
+        return serialized_terms
+    return search_svp_provider_terms(query=cleaned, tag=tag, limit=limit)
 
 
 def resolve_provider_term(db: Session, *, concept_id: str, expected_term: str, expected_tag: str):
     term = db.query(Term).options(joinedload(Term.tags)).filter(Term.concept_id == concept_id).first()
-    if term is None:
+    if term is not None:
+        tags = {tag.tag for tag in term.tags}
+        if term.term != expected_term or expected_tag not in tags:
+            raise ValueError("Clinical term, concept, and advisory type do not match")
+        return _serialize_term(term)
+    bundle_term = find_svp_provider_term(
+        concept_id=concept_id,
+        expected_term=expected_term,
+        expected_tag=expected_tag,
+    )
+    if bundle_term is None:
         raise ValueError("Selected clinical term is not in the approved terminology")
-    tags = {tag.tag for tag in term.tags}
-    if term.term != expected_term or expected_tag not in tags:
-        raise ValueError("Clinical term, concept, and advisory type do not match")
-    return _serialize_term(term)
+    return bundle_term
 
 
 def search_terms(db: Session, *, query: str, tag: str | None = None, limit: int = 20):
@@ -154,9 +165,12 @@ def search_terms(db: Session, *, query: str, tag: str | None = None, limit: int 
 
 def get_term(db: Session, *, concept_id: str):
     term = db.query(Term).options(joinedload(Term.tags)).filter(Term.concept_id == concept_id).first()
-    if term is None:
+    if term is not None:
+        return _serialize_term(term)
+    bundle_term = find_svp_provider_term(concept_id=concept_id)
+    if bundle_term is None:
         raise ValueError("Clinical term not found")
-    return _serialize_term(term)
+    return bundle_term
 
 
 def get_tags(db: Session, *, concept_id: str):

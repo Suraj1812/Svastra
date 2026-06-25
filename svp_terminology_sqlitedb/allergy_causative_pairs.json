@@ -1,0 +1,4158 @@
+[
+  {
+    "allergy_conceptId": "293611008",
+    "causative_agent_conceptId": "391704009"
+  },
+  {
+    "allergy_conceptId": "293676007",
+    "causative_agent_conceptId": "372486003"
+  },
+  {
+    "allergy_conceptId": "294742003",
+    "causative_agent_conceptId": "386965004"
+  },
+  {
+    "allergy_conceptId": "294880008",
+    "causative_agent_conceptId": "387457003"
+  },
+  {
+    "allergy_conceptId": "294729003",
+    "causative_agent_conceptId": "387210001"
+  },
+  {
+    "allergy_conceptId": "293964005",
+    "causative_agent_conceptId": "372815001"
+  },
+  {
+    "allergy_conceptId": "295030006",
+    "causative_agent_conceptId": "372709008"
+  },
+  {
+    "allergy_conceptId": "294404005",
+    "causative_agent_conceptId": "2869004"
+  },
+  {
+    "allergy_conceptId": "293584003",
+    "causative_agent_conceptId": "387517004"
+  },
+  {
+    "allergy_conceptId": "294970008",
+    "causative_agent_conceptId": "372912004"
+  },
+  {
+    "allergy_conceptId": "294250006",
+    "causative_agent_conceptId": "418810003"
+  },
+  {
+    "allergy_conceptId": "293660003",
+    "causative_agent_conceptId": "387501005"
+  },
+  {
+    "allergy_conceptId": "294097003",
+    "causative_agent_conceptId": "387440002"
+  },
+  {
+    "allergy_conceptId": "294484007",
+    "causative_agent_conceptId": "387556005"
+  },
+  {
+    "allergy_conceptId": "770712008",
+    "causative_agent_conceptId": "73801006"
+  },
+  {
+    "allergy_conceptId": "294384008",
+    "causative_agent_conceptId": "372729009"
+  },
+  {
+    "allergy_conceptId": "773399002",
+    "causative_agent_conceptId": "57308006"
+  },
+  {
+    "allergy_conceptId": "294209003",
+    "causative_agent_conceptId": "386938006"
+  },
+  {
+    "allergy_conceptId": "294459009",
+    "causative_agent_conceptId": "387558006"
+  },
+  {
+    "allergy_conceptId": "294958009",
+    "causative_agent_conceptId": "391711008"
+  },
+  {
+    "allergy_conceptId": "293764000",
+    "causative_agent_conceptId": "391713006"
+  },
+  {
+    "allergy_conceptId": "294975003",
+    "causative_agent_conceptId": "35431001"
+  },
+  {
+    "allergy_conceptId": "294691003",
+    "causative_agent_conceptId": "395956000"
+  },
+  {
+    "allergy_conceptId": "830277004",
+    "causative_agent_conceptId": "830279001"
+  },
+  {
+    "allergy_conceptId": "293733002",
+    "causative_agent_conceptId": "386917000"
+  },
+  {
+    "allergy_conceptId": "295007000",
+    "causative_agent_conceptId": "372603003"
+  },
+  {
+    "allergy_conceptId": "782580009",
+    "causative_agent_conceptId": "782578003"
+  },
+  {
+    "allergy_conceptId": "293604009",
+    "causative_agent_conceptId": "387560008"
+  },
+  {
+    "allergy_conceptId": "293986006",
+    "causative_agent_conceptId": "395954002"
+  },
+  {
+    "allergy_conceptId": "294140002",
+    "causative_agent_conceptId": "387471006"
+  },
+  {
+    "allergy_conceptId": "293740001",
+    "causative_agent_conceptId": "372669002"
+  },
+  {
+    "allergy_conceptId": "294037000",
+    "causative_agent_conceptId": "372897005"
+  },
+  {
+    "allergy_conceptId": "713707006",
+    "causative_agent_conceptId": "387005008"
+  },
+  {
+    "allergy_conceptId": "294265007",
+    "causative_agent_conceptId": "32519007"
+  },
+  {
+    "allergy_conceptId": "789251000",
+    "causative_agent_conceptId": "771384007"
+  },
+  {
+    "allergy_conceptId": "420140004",
+    "causative_agent_conceptId": "419442005"
+  },
+  {
+    "allergy_conceptId": "294220003",
+    "causative_agent_conceptId": "387135004"
+  },
+  {
+    "allergy_conceptId": "293985005",
+    "causative_agent_conceptId": "373275009"
+  },
+  {
+    "allergy_conceptId": "294746000",
+    "causative_agent_conceptId": "391736002"
+  },
+  {
+    "allergy_conceptId": "294926004",
+    "causative_agent_conceptId": "259666007"
+  },
+  {
+    "allergy_conceptId": "294024003",
+    "causative_agent_conceptId": "372622007"
+  },
+  {
+    "allergy_conceptId": "293892004",
+    "causative_agent_conceptId": "386983007"
+  },
+  {
+    "allergy_conceptId": "294255001",
+    "causative_agent_conceptId": "48988008"
+  },
+  {
+    "allergy_conceptId": "293811005",
+    "causative_agent_conceptId": "372763006"
+  },
+  {
+    "allergy_conceptId": "293691009",
+    "causative_agent_conceptId": "418483003"
+  },
+  {
+    "allergy_conceptId": "295110005",
+    "causative_agent_conceptId": "387152000"
+  },
+  {
+    "allergy_conceptId": "294519008",
+    "causative_agent_conceptId": "387541001"
+  },
+  {
+    "allergy_conceptId": "293666009",
+    "causative_agent_conceptId": "273944007"
+  },
+  {
+    "allergy_conceptId": "294520002",
+    "causative_agent_conceptId": "387542008"
+  },
+  {
+    "allergy_conceptId": "293805007",
+    "causative_agent_conceptId": "387303009"
+  },
+  {
+    "allergy_conceptId": "293957008",
+    "causative_agent_conceptId": "412035000"
+  },
+  {
+    "allergy_conceptId": "293732007",
+    "causative_agent_conceptId": "386923005"
+  },
+  {
+    "allergy_conceptId": "294463002",
+    "causative_agent_conceptId": "387266001"
+  },
+  {
+    "allergy_conceptId": "295010007",
+    "causative_agent_conceptId": "387503008"
+  },
+  {
+    "allergy_conceptId": "293787008",
+    "causative_agent_conceptId": "387257000"
+  },
+  {
+    "allergy_conceptId": "294988000",
+    "causative_agent_conceptId": "372821002"
+  },
+  {
+    "allergy_conceptId": "294158008",
+    "causative_agent_conceptId": "373508009"
+  },
+  {
+    "allergy_conceptId": "293829000",
+    "causative_agent_conceptId": "372726002"
+  },
+  {
+    "allergy_conceptId": "860902005",
+    "causative_agent_conceptId": "767323008"
+  },
+  {
+    "allergy_conceptId": "294002003",
+    "causative_agent_conceptId": "386864001"
+  },
+  {
+    "allergy_conceptId": "293880004",
+    "causative_agent_conceptId": "372831009"
+  },
+  {
+    "allergy_conceptId": "294390007",
+    "causative_agent_conceptId": "387352008"
+  },
+  {
+    "allergy_conceptId": "293828008",
+    "causative_agent_conceptId": "373754002"
+  },
+  {
+    "allergy_conceptId": "294346002",
+    "causative_agent_conceptId": "391769002"
+  },
+  {
+    "allergy_conceptId": "294505008",
+    "causative_agent_conceptId": "372687004"
+  },
+  {
+    "allergy_conceptId": "294349009",
+    "causative_agent_conceptId": "372643008"
+  },
+  {
+    "allergy_conceptId": "871506009",
+    "causative_agent_conceptId": "764146007"
+  },
+  {
+    "allergy_conceptId": "871505008",
+    "causative_agent_conceptId": "764146007"
+  },
+  {
+    "allergy_conceptId": "293778004",
+    "causative_agent_conceptId": "391774005"
+  },
+  {
+    "allergy_conceptId": "294506009",
+    "causative_agent_conceptId": "387170002"
+  },
+  {
+    "allergy_conceptId": "294757005",
+    "causative_agent_conceptId": "111151007"
+  },
+  {
+    "allergy_conceptId": "294871008",
+    "causative_agent_conceptId": "43848004"
+  },
+  {
+    "allergy_conceptId": "295111009",
+    "causative_agent_conceptId": "386958007"
+  },
+  {
+    "allergy_conceptId": "294773004",
+    "causative_agent_conceptId": "126162007"
+  },
+  {
+    "allergy_conceptId": "294125004",
+    "causative_agent_conceptId": "373544004"
+  },
+  {
+    "allergy_conceptId": "1222889008",
+    "causative_agent_conceptId": "769102002"
+  },
+  {
+    "allergy_conceptId": "294865002",
+    "causative_agent_conceptId": "109003006"
+  },
+  {
+    "allergy_conceptId": "294855008",
+    "causative_agent_conceptId": "34086003"
+  },
+  {
+    "allergy_conceptId": "293812003",
+    "causative_agent_conceptId": "387375001"
+  },
+  {
+    "allergy_conceptId": "294810001",
+    "causative_agent_conceptId": "77671006"
+  },
+  {
+    "allergy_conceptId": "293612001",
+    "causative_agent_conceptId": "391798003"
+  },
+  {
+    "allergy_conceptId": "294057001",
+    "causative_agent_conceptId": "391786008"
+  },
+  {
+    "allergy_conceptId": "294889009",
+    "causative_agent_conceptId": "386961008"
+  },
+  {
+    "allergy_conceptId": "294940003",
+    "causative_agent_conceptId": "43706004"
+  },
+  {
+    "allergy_conceptId": "293586001",
+    "causative_agent_conceptId": "387458008"
+  },
+  {
+    "allergy_conceptId": "293965006",
+    "causative_agent_conceptId": "387506000"
+  },
+  {
+    "allergy_conceptId": "13221000122100",
+    "causative_agent_conceptId": "373444002"
+  },
+  {
+    "allergy_conceptId": "294228005",
+    "causative_agent_conceptId": "372835000"
+  },
+  {
+    "allergy_conceptId": "294596002",
+    "causative_agent_conceptId": "386899002"
+  },
+  {
+    "allergy_conceptId": "294076004",
+    "causative_agent_conceptId": "372832002"
+  },
+  {
+    "allergy_conceptId": "294240005",
+    "causative_agent_conceptId": "387100001"
+  },
+  {
+    "allergy_conceptId": "294127007",
+    "causative_agent_conceptId": "372662006"
+  },
+  {
+    "allergy_conceptId": "293799001",
+    "causative_agent_conceptId": "372574004"
+  },
+  {
+    "allergy_conceptId": "294115009",
+    "causative_agent_conceptId": "372520005"
+  },
+  {
+    "allergy_conceptId": "294516001",
+    "causative_agent_conceptId": "387308000"
+  },
+  {
+    "allergy_conceptId": "294565006",
+    "causative_agent_conceptId": "387386004"
+  },
+  {
+    "allergy_conceptId": "294472005",
+    "causative_agent_conceptId": "387531004"
+  },
+  {
+    "allergy_conceptId": "294234003",
+    "causative_agent_conceptId": "387342009"
+  },
+  {
+    "allergy_conceptId": "294511006",
+    "causative_agent_conceptId": "372865005"
+  },
+  {
+    "allergy_conceptId": "830212002",
+    "causative_agent_conceptId": "255842006"
+  },
+  {
+    "allergy_conceptId": "294038005",
+    "causative_agent_conceptId": "396462008"
+  },
+  {
+    "allergy_conceptId": "773420005",
+    "causative_agent_conceptId": "703404009"
+  },
+  {
+    "allergy_conceptId": "860900002",
+    "causative_agent_conceptId": "372798009"
+  },
+  {
+    "allergy_conceptId": "293858002",
+    "causative_agent_conceptId": "391815006"
+  },
+  {
+    "allergy_conceptId": "294692005",
+    "causative_agent_conceptId": "116574000"
+  },
+  {
+    "allergy_conceptId": "294067006",
+    "causative_agent_conceptId": "391816007"
+  },
+  {
+    "allergy_conceptId": "294494002",
+    "causative_agent_conceptId": "391818008"
+  },
+  {
+    "allergy_conceptId": "294992007",
+    "causative_agent_conceptId": "387520007"
+  },
+  {
+    "allergy_conceptId": "788163005",
+    "causative_agent_conceptId": "4700006"
+  },
+  {
+    "allergy_conceptId": "293726002",
+    "causative_agent_conceptId": "52140009"
+  },
+  {
+    "allergy_conceptId": "293920002",
+    "causative_agent_conceptId": "391820006"
+  },
+  {
+    "allergy_conceptId": "294281002",
+    "causative_agent_conceptId": "42230009"
+  },
+  {
+    "allergy_conceptId": "294078003",
+    "causative_agent_conceptId": "372846002"
+  },
+  {
+    "allergy_conceptId": "294438002",
+    "causative_agent_conceptId": "373549009"
+  },
+  {
+    "allergy_conceptId": "293724004",
+    "causative_agent_conceptId": "387357002"
+  },
+  {
+    "allergy_conceptId": "294270000",
+    "causative_agent_conceptId": "372906009"
+  },
+  {
+    "allergy_conceptId": "767642003",
+    "causative_agent_conceptId": "372664007"
+  },
+  {
+    "allergy_conceptId": "294620008",
+    "causative_agent_conceptId": "387263009"
+  },
+  {
+    "allergy_conceptId": "294499007",
+    "causative_agent_conceptId": "323389000"
+  },
+  {
+    "allergy_conceptId": "294103005",
+    "causative_agent_conceptId": "387225001"
+  },
+  {
+    "allergy_conceptId": "294455003",
+    "causative_agent_conceptId": "391836008"
+  },
+  {
+    "allergy_conceptId": "293962009",
+    "causative_agent_conceptId": "373254001"
+  },
+  {
+    "allergy_conceptId": "293963004",
+    "causative_agent_conceptId": "372661004"
+  },
+  {
+    "allergy_conceptId": "295103004",
+    "causative_agent_conceptId": "418067008"
+  },
+  {
+    "allergy_conceptId": "294678004",
+    "causative_agent_conceptId": "116571008"
+  },
+  {
+    "allergy_conceptId": "294033001",
+    "causative_agent_conceptId": "373215002"
+  },
+  {
+    "allergy_conceptId": "295033008",
+    "causative_agent_conceptId": "418981008"
+  },
+  {
+    "allergy_conceptId": "293966007",
+    "causative_agent_conceptId": "409276006"
+  },
+  {
+    "allergy_conceptId": "294018009",
+    "causative_agent_conceptId": "372698003"
+  },
+  {
+    "allergy_conceptId": "294769002",
+    "causative_agent_conceptId": "386908000"
+  },
+  {
+    "allergy_conceptId": "720691008",
+    "causative_agent_conceptId": "431067008"
+  },
+  {
+    "allergy_conceptId": "294069009",
+    "causative_agent_conceptId": "387359004"
+  },
+  {
+    "allergy_conceptId": "293678008",
+    "causative_agent_conceptId": "387075009"
+  },
+  {
+    "allergy_conceptId": "293967003",
+    "causative_agent_conceptId": "386868003"
+  },
+  {
+    "allergy_conceptId": "294833000",
+    "causative_agent_conceptId": "372907000"
+  },
+  {
+    "allergy_conceptId": "293761008",
+    "causative_agent_conceptId": "372843005"
+  },
+  {
+    "allergy_conceptId": "294434000",
+    "causative_agent_conceptId": "21611007"
+  },
+  {
+    "allergy_conceptId": "294668002",
+    "causative_agent_conceptId": "385336006"
+  },
+  {
+    "allergy_conceptId": "294448000",
+    "causative_agent_conceptId": "396057002"
+  },
+  {
+    "allergy_conceptId": "294986001",
+    "causative_agent_conceptId": "372774002"
+  },
+  {
+    "allergy_conceptId": "293893009",
+    "causative_agent_conceptId": "387571009"
+  },
+  {
+    "allergy_conceptId": "830081005",
+    "causative_agent_conceptId": "708561003"
+  },
+  {
+    "allergy_conceptId": "293815001",
+    "causative_agent_conceptId": "387039007"
+  },
+  {
+    "allergy_conceptId": "295001004",
+    "causative_agent_conceptId": "387498005"
+  },
+  {
+    "allergy_conceptId": "294172004",
+    "causative_agent_conceptId": "273952005"
+  },
+  {
+    "allergy_conceptId": "294712001",
+    "causative_agent_conceptId": "395726003"
+  },
+  {
+    "allergy_conceptId": "293719002",
+    "causative_agent_conceptId": "387150008"
+  },
+  {
+    "allergy_conceptId": "293596005",
+    "causative_agent_conceptId": "387173000"
+  },
+  {
+    "allergy_conceptId": "294817003",
+    "causative_agent_conceptId": "395744006"
+  },
+  {
+    "allergy_conceptId": "293822009",
+    "causative_agent_conceptId": "386997004"
+  },
+  {
+    "allergy_conceptId": "293911006",
+    "causative_agent_conceptId": "387523009"
+  },
+  {
+    "allergy_conceptId": "293742009",
+    "causative_agent_conceptId": "387138002"
+  },
+  {
+    "allergy_conceptId": "293881000",
+    "causative_agent_conceptId": "395755006"
+  },
+  {
+    "allergy_conceptId": "293919008",
+    "causative_agent_conceptId": "764414000"
+  },
+  {
+    "allergy_conceptId": "294800005",
+    "causative_agent_conceptId": "386979007"
+  },
+  {
+    "allergy_conceptId": "418344001",
+    "causative_agent_conceptId": "255641001"
+  },
+  {
+    "allergy_conceptId": "294178000",
+    "causative_agent_conceptId": "395766004"
+  },
+  {
+    "allergy_conceptId": "294839001",
+    "causative_agent_conceptId": "63730009"
+  },
+  {
+    "allergy_conceptId": "294838009",
+    "causative_agent_conceptId": "373701000"
+  },
+  {
+    "allergy_conceptId": "294570004",
+    "causative_agent_conceptId": "418190000"
+  },
+  {
+    "allergy_conceptId": "1208355000",
+    "causative_agent_conceptId": "703676004"
+  },
+  {
+    "allergy_conceptId": "294019001",
+    "causative_agent_conceptId": "387183001"
+  },
+  {
+    "allergy_conceptId": "294609008",
+    "causative_agent_conceptId": "387081001"
+  },
+  {
+    "allergy_conceptId": "293867002",
+    "causative_agent_conceptId": "387222003"
+  },
+  {
+    "allergy_conceptId": "294510007",
+    "causative_agent_conceptId": "372713001"
+  },
+  {
+    "allergy_conceptId": "293657005",
+    "causative_agent_conceptId": "387273006"
+  },
+  {
+    "allergy_conceptId": "294674002",
+    "causative_agent_conceptId": "395831005"
+  },
+  {
+    "allergy_conceptId": "870731003",
+    "causative_agent_conceptId": "65955006"
+  },
+  {
+    "allergy_conceptId": "294258004",
+    "causative_agent_conceptId": "373455002"
+  },
+  {
+    "allergy_conceptId": "294095006",
+    "causative_agent_conceptId": "395842001"
+  },
+  {
+    "allergy_conceptId": "293779007",
+    "causative_agent_conceptId": "386905002"
+  },
+  {
+    "allergy_conceptId": "294518000",
+    "causative_agent_conceptId": "417288007"
+  },
+  {
+    "allergy_conceptId": "293755005",
+    "causative_agent_conceptId": "387281007"
+  },
+  {
+    "allergy_conceptId": "293976005",
+    "causative_agent_conceptId": "386866004"
+  },
+  {
+    "allergy_conceptId": "294235002",
+    "causative_agent_conceptId": "387133006"
+  },
+  {
+    "allergy_conceptId": "293685007",
+    "causative_agent_conceptId": "387128007"
+  },
+  {
+    "allergy_conceptId": "293974008",
+    "causative_agent_conceptId": "386870007"
+  },
+  {
+    "allergy_conceptId": "294318004",
+    "causative_agent_conceptId": "34239008"
+  },
+  {
+    "allergy_conceptId": "294541008",
+    "causative_agent_conceptId": "387270009"
+  },
+  {
+    "allergy_conceptId": "294534002",
+    "causative_agent_conceptId": "372651006"
+  },
+  {
+    "allergy_conceptId": "294543006",
+    "causative_agent_conceptId": "372801003"
+  },
+  {
+    "allergy_conceptId": "294535001",
+    "causative_agent_conceptId": "387304003"
+  },
+  {
+    "allergy_conceptId": "294536000",
+    "causative_agent_conceptId": "373485007"
+  },
+  {
+    "allergy_conceptId": "294549005",
+    "causative_agent_conceptId": "387539002"
+  },
+  {
+    "allergy_conceptId": "294548002",
+    "causative_agent_conceptId": "387536009"
+  },
+  {
+    "allergy_conceptId": "294537009",
+    "causative_agent_conceptId": "387470007"
+  },
+  {
+    "allergy_conceptId": "294545004",
+    "causative_agent_conceptId": "372704003"
+  },
+  {
+    "allergy_conceptId": "294558003",
+    "causative_agent_conceptId": "372780005"
+  },
+  {
+    "allergy_conceptId": "294556004",
+    "causative_agent_conceptId": "387533001"
+  },
+  {
+    "allergy_conceptId": "294550005",
+    "causative_agent_conceptId": "387534007"
+  },
+  {
+    "allergy_conceptId": "294554001",
+    "causative_agent_conceptId": "387537000"
+  },
+  {
+    "allergy_conceptId": "294538004",
+    "causative_agent_conceptId": "387091007"
+  },
+  {
+    "allergy_conceptId": "294546003",
+    "causative_agent_conceptId": "387200005"
+  },
+  {
+    "allergy_conceptId": "294547007",
+    "causative_agent_conceptId": "372770006"
+  },
+  {
+    "allergy_conceptId": "294552002",
+    "causative_agent_conceptId": "387535008"
+  },
+  {
+    "allergy_conceptId": "293968008",
+    "causative_agent_conceptId": "395960002"
+  },
+  {
+    "allergy_conceptId": "294551009",
+    "causative_agent_conceptId": "372670001"
+  },
+  {
+    "allergy_conceptId": "294542001",
+    "causative_agent_conceptId": "372833007"
+  },
+  {
+    "allergy_conceptId": "294532003",
+    "causative_agent_conceptId": "764147003"
+  },
+  {
+    "allergy_conceptId": "718534009",
+    "causative_agent_conceptId": "373443008"
+  },
+  {
+    "allergy_conceptId": "294116005",
+    "causative_agent_conceptId": "372523007"
+  },
+  {
+    "allergy_conceptId": "294557008",
+    "causative_agent_conceptId": "416147006"
+  },
+  {
+    "allergy_conceptId": "294437007",
+    "causative_agent_conceptId": "395895003"
+  },
+  {
+    "allergy_conceptId": "294441006",
+    "causative_agent_conceptId": "387043006"
+  },
+  {
+    "allergy_conceptId": "871501004",
+    "causative_agent_conceptId": "117447007"
+  },
+  {
+    "allergy_conceptId": "294593005",
+    "causative_agent_conceptId": "372777009"
+  },
+  {
+    "allergy_conceptId": "293747003",
+    "causative_agent_conceptId": "387249003"
+  },
+  {
+    "allergy_conceptId": "293908005",
+    "causative_agent_conceptId": "273948005"
+  },
+  {
+    "allergy_conceptId": "293894003",
+    "causative_agent_conceptId": "372866006"
+  },
+  {
+    "allergy_conceptId": "1306844002",
+    "causative_agent_conceptId": "409400001"
+  },
+  {
+    "allergy_conceptId": "1306844002",
+    "causative_agent_conceptId": "788778006"
+  },
+  {
+    "allergy_conceptId": "782530003",
+    "causative_agent_conceptId": "418037002"
+  },
+  {
+    "allergy_conceptId": "293912004",
+    "causative_agent_conceptId": "395978007"
+  },
+  {
+    "allergy_conceptId": "293753003",
+    "causative_agent_conceptId": "372692002"
+  },
+  {
+    "allergy_conceptId": "293699006",
+    "causative_agent_conceptId": "82490009"
+  },
+  {
+    "allergy_conceptId": "294431008",
+    "causative_agent_conceptId": "373568007"
+  },
+  {
+    "allergy_conceptId": "293876009",
+    "causative_agent_conceptId": "387400008"
+  },
+  {
+    "allergy_conceptId": "441931002",
+    "causative_agent_conceptId": "71668006"
+  },
+  {
+    "allergy_conceptId": "294993002",
+    "causative_agent_conceptId": "372782002"
+  },
+  {
+    "allergy_conceptId": "294394003",
+    "causative_agent_conceptId": "373468005"
+  },
+  {
+    "allergy_conceptId": "295023000",
+    "causative_agent_conceptId": "387324004"
+  },
+  {
+    "allergy_conceptId": "293943006",
+    "causative_agent_conceptId": "387317000"
+  },
+  {
+    "allergy_conceptId": "293935001",
+    "causative_agent_conceptId": "387258005"
+  },
+  {
+    "allergy_conceptId": "294415000",
+    "causative_agent_conceptId": "398713003"
+  },
+  {
+    "allergy_conceptId": "294962003",
+    "causative_agent_conceptId": "387408001"
+  },
+  {
+    "allergy_conceptId": "294590008",
+    "causative_agent_conceptId": "373509001"
+  },
+  {
+    "allergy_conceptId": "294730008",
+    "causative_agent_conceptId": "386991003"
+  },
+  {
+    "allergy_conceptId": "294129005",
+    "causative_agent_conceptId": "372914003"
+  },
+  {
+    "allergy_conceptId": "294507000",
+    "causative_agent_conceptId": "387382002"
+  },
+  {
+    "allergy_conceptId": "293798009",
+    "causative_agent_conceptId": "387467008"
+  },
+  {
+    "allergy_conceptId": "293650007",
+    "causative_agent_conceptId": "373541007"
+  },
+  {
+    "allergy_conceptId": "293720008",
+    "causative_agent_conceptId": "395953008"
+  },
+  {
+    "allergy_conceptId": "448438007",
+    "causative_agent_conceptId": "372495006"
+  },
+  {
+    "allergy_conceptId": "294485008",
+    "causative_agent_conceptId": "387549004"
+  },
+  {
+    "allergy_conceptId": "294487000",
+    "causative_agent_conceptId": "372840008"
+  },
+  {
+    "allergy_conceptId": "294471003",
+    "causative_agent_conceptId": "387487009"
+  },
+  {
+    "allergy_conceptId": "293671002",
+    "causative_agent_conceptId": "387164008"
+  },
+  {
+    "allergy_conceptId": "293849009",
+    "causative_agent_conceptId": "372596005"
+  },
+  {
+    "allergy_conceptId": "294561002",
+    "causative_agent_conceptId": "372786004"
+  },
+  {
+    "allergy_conceptId": "294118006",
+    "causative_agent_conceptId": "372744005"
+  },
+  {
+    "allergy_conceptId": "293780005",
+    "causative_agent_conceptId": "387318005"
+  },
+  {
+    "allergy_conceptId": "293895002",
+    "causative_agent_conceptId": "387572002"
+  },
+  {
+    "allergy_conceptId": "294604003",
+    "causative_agent_conceptId": "387291001"
+  },
+  {
+    "allergy_conceptId": "294693000",
+    "causative_agent_conceptId": "419129004"
+  },
+  {
+    "allergy_conceptId": "773481006",
+    "causative_agent_conceptId": "387579006"
+  },
+  {
+    "allergy_conceptId": "294618005",
+    "causative_agent_conceptId": "387410004"
+  },
+  {
+    "allergy_conceptId": "294694006",
+    "causative_agent_conceptId": "395963000"
+  },
+  {
+    "allergy_conceptId": "294965001",
+    "causative_agent_conceptId": "387439004"
+  },
+  {
+    "allergy_conceptId": "294584009",
+    "causative_agent_conceptId": "419950007"
+  },
+  {
+    "allergy_conceptId": "294798003",
+    "causative_agent_conceptId": "387166005"
+  },
+  {
+    "allergy_conceptId": "293871004",
+    "causative_agent_conceptId": "387383007"
+  },
+  {
+    "allergy_conceptId": "293830005",
+    "causative_agent_conceptId": "372903001"
+  },
+  {
+    "allergy_conceptId": "294058006",
+    "causative_agent_conceptId": "372805007"
+  },
+  {
+    "allergy_conceptId": "830167005",
+    "causative_agent_conceptId": "39815009"
+  },
+  {
+    "allergy_conceptId": "294356003",
+    "causative_agent_conceptId": "387325003"
+  },
+  {
+    "allergy_conceptId": "770891008",
+    "causative_agent_conceptId": "116181003"
+  },
+  {
+    "allergy_conceptId": "293916001",
+    "causative_agent_conceptId": "387568001"
+  },
+  {
+    "allergy_conceptId": "294501004",
+    "causative_agent_conceptId": "373276005"
+  },
+  {
+    "allergy_conceptId": "770713003",
+    "causative_agent_conceptId": "60208008"
+  },
+  {
+    "allergy_conceptId": "770715005",
+    "causative_agent_conceptId": "46572007"
+  },
+  {
+    "allergy_conceptId": "293723005",
+    "causative_agent_conceptId": "387085005"
+  },
+  {
+    "allergy_conceptId": "770714009",
+    "causative_agent_conceptId": "30804005"
+  },
+  {
+    "allergy_conceptId": "294169006",
+    "causative_agent_conceptId": "53034005"
+  },
+  {
+    "allergy_conceptId": "294961005",
+    "causative_agent_conceptId": "372811005"
+  },
+  {
+    "allergy_conceptId": "293597001",
+    "causative_agent_conceptId": "387494007"
+  },
+  {
+    "allergy_conceptId": "294106002",
+    "causative_agent_conceptId": "418047004"
+  },
+  {
+    "allergy_conceptId": "294529001",
+    "causative_agent_conceptId": "387412007"
+  },
+  {
+    "allergy_conceptId": "294888001",
+    "causative_agent_conceptId": "61472002"
+  },
+  {
+    "allergy_conceptId": "294811002",
+    "causative_agent_conceptId": "1163345007"
+  },
+  {
+    "allergy_conceptId": "294795000",
+    "causative_agent_conceptId": "126098001"
+  },
+  {
+    "allergy_conceptId": "294677009",
+    "causative_agent_conceptId": "304275008"
+  },
+  {
+    "allergy_conceptId": "294695007",
+    "causative_agent_conceptId": "32498003"
+  },
+  {
+    "allergy_conceptId": "293882007",
+    "causative_agent_conceptId": "68669008"
+  },
+  {
+    "allergy_conceptId": "294763001",
+    "causative_agent_conceptId": "418997003"
+  },
+  {
+    "allergy_conceptId": "767203005",
+    "causative_agent_conceptId": "372672009"
+  },
+  {
+    "allergy_conceptId": "295095003",
+    "causative_agent_conceptId": "387405003"
+  },
+  {
+    "allergy_conceptId": "293784001",
+    "causative_agent_conceptId": "370893003"
+  },
+  {
+    "allergy_conceptId": "294934005",
+    "causative_agent_conceptId": "419382002"
+  },
+  {
+    "allergy_conceptId": "294079006",
+    "causative_agent_conceptId": "372869004"
+  },
+  {
+    "allergy_conceptId": "294994008",
+    "causative_agent_conceptId": "396009008"
+  },
+  {
+    "allergy_conceptId": "294131001",
+    "causative_agent_conceptId": "372683000"
+  },
+  {
+    "allergy_conceptId": "294610003",
+    "causative_agent_conceptId": "387282000"
+  },
+  {
+    "allergy_conceptId": "293748008",
+    "causative_agent_conceptId": "387420009"
+  },
+  {
+    "allergy_conceptId": "294771002",
+    "causative_agent_conceptId": "126119006"
+  },
+  {
+    "allergy_conceptId": "293775001",
+    "causative_agent_conceptId": "387511003"
+  },
+  {
+    "allergy_conceptId": "773427008",
+    "causative_agent_conceptId": "372564002"
+  },
+  {
+    "allergy_conceptId": "293760009",
+    "causative_agent_conceptId": "387353003"
+  },
+  {
+    "allergy_conceptId": "293758007",
+    "causative_agent_conceptId": "387441003"
+  },
+  {
+    "allergy_conceptId": "293679000",
+    "causative_agent_conceptId": "387364000"
+  },
+  {
+    "allergy_conceptId": "294874000",
+    "causative_agent_conceptId": "372563008"
+  },
+  {
+    "allergy_conceptId": "294237005",
+    "causative_agent_conceptId": "372819007"
+  },
+  {
+    "allergy_conceptId": "295034002",
+    "causative_agent_conceptId": "396010003"
+  },
+  {
+    "allergy_conceptId": "294764007",
+    "causative_agent_conceptId": "126124009"
+  },
+  {
+    "allergy_conceptId": "1208353007",
+    "causative_agent_conceptId": "703674001"
+  },
+  {
+    "allergy_conceptId": "294617000",
+    "causative_agent_conceptId": "387096002"
+  },
+  {
+    "allergy_conceptId": "294284005",
+    "causative_agent_conceptId": "372825006"
+  },
+  {
+    "allergy_conceptId": "293700007",
+    "causative_agent_conceptId": "387285003"
+  },
+  {
+    "allergy_conceptId": "713018004",
+    "causative_agent_conceptId": "423888002"
+  },
+  {
+    "allergy_conceptId": "294012005",
+    "causative_agent_conceptId": "372827003"
+  },
+  {
+    "allergy_conceptId": "294443009",
+    "causative_agent_conceptId": "395964006"
+  },
+  {
+    "allergy_conceptId": "737493007",
+    "causative_agent_conceptId": "446321003"
+  },
+  {
+    "allergy_conceptId": "294591007",
+    "causative_agent_conceptId": "372779007"
+  },
+  {
+    "allergy_conceptId": "293831009",
+    "causative_agent_conceptId": "372705002"
+  },
+  {
+    "allergy_conceptId": "294807008",
+    "causative_agent_conceptId": "126189002"
+  },
+  {
+    "allergy_conceptId": "294685000",
+    "causative_agent_conceptId": "412363005"
+  },
+  {
+    "allergy_conceptId": "294702008",
+    "causative_agent_conceptId": "372584003"
+  },
+  {
+    "allergy_conceptId": "293717000",
+    "causative_agent_conceptId": "386841003"
+  },
+  {
+    "allergy_conceptId": "293804006",
+    "causative_agent_conceptId": "412366002"
+  },
+  {
+    "allergy_conceptId": "293958003",
+    "causative_agent_conceptId": "387278002"
+  },
+  {
+    "allergy_conceptId": "294686004",
+    "causative_agent_conceptId": "387473009"
+  },
+  {
+    "allergy_conceptId": "293591000",
+    "causative_agent_conceptId": "387561007"
+  },
+  {
+    "allergy_conceptId": "293598006",
+    "causative_agent_conceptId": "387341002"
+  },
+  {
+    "allergy_conceptId": "293592007",
+    "causative_agent_conceptId": "387042001"
+  },
+  {
+    "allergy_conceptId": "773453000",
+    "causative_agent_conceptId": "59170000"
+  },
+  {
+    "allergy_conceptId": "293902006",
+    "causative_agent_conceptId": "387264003"
+  },
+  {
+    "allergy_conceptId": "295074008",
+    "causative_agent_conceptId": "387328001"
+  },
+  {
+    "allergy_conceptId": "773487005",
+    "causative_agent_conceptId": "398837005"
+  },
+  {
+    "allergy_conceptId": "293613006",
+    "causative_agent_conceptId": "7034005"
+  },
+  {
+    "allergy_conceptId": "293909002",
+    "causative_agent_conceptId": "387026008"
+  },
+  {
+    "allergy_conceptId": "294789001",
+    "causative_agent_conceptId": "126169003"
+  },
+  {
+    "allergy_conceptId": "294372006",
+    "causative_agent_conceptId": "387105006"
+  },
+  {
+    "allergy_conceptId": "294456002",
+    "causative_agent_conceptId": "387340001"
+  },
+  {
+    "allergy_conceptId": "293693007",
+    "causative_agent_conceptId": "372732007"
+  },
+  {
+    "allergy_conceptId": "294796004",
+    "causative_agent_conceptId": "396026002"
+  },
+  {
+    "allergy_conceptId": "295055000",
+    "causative_agent_conceptId": "373534001"
+  },
+  {
+    "allergy_conceptId": "782529008",
+    "causative_agent_conceptId": "406759007"
+  },
+  {
+    "allergy_conceptId": "294696008",
+    "causative_agent_conceptId": "395965007"
+  },
+  {
+    "allergy_conceptId": "295054001",
+    "causative_agent_conceptId": "387461009"
+  },
+  {
+    "allergy_conceptId": "767198002",
+    "causative_agent_conceptId": "259170003"
+  },
+  {
+    "allergy_conceptId": "294268009",
+    "causative_agent_conceptId": "68332000"
+  },
+  {
+    "allergy_conceptId": "293599003",
+    "causative_agent_conceptId": "387322000"
+  },
+  {
+    "allergy_conceptId": "294602004",
+    "causative_agent_conceptId": "387483008"
+  },
+  {
+    "allergy_conceptId": "870748006",
+    "causative_agent_conceptId": "32824001"
+  },
+  {
+    "allergy_conceptId": "294123006",
+    "causative_agent_conceptId": "387469006"
+  },
+  {
+    "allergy_conceptId": "294003008",
+    "causative_agent_conceptId": "372793000"
+  },
+  {
+    "allergy_conceptId": "294283004",
+    "causative_agent_conceptId": "387077001"
+  },
+  {
+    "allergy_conceptId": "293796008",
+    "causative_agent_conceptId": "115535002"
+  },
+  {
+    "allergy_conceptId": "773490004",
+    "causative_agent_conceptId": "387267005"
+  },
+  {
+    "allergy_conceptId": "294253008",
+    "causative_agent_conceptId": "387245009"
+  },
+  {
+    "allergy_conceptId": "294133003",
+    "causative_agent_conceptId": "372682005"
+  },
+  {
+    "allergy_conceptId": "294257009",
+    "causative_agent_conceptId": "387228004"
+  },
+  {
+    "allergy_conceptId": "293593002",
+    "causative_agent_conceptId": "387226000"
+  },
+  {
+    "allergy_conceptId": "293925007",
+    "causative_agent_conceptId": "372606006"
+  },
+  {
+    "allergy_conceptId": "294134009",
+    "causative_agent_conceptId": "387476001"
+  },
+  {
+    "allergy_conceptId": "295077001",
+    "causative_agent_conceptId": "387371005"
+  },
+  {
+    "allergy_conceptId": "294060008",
+    "causative_agent_conceptId": "372830005"
+  },
+  {
+    "allergy_conceptId": "294669005",
+    "causative_agent_conceptId": "412175006"
+  },
+  {
+    "allergy_conceptId": "294977006",
+    "causative_agent_conceptId": "372844004"
+  },
+  {
+    "allergy_conceptId": "294013000",
+    "causative_agent_conceptId": "395966008"
+  },
+  {
+    "allergy_conceptId": "293960001",
+    "causative_agent_conceptId": "387212009"
+  },
+  {
+    "allergy_conceptId": "294047002",
+    "causative_agent_conceptId": "387145002"
+  },
+  {
+    "allergy_conceptId": "294061007",
+    "causative_agent_conceptId": "412383006"
+  },
+  {
+    "allergy_conceptId": "293674005",
+    "causative_agent_conceptId": "387181004"
+  },
+  {
+    "allergy_conceptId": "293687004",
+    "causative_agent_conceptId": "418700002"
+  },
+  {
+    "allergy_conceptId": "294439005",
+    "causative_agent_conceptId": "387295005"
+  },
+  {
+    "allergy_conceptId": "294048007",
+    "causative_agent_conceptId": "419490003"
+  },
+  {
+    "allergy_conceptId": "294091002",
+    "causative_agent_conceptId": "386882003"
+  },
+  {
+    "allergy_conceptId": "449324007",
+    "causative_agent_conceptId": "372496007"
+  },
+  {
+    "allergy_conceptId": "293832002",
+    "causative_agent_conceptId": "414047005"
+  },
+  {
+    "allergy_conceptId": "294101007",
+    "causative_agent_conceptId": "373339005"
+  },
+  {
+    "allergy_conceptId": "293987002",
+    "causative_agent_conceptId": "372508002"
+  },
+  {
+    "allergy_conceptId": "293823004",
+    "causative_agent_conceptId": "372587005"
+  },
+  {
+    "allergy_conceptId": "294585005",
+    "causative_agent_conceptId": "372478003"
+  },
+  {
+    "allergy_conceptId": "293766003",
+    "causative_agent_conceptId": "372817009"
+  },
+  {
+    "allergy_conceptId": "293923000",
+    "causative_agent_conceptId": "387146001"
+  },
+  {
+    "allergy_conceptId": "773496005",
+    "causative_agent_conceptId": "420633004"
+  },
+  {
+    "allergy_conceptId": "294015007",
+    "causative_agent_conceptId": "373342004"
+  },
+  {
+    "allergy_conceptId": "294747009",
+    "causative_agent_conceptId": "126093005"
+  },
+  {
+    "allergy_conceptId": "294252003",
+    "causative_agent_conceptId": "418517007"
+  },
+  {
+    "allergy_conceptId": "773500007",
+    "causative_agent_conceptId": "421158004"
+  },
+  {
+    "allergy_conceptId": "294014006",
+    "causative_agent_conceptId": "387339003"
+  },
+  {
+    "allergy_conceptId": "294359005",
+    "causative_agent_conceptId": "373471002"
+  },
+  {
+    "allergy_conceptId": "293712006",
+    "causative_agent_conceptId": "387176008"
+  },
+  {
+    "allergy_conceptId": "294873006",
+    "causative_agent_conceptId": "372562003"
+  },
+  {
+    "allergy_conceptId": "294488005",
+    "causative_agent_conceptId": "387550004"
+  },
+  {
+    "allergy_conceptId": "295060001",
+    "causative_agent_conceptId": "396042009"
+  },
+  {
+    "allergy_conceptId": "293767007",
+    "causative_agent_conceptId": "417916005"
+  },
+  {
+    "allergy_conceptId": "294062000",
+    "causative_agent_conceptId": "387358007"
+  },
+  {
+    "allergy_conceptId": "294844008",
+    "causative_agent_conceptId": "386947003"
+  },
+  {
+    "allergy_conceptId": "294845009",
+    "causative_agent_conceptId": "396043004"
+  },
+  {
+    "allergy_conceptId": "294799006",
+    "causative_agent_conceptId": "419614002"
+  },
+  {
+    "allergy_conceptId": "295066007",
+    "causative_agent_conceptId": "32824001"
+  },
+  {
+    "allergy_conceptId": "294260002",
+    "causative_agent_conceptId": "372513003"
+  },
+  {
+    "allergy_conceptId": "295068008",
+    "causative_agent_conceptId": "126071000"
+  },
+  {
+    "allergy_conceptId": "441725009",
+    "causative_agent_conceptId": "396346003"
+  },
+  {
+    "allergy_conceptId": "1208354001",
+    "causative_agent_conceptId": "764274008"
+  },
+  {
+    "allergy_conceptId": "91931000",
+    "causative_agent_conceptId": "372694001"
+  },
+  {
+    "allergy_conceptId": "293969000",
+    "causative_agent_conceptId": "372847006"
+  },
+  {
+    "allergy_conceptId": "293752008",
+    "causative_agent_conceptId": "386909008"
+  },
+  {
+    "allergy_conceptId": "293788003",
+    "causative_agent_conceptId": "373336003"
+  },
+  {
+    "allergy_conceptId": "1156733008",
+    "causative_agent_conceptId": "1156730006"
+  },
+  {
+    "allergy_conceptId": "294782005",
+    "causative_agent_conceptId": "126172005"
+  },
+  {
+    "allergy_conceptId": "294794001",
+    "causative_agent_conceptId": "73723004"
+  },
+  {
+    "allergy_conceptId": "294781003",
+    "causative_agent_conceptId": "1052201004"
+  },
+  {
+    "allergy_conceptId": "830168000",
+    "causative_agent_conceptId": "51775003"
+  },
+  {
+    "allergy_conceptId": "294615008",
+    "causative_agent_conceptId": "387129004"
+  },
+  {
+    "allergy_conceptId": "295002006",
+    "causative_agent_conceptId": "373536004"
+  },
+  {
+    "allergy_conceptId": "294885003",
+    "causative_agent_conceptId": "396048008"
+  },
+  {
+    "allergy_conceptId": "294793007",
+    "causative_agent_conceptId": "126097006"
+  },
+  {
+    "allergy_conceptId": "293749000",
+    "causative_agent_conceptId": "419766000"
+  },
+  {
+    "allergy_conceptId": "293870003",
+    "causative_agent_conceptId": "387244008"
+  },
+  {
+    "allergy_conceptId": "293614000",
+    "causative_agent_conceptId": "386860005"
+  },
+  {
+    "allergy_conceptId": "773417002",
+    "causative_agent_conceptId": "420879007"
+  },
+  {
+    "allergy_conceptId": "773499003",
+    "causative_agent_conceptId": "420702005"
+  },
+  {
+    "allergy_conceptId": "293777009",
+    "causative_agent_conceptId": "387316009"
+  },
+  {
+    "allergy_conceptId": "293706001",
+    "causative_agent_conceptId": "387218008"
+  },
+  {
+    "allergy_conceptId": "294208006",
+    "causative_agent_conceptId": "386937001"
+  },
+  {
+    "allergy_conceptId": "294256000",
+    "causative_agent_conceptId": "373693004"
+  },
+  {
+    "allergy_conceptId": "293615004",
+    "causative_agent_conceptId": "396051001"
+  },
+  {
+    "allergy_conceptId": "294371004",
+    "causative_agent_conceptId": "387557001"
+  },
+  {
+    "allergy_conceptId": "293651006",
+    "causative_agent_conceptId": "387211002"
+  },
+  {
+    "allergy_conceptId": "293999009",
+    "causative_agent_conceptId": "386863007"
+  },
+  {
+    "allergy_conceptId": "293616003",
+    "causative_agent_conceptId": "396052008"
+  },
+  {
+    "allergy_conceptId": "293806008",
+    "causative_agent_conceptId": "387451002"
+  },
+  {
+    "allergy_conceptId": "294966000",
+    "causative_agent_conceptId": "386879008"
+  },
+  {
+    "allergy_conceptId": "293617007",
+    "causative_agent_conceptId": "373525006"
+  },
+  {
+    "allergy_conceptId": "293605005",
+    "causative_agent_conceptId": "373492002"
+  },
+  {
+    "allergy_conceptId": "294039002",
+    "causative_agent_conceptId": "395976006"
+  },
+  {
+    "allergy_conceptId": "293737001",
+    "causative_agent_conceptId": "386948008"
+  },
+  {
+    "allergy_conceptId": "294243007",
+    "causative_agent_conceptId": "372768002"
+  },
+  {
+    "allergy_conceptId": "294767000",
+    "causative_agent_conceptId": "386963006"
+  },
+  {
+    "allergy_conceptId": "294979009",
+    "causative_agent_conceptId": "372751001"
+  },
+  {
+    "allergy_conceptId": "294357007",
+    "causative_agent_conceptId": "419234006"
+  },
+  {
+    "allergy_conceptId": "295073002",
+    "causative_agent_conceptId": "412391002"
+  },
+  {
+    "allergy_conceptId": "294697004",
+    "causative_agent_conceptId": "419790004"
+  },
+  {
+    "allergy_conceptId": "294502006",
+    "causative_agent_conceptId": "387544009"
+  },
+  {
+    "allergy_conceptId": "294365005",
+    "causative_agent_conceptId": "387174006"
+  },
+  {
+    "allergy_conceptId": "294341007",
+    "causative_agent_conceptId": "387155003"
+  },
+  {
+    "allergy_conceptId": "293786004",
+    "causative_agent_conceptId": "386907005"
+  },
+  {
+    "allergy_conceptId": "294698009",
+    "causative_agent_conceptId": "116586002"
+  },
+  {
+    "allergy_conceptId": "294271001",
+    "causative_agent_conceptId": "387575000"
+  },
+  {
+    "allergy_conceptId": "293886005",
+    "causative_agent_conceptId": "387573007"
+  },
+  {
+    "allergy_conceptId": "294687008",
+    "causative_agent_conceptId": "396060009"
+  },
+  {
+    "allergy_conceptId": "294689006",
+    "causative_agent_conceptId": "16522004"
+  },
+  {
+    "allergy_conceptId": "294699001",
+    "causative_agent_conceptId": "395977002"
+  },
+  {
+    "allergy_conceptId": "294684001",
+    "causative_agent_conceptId": "116588001"
+  },
+  {
+    "allergy_conceptId": "830259009",
+    "causative_agent_conceptId": "838284008"
+  },
+  {
+    "allergy_conceptId": "294688003",
+    "causative_agent_conceptId": "396061008"
+  },
+  {
+    "allergy_conceptId": "294683007",
+    "causative_agent_conceptId": "2925007"
+  },
+  {
+    "allergy_conceptId": "293776000",
+    "causative_agent_conceptId": "387172005"
+  },
+  {
+    "allergy_conceptId": "293850009",
+    "causative_agent_conceptId": "372767007"
+  },
+  {
+    "allergy_conceptId": "293934002",
+    "causative_agent_conceptId": "372730004"
+  },
+  {
+    "allergy_conceptId": "293948002",
+    "causative_agent_conceptId": "387567006"
+  },
+  {
+    "allergy_conceptId": "293927004",
+    "causative_agent_conceptId": "419373008"
+  },
+  {
+    "allergy_conceptId": "293887001",
+    "causative_agent_conceptId": "387109000"
+  },
+  {
+    "allergy_conceptId": "294700000",
+    "causative_agent_conceptId": "397192001"
+  },
+  {
+    "allergy_conceptId": "293618002",
+    "causative_agent_conceptId": "373506008"
+  },
+  {
+    "allergy_conceptId": "294768005",
+    "causative_agent_conceptId": "387587007"
+  },
+  {
+    "allergy_conceptId": "293851008",
+    "causative_agent_conceptId": "372905008"
+  },
+  {
+    "allergy_conceptId": "294931002",
+    "causative_agent_conceptId": "396065004"
+  },
+  {
+    "allergy_conceptId": "294426006",
+    "causative_agent_conceptId": "111095003"
+  },
+  {
+    "allergy_conceptId": "294930001",
+    "causative_agent_conceptId": "63718003"
+  },
+  {
+    "allergy_conceptId": "294972000",
+    "causative_agent_conceptId": "387585004"
+  },
+  {
+    "allergy_conceptId": "293791003",
+    "causative_agent_conceptId": "414288004"
+  },
+  {
+    "allergy_conceptId": "294382007",
+    "causative_agent_conceptId": "372902006"
+  },
+  {
+    "allergy_conceptId": "294559006",
+    "causative_agent_conceptId": "372534005"
+  },
+  {
+    "allergy_conceptId": "294467001",
+    "causative_agent_conceptId": "373765007"
+  },
+  {
+    "allergy_conceptId": "293861001",
+    "causative_agent_conceptId": "386845007"
+  },
+  {
+    "allergy_conceptId": "295000003",
+    "causative_agent_conceptId": "387475002"
+  },
+  {
+    "allergy_conceptId": "294482006",
+    "causative_agent_conceptId": "387530003"
+  },
+  {
+    "allergy_conceptId": "294229002",
+    "causative_agent_conceptId": "387435005"
+  },
+  {
+    "allergy_conceptId": "294280001",
+    "causative_agent_conceptId": "68329003"
+  },
+  {
+    "allergy_conceptId": "294254002",
+    "causative_agent_conceptId": "395729005"
+  },
+  {
+    "allergy_conceptId": "294370003",
+    "causative_agent_conceptId": "372848001"
+  },
+  {
+    "allergy_conceptId": "294847001",
+    "causative_agent_conceptId": "373531009"
+  },
+  {
+    "allergy_conceptId": "294469003",
+    "causative_agent_conceptId": "387321007"
+  },
+  {
+    "allergy_conceptId": "294749007",
+    "causative_agent_conceptId": "395980001"
+  },
+  {
+    "allergy_conceptId": "294447005",
+    "causative_agent_conceptId": "387239001"
+  },
+  {
+    "allergy_conceptId": "294765008",
+    "causative_agent_conceptId": "387589005"
+  },
+  {
+    "allergy_conceptId": "294731007",
+    "causative_agent_conceptId": "384978002"
+  },
+  {
+    "allergy_conceptId": "294732000",
+    "causative_agent_conceptId": "419384001"
+  },
+  {
+    "allergy_conceptId": "294733005",
+    "causative_agent_conceptId": "395731001"
+  },
+  {
+    "allergy_conceptId": "294735003",
+    "causative_agent_conceptId": "395732008"
+  },
+  {
+    "allergy_conceptId": "294734004",
+    "causative_agent_conceptId": "387143009"
+  },
+  {
+    "allergy_conceptId": "294671005",
+    "causative_agent_conceptId": "66603002"
+  },
+  {
+    "allergy_conceptId": "294080009",
+    "causative_agent_conceptId": "769097000"
+  },
+  {
+    "allergy_conceptId": "294320001",
+    "causative_agent_conceptId": "80582002"
+  },
+  {
+    "allergy_conceptId": "295079003",
+    "causative_agent_conceptId": "387404004"
+  },
+  {
+    "allergy_conceptId": "294820006",
+    "causative_agent_conceptId": "31895006"
+  },
+  {
+    "allergy_conceptId": "294815006",
+    "causative_agent_conceptId": "397197007"
+  },
+  {
+    "allergy_conceptId": "294423003",
+    "causative_agent_conceptId": "22242006"
+  },
+  {
+    "allergy_conceptId": "294814005",
+    "causative_agent_conceptId": "418974001"
+  },
+  {
+    "allergy_conceptId": "294818008",
+    "causative_agent_conceptId": "108771008"
+  },
+  {
+    "allergy_conceptId": "294348001",
+    "causative_agent_conceptId": "372807004"
+  },
+  {
+    "allergy_conceptId": "295035001",
+    "causative_agent_conceptId": "387456007"
+  },
+  {
+    "allergy_conceptId": "293654003",
+    "causative_agent_conceptId": "372525000"
+  },
+  {
+    "allergy_conceptId": "294690002",
+    "causative_agent_conceptId": "395735005"
+  },
+  {
+    "allergy_conceptId": "293714007",
+    "causative_agent_conceptId": "387351001"
+  },
+  {
+    "allergy_conceptId": "294399008",
+    "causative_agent_conceptId": "372527008"
+  },
+  {
+    "allergy_conceptId": "293924006",
+    "causative_agent_conceptId": "386837002"
+  },
+  {
+    "allergy_conceptId": "294872001",
+    "causative_agent_conceptId": "372877000"
+  },
+  {
+    "allergy_conceptId": "294876003",
+    "causative_agent_conceptId": "372637006"
+  },
+  {
+    "allergy_conceptId": "294407003",
+    "causative_agent_conceptId": "387132001"
+  },
+  {
+    "allergy_conceptId": "294081008",
+    "causative_agent_conceptId": "372864009"
+  },
+  {
+    "allergy_conceptId": "782558006",
+    "causative_agent_conceptId": "418747006"
+  },
+  {
+    "allergy_conceptId": "293649007",
+    "causative_agent_conceptId": "372524001"
+  },
+  {
+    "allergy_conceptId": "773482004",
+    "causative_agent_conceptId": "38218009"
+  },
+  {
+    "allergy_conceptId": "294723002",
+    "causative_agent_conceptId": "96367001"
+  },
+  {
+    "allergy_conceptId": "294633002",
+    "causative_agent_conceptId": "420084002"
+  },
+  {
+    "allergy_conceptId": "295075009",
+    "causative_agent_conceptId": "387125005"
+  },
+  {
+    "allergy_conceptId": "294995009",
+    "causative_agent_conceptId": "387525002"
+  },
+  {
+    "allergy_conceptId": "294405006",
+    "causative_agent_conceptId": "419172005"
+  },
+  {
+    "allergy_conceptId": "294996005",
+    "causative_agent_conceptId": "395946004"
+  },
+  {
+    "allergy_conceptId": "294449008",
+    "causative_agent_conceptId": "387171003"
+  },
+  {
+    "allergy_conceptId": "294679007",
+    "causative_agent_conceptId": "396458002"
+  },
+  {
+    "allergy_conceptId": "294393009",
+    "causative_agent_conceptId": "373540008"
+  },
+  {
+    "allergy_conceptId": "294750007",
+    "causative_agent_conceptId": "126110005"
+  },
+  {
+    "allergy_conceptId": "293781009",
+    "causative_agent_conceptId": "387314007"
+  },
+  {
+    "allergy_conceptId": "860776004",
+    "causative_agent_conceptId": "765459004"
+  },
+  {
+    "allergy_conceptId": "294933004",
+    "causative_agent_conceptId": "1217428002"
+  },
+  {
+    "allergy_conceptId": "294135005",
+    "causative_agent_conceptId": "372856003"
+  },
+  {
+    "allergy_conceptId": "767014001",
+    "causative_agent_conceptId": "766966001"
+  },
+  {
+    "allergy_conceptId": "294074001",
+    "causative_agent_conceptId": "387409009"
+  },
+  {
+    "allergy_conceptId": "294259007",
+    "causative_agent_conceptId": "373232003"
+  },
+  {
+    "allergy_conceptId": "293619005",
+    "causative_agent_conceptId": "387207008"
+  },
+  {
+    "allergy_conceptId": "293750000",
+    "causative_agent_conceptId": "386904003"
+  },
+  {
+    "allergy_conceptId": "294385009",
+    "causative_agent_conceptId": "373499006"
+  },
+  {
+    "allergy_conceptId": "293768002",
+    "causative_agent_conceptId": "372539000"
+  },
+  {
+    "allergy_conceptId": "295024006",
+    "causative_agent_conceptId": "387419003"
+  },
+  {
+    "allergy_conceptId": "782560008",
+    "causative_agent_conceptId": "372573005"
+  },
+  {
+    "allergy_conceptId": "293833007",
+    "causative_agent_conceptId": "372718005"
+  },
+  {
+    "allergy_conceptId": "293988007",
+    "causative_agent_conceptId": "395748009"
+  },
+  {
+    "allergy_conceptId": "294937003",
+    "causative_agent_conceptId": "72164009"
+  },
+  {
+    "allergy_conceptId": "294368007",
+    "causative_agent_conceptId": "395749001"
+  },
+  {
+    "allergy_conceptId": "442408006",
+    "causative_agent_conceptId": "46558003"
+  },
+  {
+    "allergy_conceptId": "293620004",
+    "causative_agent_conceptId": "373513008"
+  },
+  {
+    "allergy_conceptId": "294375008",
+    "causative_agent_conceptId": "49327004"
+  },
+  {
+    "allergy_conceptId": "294714000",
+    "causative_agent_conceptId": "67866001"
+  },
+  {
+    "allergy_conceptId": "294378005",
+    "causative_agent_conceptId": "386915008"
+  },
+  {
+    "allergy_conceptId": "294377000",
+    "causative_agent_conceptId": "386914007"
+  },
+  {
+    "allergy_conceptId": "294379002",
+    "causative_agent_conceptId": "419598008"
+  },
+  {
+    "allergy_conceptId": "294376009",
+    "causative_agent_conceptId": "386901006"
+  },
+  {
+    "allergy_conceptId": "294264006",
+    "causative_agent_conceptId": "372591000"
+  },
+  {
+    "allergy_conceptId": "294148009",
+    "causative_agent_conceptId": "396485009"
+  },
+  {
+    "allergy_conceptId": "293838003",
+    "causative_agent_conceptId": "387161000"
+  },
+  {
+    "allergy_conceptId": "293824005",
+    "causative_agent_conceptId": "419144003"
+  },
+  {
+    "allergy_conceptId": "294082001",
+    "causative_agent_conceptId": "372518007"
+  },
+  {
+    "allergy_conceptId": "294360000",
+    "causative_agent_conceptId": "418371001"
+  },
+  {
+    "allergy_conceptId": "293837008",
+    "causative_agent_conceptId": "387438007"
+  },
+  {
+    "allergy_conceptId": "293715008",
+    "causative_agent_conceptId": "387368002"
+  },
+  {
+    "allergy_conceptId": "294614007",
+    "causative_agent_conceptId": "387472004"
+  },
+  {
+    "allergy_conceptId": "294720004",
+    "causative_agent_conceptId": "66384003"
+  },
+  {
+    "allergy_conceptId": "294050004",
+    "causative_agent_conceptId": "372781009"
+  },
+  {
+    "allergy_conceptId": "830169008",
+    "causative_agent_conceptId": "66004009"
+  },
+  {
+    "allergy_conceptId": "773428003",
+    "causative_agent_conceptId": "386853004"
+  },
+  {
+    "allergy_conceptId": "293998001",
+    "causative_agent_conceptId": "386862002"
+  },
+  {
+    "allergy_conceptId": "294366006",
+    "causative_agent_conceptId": "387532006"
+  },
+  {
+    "allergy_conceptId": "295098001",
+    "causative_agent_conceptId": "372818004"
+  },
+  {
+    "allergy_conceptId": "293707005",
+    "causative_agent_conceptId": "373464007"
+  },
+  {
+    "allergy_conceptId": "294211007",
+    "causative_agent_conceptId": "387208003"
+  },
+  {
+    "allergy_conceptId": "294464008",
+    "causative_agent_conceptId": "387396008"
+  },
+  {
+    "allergy_conceptId": "293897005",
+    "causative_agent_conceptId": "419657007"
+  },
+  {
+    "allergy_conceptId": "293622007",
+    "causative_agent_conceptId": "372501008"
+  },
+  {
+    "allergy_conceptId": "294362008",
+    "causative_agent_conceptId": "387216007"
+  },
+  {
+    "allergy_conceptId": "293977001",
+    "causative_agent_conceptId": "372750000"
+  },
+  {
+    "allergy_conceptId": "293621000",
+    "causative_agent_conceptId": "386832008"
+  },
+  {
+    "allergy_conceptId": "294144006",
+    "causative_agent_conceptId": "372642003"
+  },
+  {
+    "allergy_conceptId": "830170009",
+    "causative_agent_conceptId": "816176000"
+  },
+  {
+    "allergy_conceptId": "294000006",
+    "causative_agent_conceptId": "395764001"
+  },
+  {
+    "allergy_conceptId": "293859005",
+    "causative_agent_conceptId": "387562000"
+  },
+  {
+    "allergy_conceptId": "295056004",
+    "causative_agent_conceptId": "387338006"
+  },
+  {
+    "allergy_conceptId": "293681003",
+    "causative_agent_conceptId": "273945008"
+  },
+  {
+    "allergy_conceptId": "294539007",
+    "causative_agent_conceptId": "387099009"
+  },
+  {
+    "allergy_conceptId": "293656001",
+    "causative_agent_conceptId": "386888004"
+  },
+  {
+    "allergy_conceptId": "293738006",
+    "causative_agent_conceptId": "387296006"
+  },
+  {
+    "allergy_conceptId": "293978006",
+    "causative_agent_conceptId": "418934007"
+  },
+  {
+    "allergy_conceptId": "293736005",
+    "causative_agent_conceptId": "395767008"
+  },
+  {
+    "allergy_conceptId": "294821005",
+    "causative_agent_conceptId": "397198002"
+  },
+  {
+    "allergy_conceptId": "294912008",
+    "causative_agent_conceptId": "372601001"
+  },
+  {
+    "allergy_conceptId": "13181000122107",
+    "causative_agent_conceptId": "387552007"
+  },
+  {
+    "allergy_conceptId": "293808009",
+    "causative_agent_conceptId": "387086006"
+  },
+  {
+    "allergy_conceptId": "294754003",
+    "causative_agent_conceptId": "126109000"
+  },
+  {
+    "allergy_conceptId": "293929001",
+    "causative_agent_conceptId": "387509007"
+  },
+  {
+    "allergy_conceptId": "293722000",
+    "causative_agent_conceptId": "387480006"
+  },
+  {
+    "allergy_conceptId": "293609004",
+    "causative_agent_conceptId": "387275004"
+  },
+  {
+    "allergy_conceptId": "293995003",
+    "causative_agent_conceptId": "418865004"
+  },
+  {
+    "allergy_conceptId": "294562009",
+    "causative_agent_conceptId": "372677003"
+  },
+  {
+    "allergy_conceptId": "293818004",
+    "causative_agent_conceptId": "387095003"
+  },
+  {
+    "allergy_conceptId": "293813008",
+    "causative_agent_conceptId": "395770007"
+  },
+  {
+    "allergy_conceptId": "293819007",
+    "causative_agent_conceptId": "387098001"
+  },
+  {
+    "allergy_conceptId": "293718005",
+    "causative_agent_conceptId": "373477003"
+  },
+  {
+    "allergy_conceptId": "782563005",
+    "causative_agent_conceptId": "36378007"
+  },
+  {
+    "allergy_conceptId": "294145007",
+    "causative_agent_conceptId": "372552005"
+  },
+  {
+    "allergy_conceptId": "293825006",
+    "causative_agent_conceptId": "395772004"
+  },
+  {
+    "allergy_conceptId": "294803007",
+    "causative_agent_conceptId": "61275002"
+  },
+  {
+    "allergy_conceptId": "293756006",
+    "causative_agent_conceptId": "387227009"
+  },
+  {
+    "allergy_conceptId": "294059003",
+    "causative_agent_conceptId": "395989000"
+  },
+  {
+    "allergy_conceptId": "293668005",
+    "causative_agent_conceptId": "387040009"
+  },
+  {
+    "allergy_conceptId": "293888006",
+    "causative_agent_conceptId": "395774003"
+  },
+  {
+    "allergy_conceptId": "294114008",
+    "causative_agent_conceptId": "386884002"
+  },
+  {
+    "allergy_conceptId": "293889003",
+    "causative_agent_conceptId": "387570005"
+  },
+  {
+    "allergy_conceptId": "293903001",
+    "causative_agent_conceptId": "387106007"
+  },
+  {
+    "allergy_conceptId": "293915002",
+    "causative_agent_conceptId": "372789006"
+  },
+  {
+    "allergy_conceptId": "294586006",
+    "causative_agent_conceptId": "387548007"
+  },
+  {
+    "allergy_conceptId": "294579003",
+    "causative_agent_conceptId": "372876009"
+  },
+  {
+    "allergy_conceptId": "293682005",
+    "causative_agent_conceptId": "387202002"
+  },
+  {
+    "allergy_conceptId": "294563004",
+    "causative_agent_conceptId": "395778000"
+  },
+  {
+    "allergy_conceptId": "718536006",
+    "causative_agent_conceptId": "96303004"
+  },
+  {
+    "allergy_conceptId": "293853006",
+    "causative_agent_conceptId": "387180003"
+  },
+  {
+    "allergy_conceptId": "293665008",
+    "causative_agent_conceptId": "387117008"
+  },
+  {
+    "allergy_conceptId": "293802005",
+    "causative_agent_conceptId": "387232005"
+  },
+  {
+    "allergy_conceptId": "294458001",
+    "causative_agent_conceptId": "387311004"
+  },
+  {
+    "allergy_conceptId": "295019008",
+    "causative_agent_conceptId": "387168006"
+  },
+  {
+    "allergy_conceptId": "293692002",
+    "causative_agent_conceptId": "419830007"
+  },
+  {
+    "allergy_conceptId": "830171008",
+    "causative_agent_conceptId": "372879002"
+  },
+  {
+    "allergy_conceptId": "293623002",
+    "causative_agent_conceptId": "387185008"
+  },
+  {
+    "allergy_conceptId": "293898000",
+    "causative_agent_conceptId": "387192003"
+  },
+  {
+    "allergy_conceptId": "294755002",
+    "causative_agent_conceptId": "126113007"
+  },
+  {
+    "allergy_conceptId": "295025007",
+    "causative_agent_conceptId": "406772008"
+  },
+  {
+    "allergy_conceptId": "295057008",
+    "causative_agent_conceptId": "418574005"
+  },
+  {
+    "allergy_conceptId": "294392004",
+    "causative_agent_conceptId": "387505001"
+  },
+  {
+    "allergy_conceptId": "294751006",
+    "causative_agent_conceptId": "126091007"
+  },
+  {
+    "allergy_conceptId": "293751001",
+    "causative_agent_conceptId": "387297002"
+  },
+  {
+    "allergy_conceptId": "293694001",
+    "causative_agent_conceptId": "372834001"
+  },
+  {
+    "allergy_conceptId": "293606006",
+    "causative_agent_conceptId": "387298007"
+  },
+  {
+    "allergy_conceptId": "294400001",
+    "causative_agent_conceptId": "387445007"
+  },
+  {
+    "allergy_conceptId": "293603003",
+    "causative_agent_conceptId": "373700004"
+  },
+  {
+    "allergy_conceptId": "293864009",
+    "causative_agent_conceptId": "387252006"
+  },
+  {
+    "allergy_conceptId": "293906009",
+    "causative_agent_conceptId": "387395007"
+  },
+  {
+    "allergy_conceptId": "293608007",
+    "causative_agent_conceptId": "395783008"
+  },
+  {
+    "allergy_conceptId": "293772003",
+    "causative_agent_conceptId": "386835005"
+  },
+  {
+    "allergy_conceptId": "442022002",
+    "causative_agent_conceptId": "387540000"
+  },
+  {
+    "allergy_conceptId": "294269001",
+    "causative_agent_conceptId": "386922000"
+  },
+  {
+    "allergy_conceptId": "293770006",
+    "causative_agent_conceptId": "86388007"
+  },
+  {
+    "allergy_conceptId": "294040000",
+    "causative_agent_conceptId": "372797004"
+  },
+  {
+    "allergy_conceptId": "294774005",
+    "causative_agent_conceptId": "96346001"
+  },
+  {
+    "allergy_conceptId": "295021003",
+    "causative_agent_conceptId": "387157006"
+  },
+  {
+    "allergy_conceptId": "294792002",
+    "causative_agent_conceptId": "395785001"
+  },
+  {
+    "allergy_conceptId": "830172001",
+    "causative_agent_conceptId": "780831000"
+  },
+  {
+    "allergy_conceptId": "294740006",
+    "causative_agent_conceptId": "372567009"
+  },
+  {
+    "allergy_conceptId": "294009007",
+    "causative_agent_conceptId": "372766003"
+  },
+  {
+    "allergy_conceptId": "294026001",
+    "causative_agent_conceptId": "372728001"
+  },
+  {
+    "allergy_conceptId": "830173006",
+    "causative_agent_conceptId": "372773008"
+  },
+  {
+    "allergy_conceptId": "293594008",
+    "causative_agent_conceptId": "387286002"
+  },
+  {
+    "allergy_conceptId": "294503001",
+    "causative_agent_conceptId": "373515001"
+  },
+  {
+    "allergy_conceptId": "294083006",
+    "causative_agent_conceptId": "387354009"
+  },
+  {
+    "allergy_conceptId": "294236001",
+    "causative_agent_conceptId": "387486000"
+  },
+  {
+    "allergy_conceptId": "294096007",
+    "causative_agent_conceptId": "396489003"
+  },
+  {
+    "allergy_conceptId": "294997001",
+    "causative_agent_conceptId": "387373008"
+  },
+  {
+    "allergy_conceptId": "294027005",
+    "causative_agent_conceptId": "372769005"
+  },
+  {
+    "allergy_conceptId": "293955000",
+    "causative_agent_conceptId": "373337007"
+  },
+  {
+    "allergy_conceptId": "293771005",
+    "causative_agent_conceptId": "387381009"
+  },
+  {
+    "allergy_conceptId": "293710003",
+    "causative_agent_conceptId": "373488009"
+  },
+  {
+    "allergy_conceptId": "294775006",
+    "causative_agent_conceptId": "126161000"
+  },
+  {
+    "allergy_conceptId": "294706006",
+    "causative_agent_conceptId": "116593003"
+  },
+  {
+    "allergy_conceptId": "294055009",
+    "causative_agent_conceptId": "373542000"
+  },
+  {
+    "allergy_conceptId": "293975009",
+    "causative_agent_conceptId": "373446000"
+  },
+  {
+    "allergy_conceptId": "293877000",
+    "causative_agent_conceptId": "387169003"
+  },
+  {
+    "allergy_conceptId": "295026008",
+    "causative_agent_conceptId": "387123003"
+  },
+  {
+    "allergy_conceptId": "294508005",
+    "causative_agent_conceptId": "387446008"
+  },
+  {
+    "allergy_conceptId": "295049005",
+    "causative_agent_conceptId": "387495008"
+  },
+  {
+    "allergy_conceptId": "293675006",
+    "causative_agent_conceptId": "372776000"
+  },
+  {
+    "allergy_conceptId": "294980007",
+    "causative_agent_conceptId": "372909002"
+  },
+  {
+    "allergy_conceptId": "294363003",
+    "causative_agent_conceptId": "372738006"
+  },
+  {
+    "allergy_conceptId": "293970004",
+    "causative_agent_conceptId": "372826007"
+  },
+  {
+    "allergy_conceptId": "294567003",
+    "causative_agent_conceptId": "372602008"
+  },
+  {
+    "allergy_conceptId": "293854000",
+    "causative_agent_conceptId": "387565003"
+  },
+  {
+    "allergy_conceptId": "293901004",
+    "causative_agent_conceptId": "373476007"
+  },
+  {
+    "allergy_conceptId": "294245000",
+    "causative_agent_conceptId": "395796009"
+  },
+  {
+    "allergy_conceptId": "295062009",
+    "causative_agent_conceptId": "373441005"
+  },
+  {
+    "allergy_conceptId": "293648004",
+    "causative_agent_conceptId": "387242007"
+  },
+  {
+    "allergy_conceptId": "295071000",
+    "causative_agent_conceptId": "387272001"
+  },
+  {
+    "allergy_conceptId": "293840008",
+    "causative_agent_conceptId": "395800003"
+  },
+  {
+    "allergy_conceptId": "294226009",
+    "causative_agent_conceptId": "372493004"
+  },
+  {
+    "allergy_conceptId": "294587002",
+    "causative_agent_conceptId": "372653009"
+  },
+  {
+    "allergy_conceptId": "293735009",
+    "causative_agent_conceptId": "395801004"
+  },
+  {
+    "allergy_conceptId": "293741002",
+    "causative_agent_conceptId": "387156002"
+  },
+  {
+    "allergy_conceptId": "293762001",
+    "causative_agent_conceptId": "387331000"
+  },
+  {
+    "allergy_conceptId": "293765004",
+    "causative_agent_conceptId": "386913001"
+  },
+  {
+    "allergy_conceptId": "294327003",
+    "causative_agent_conceptId": "111089004"
+  },
+  {
+    "allergy_conceptId": "294701001",
+    "causative_agent_conceptId": "395990009"
+  },
+  {
+    "allergy_conceptId": "293835000",
+    "causative_agent_conceptId": "373281001"
+  },
+  {
+    "allergy_conceptId": "294621007",
+    "causative_agent_conceptId": "417533007"
+  },
+  {
+    "allergy_conceptId": "293673004",
+    "causative_agent_conceptId": "395806009"
+  },
+  {
+    "allergy_conceptId": "293972007",
+    "causative_agent_conceptId": "387482003"
+  },
+  {
+    "allergy_conceptId": "293601001",
+    "causative_agent_conceptId": "373529000"
+  },
+  {
+    "allergy_conceptId": "293595009",
+    "causative_agent_conceptId": "373699000"
+  },
+  {
+    "allergy_conceptId": "294816007",
+    "causative_agent_conceptId": "109046009"
+  },
+  {
+    "allergy_conceptId": "295102009",
+    "causative_agent_conceptId": "395901000"
+  },
+  {
+    "allergy_conceptId": "294981006",
+    "causative_agent_conceptId": "373726009"
+  },
+  {
+    "allergy_conceptId": "293624008",
+    "causative_agent_conceptId": "386859000"
+  },
+  {
+    "allergy_conceptId": "295099009",
+    "causative_agent_conceptId": "395992001"
+  },
+  {
+    "allergy_conceptId": "294480003",
+    "causative_agent_conceptId": "387397004"
+  },
+  {
+    "allergy_conceptId": "293600000",
+    "causative_agent_conceptId": "373539006"
+  },
+  {
+    "allergy_conceptId": "294486009",
+    "causative_agent_conceptId": "387261006"
+  },
+  {
+    "allergy_conceptId": "294761004",
+    "causative_agent_conceptId": "126171003"
+  },
+  {
+    "allergy_conceptId": "294276006",
+    "causative_agent_conceptId": "373546002"
+  },
+  {
+    "allergy_conceptId": "294277002",
+    "causative_agent_conceptId": "372890007"
+  },
+  {
+    "allergy_conceptId": "294142005",
+    "causative_agent_conceptId": "372519004"
+  },
+  {
+    "allergy_conceptId": "293625009",
+    "causative_agent_conceptId": "372588000"
+  },
+  {
+    "allergy_conceptId": "293848001",
+    "causative_agent_conceptId": "372491002"
+  },
+  {
+    "allergy_conceptId": "293626005",
+    "causative_agent_conceptId": "419768004"
+  },
+  {
+    "allergy_conceptId": "294350009",
+    "causative_agent_conceptId": "372712006"
+  },
+  {
+    "allergy_conceptId": "294028000",
+    "causative_agent_conceptId": "372803000"
+  },
+  {
+    "allergy_conceptId": "772021008",
+    "causative_agent_conceptId": "395808005"
+  },
+  {
+    "allergy_conceptId": "294468006",
+    "causative_agent_conceptId": "373528008"
+  },
+  {
+    "allergy_conceptId": "294017004",
+    "causative_agent_conceptId": "373346001"
+  },
+  {
+    "allergy_conceptId": "294465009",
+    "causative_agent_conceptId": "387110005"
+  },
+  {
+    "allergy_conceptId": "713725004",
+    "causative_agent_conceptId": "386898005"
+  },
+  {
+    "allergy_conceptId": "294004002",
+    "causative_agent_conceptId": "372502001"
+  },
+  {
+    "allergy_conceptId": "294453005",
+    "causative_agent_conceptId": "387334008"
+  },
+  {
+    "allergy_conceptId": "294929006",
+    "causative_agent_conceptId": "273943001"
+  },
+  {
+    "allergy_conceptId": "295096002",
+    "causative_agent_conceptId": "419843007"
+  },
+  {
+    "allergy_conceptId": "294001005",
+    "causative_agent_conceptId": "387502003"
+  },
+  {
+    "allergy_conceptId": "295100001",
+    "causative_agent_conceptId": "419062009"
+  },
+  {
+    "allergy_conceptId": "295076005",
+    "causative_agent_conceptId": "395809002"
+  },
+  {
+    "allergy_conceptId": "293996002",
+    "causative_agent_conceptId": "387490003"
+  },
+  {
+    "allergy_conceptId": "293993005",
+    "causative_agent_conceptId": "68540007"
+  },
+  {
+    "allergy_conceptId": "294569000",
+    "causative_agent_conceptId": "418509004"
+  },
+  {
+    "allergy_conceptId": "293890007",
+    "causative_agent_conceptId": "387449001"
+  },
+  {
+    "allergy_conceptId": "294481004",
+    "causative_agent_conceptId": "87097009"
+  },
+  {
+    "allergy_conceptId": "294478009",
+    "causative_agent_conceptId": "373543005"
+  },
+  {
+    "allergy_conceptId": "293746007",
+    "causative_agent_conceptId": "372609004"
+  },
+  {
+    "allergy_conceptId": "294566007",
+    "causative_agent_conceptId": "373235001"
+  },
+  {
+    "allergy_conceptId": "293652004",
+    "causative_agent_conceptId": "386887009"
+  },
+  {
+    "allergy_conceptId": "293610009",
+    "causative_agent_conceptId": "372665008"
+  },
+  {
+    "allergy_conceptId": "294343005",
+    "causative_agent_conceptId": "34332002"
+  },
+  {
+    "allergy_conceptId": "294225008",
+    "causative_agent_conceptId": "372790002"
+  },
+  {
+    "allergy_conceptId": "293754009",
+    "causative_agent_conceptId": "372610009"
+  },
+  {
+    "allergy_conceptId": "773483009",
+    "causative_agent_conceptId": "372860000"
+  },
+  {
+    "allergy_conceptId": "294029008",
+    "causative_agent_conceptId": "45555007"
+  },
+  {
+    "allergy_conceptId": "294752004",
+    "causative_agent_conceptId": "126102009"
+  },
+  {
+    "allergy_conceptId": "294490006",
+    "causative_agent_conceptId": "387271008"
+  },
+  {
+    "allergy_conceptId": "294152009",
+    "causative_agent_conceptId": "387437002"
+  },
+  {
+    "allergy_conceptId": "293826007",
+    "causative_agent_conceptId": "372652004"
+  },
+  {
+    "allergy_conceptId": "294351008",
+    "causative_agent_conceptId": "387048002"
+  },
+  {
+    "allergy_conceptId": "294425005",
+    "causative_agent_conceptId": "395812004"
+  },
+  {
+    "allergy_conceptId": "294489002",
+    "causative_agent_conceptId": "387551000"
+  },
+  {
+    "allergy_conceptId": "294826000",
+    "causative_agent_conceptId": "109053000"
+  },
+  {
+    "allergy_conceptId": "293899008",
+    "causative_agent_conceptId": "387455006"
+  },
+  {
+    "allergy_conceptId": "295058003",
+    "causative_agent_conceptId": "35966009"
+  },
+  {
+    "allergy_conceptId": "293655002",
+    "causative_agent_conceptId": "387137007"
+  },
+  {
+    "allergy_conceptId": "293662006",
+    "causative_agent_conceptId": "386890003"
+  },
+  {
+    "allergy_conceptId": "294084000",
+    "causative_agent_conceptId": "372714007"
+  },
+  {
+    "allergy_conceptId": "830174000",
+    "causative_agent_conceptId": "419339003"
+  },
+  {
+    "allergy_conceptId": "294087007",
+    "causative_agent_conceptId": "395993006"
+  },
+  {
+    "allergy_conceptId": "293979003",
+    "causative_agent_conceptId": "387583006"
+  },
+  {
+    "allergy_conceptId": "294088002",
+    "causative_agent_conceptId": "372717000"
+  },
+  {
+    "allergy_conceptId": "294760003",
+    "causative_agent_conceptId": "126101002"
+  },
+  {
+    "allergy_conceptId": "294063005",
+    "causative_agent_conceptId": "387158001"
+  },
+  {
+    "allergy_conceptId": "293949005",
+    "causative_agent_conceptId": "395818000"
+  },
+  {
+    "allergy_conceptId": "293627001",
+    "causative_agent_conceptId": "387269008"
+  },
+  {
+    "allergy_conceptId": "773491000",
+    "causative_agent_conceptId": "420442001"
+  },
+  {
+    "allergy_conceptId": "293785000",
+    "causative_agent_conceptId": "387374002"
+  },
+  {
+    "allergy_conceptId": "294230007",
+    "causative_agent_conceptId": "373738000"
+  },
+  {
+    "allergy_conceptId": "11861000122107",
+    "causative_agent_conceptId": "395821003"
+  },
+  {
+    "allergy_conceptId": "294823008",
+    "causative_agent_conceptId": "112115002"
+  },
+  {
+    "allergy_conceptId": "293847006",
+    "causative_agent_conceptId": "372595009"
+  },
+  {
+    "allergy_conceptId": "293878005",
+    "causative_agent_conceptId": "387190006"
+  },
+  {
+    "allergy_conceptId": "293659008",
+    "causative_agent_conceptId": "387049005"
+  },
+  {
+    "allergy_conceptId": "294242002",
+    "causative_agent_conceptId": "372784001"
+  },
+  {
+    "allergy_conceptId": "294588007",
+    "causative_agent_conceptId": "372675006"
+  },
+  {
+    "allergy_conceptId": "293954001",
+    "causative_agent_conceptId": "387393000"
+  },
+  {
+    "allergy_conceptId": "293980000",
+    "causative_agent_conceptId": "372505004"
+  },
+  {
+    "allergy_conceptId": "294291008",
+    "causative_agent_conceptId": "387235007"
+  },
+  {
+    "allergy_conceptId": "294497009",
+    "causative_agent_conceptId": "372725003"
+  },
+  {
+    "allergy_conceptId": "91936005",
+    "causative_agent_conceptId": "764146007"
+  },
+  {
+    "allergy_conceptId": "294600007",
+    "causative_agent_conceptId": "372699006"
+  },
+  {
+    "allergy_conceptId": "293774002",
+    "causative_agent_conceptId": "387154004"
+  },
+  {
+    "allergy_conceptId": "293588000",
+    "causative_agent_conceptId": "387213004"
+  },
+  {
+    "allergy_conceptId": "295091007",
+    "causative_agent_conceptId": "386836006"
+  },
+  {
+    "allergy_conceptId": "293814002",
+    "causative_agent_conceptId": "372498008"
+  },
+  {
+    "allergy_conceptId": "293690005",
+    "causative_agent_conceptId": "52283007"
+  },
+  {
+    "allergy_conceptId": "295094004",
+    "causative_agent_conceptId": "387522004"
+  },
+  {
+    "allergy_conceptId": "293939007",
+    "causative_agent_conceptId": "387229007"
+  },
+  {
+    "allergy_conceptId": "293930006",
+    "causative_agent_conceptId": "395825007"
+  },
+  {
+    "allergy_conceptId": "293589008",
+    "causative_agent_conceptId": "387326002"
+  },
+  {
+    "allergy_conceptId": "293836004",
+    "causative_agent_conceptId": "387528000"
+  },
+  {
+    "allergy_conceptId": "294496000",
+    "causative_agent_conceptId": "387084009"
+  },
+  {
+    "allergy_conceptId": "294883005",
+    "causative_agent_conceptId": "387260007"
+  },
+  {
+    "allergy_conceptId": "293989004",
+    "causative_agent_conceptId": "372838003"
+  },
+  {
+    "allergy_conceptId": "782607004",
+    "causative_agent_conceptId": "782605007"
+  },
+  {
+    "allergy_conceptId": "293990008",
+    "causative_agent_conceptId": "372863003"
+  },
+  {
+    "allergy_conceptId": "293865005",
+    "causative_agent_conceptId": "373505007"
+  },
+  {
+    "allergy_conceptId": "293628006",
+    "causative_agent_conceptId": "273951003"
+  },
+  {
+    "allergy_conceptId": "294138007",
+    "causative_agent_conceptId": "373500002"
+  },
+  {
+    "allergy_conceptId": "293607002",
+    "causative_agent_conceptId": "420076001"
+  },
+  {
+    "allergy_conceptId": "293928009",
+    "causative_agent_conceptId": "372839006"
+  },
+  {
+    "allergy_conceptId": "293803000",
+    "causative_agent_conceptId": "373343009"
+  },
+  {
+    "allergy_conceptId": "294030003",
+    "causative_agent_conceptId": "372771005"
+  },
+  {
+    "allergy_conceptId": "773518005",
+    "causative_agent_conceptId": "387464001"
+  },
+  {
+    "allergy_conceptId": "293869004",
+    "causative_agent_conceptId": "387220006"
+  },
+  {
+    "allergy_conceptId": "294153004",
+    "causative_agent_conceptId": "396486005"
+  },
+  {
+    "allergy_conceptId": "294451007",
+    "causative_agent_conceptId": "428714003"
+  },
+  {
+    "allergy_conceptId": "294571000",
+    "causative_agent_conceptId": "16359004"
+  },
+  {
+    "allergy_conceptId": "294011003",
+    "causative_agent_conceptId": "373347005"
+  },
+  {
+    "allergy_conceptId": "294007009",
+    "causative_agent_conceptId": "372895002"
+  },
+  {
+    "allergy_conceptId": "830175004",
+    "causative_agent_conceptId": "46201000"
+  },
+  {
+    "allergy_conceptId": "293695000",
+    "causative_agent_conceptId": "387425004"
+  },
+  {
+    "allergy_conceptId": "294515002",
+    "causative_agent_conceptId": "372836004"
+  },
+  {
+    "allergy_conceptId": "293973002",
+    "causative_agent_conceptId": "387102009"
+  },
+  {
+    "allergy_conceptId": "293936000",
+    "causative_agent_conceptId": "395995004"
+  },
+  {
+    "allergy_conceptId": "293926008",
+    "causative_agent_conceptId": "386848009"
+  },
+  {
+    "allergy_conceptId": "293860000",
+    "causative_agent_conceptId": "395833008"
+  },
+  {
+    "allergy_conceptId": "294035008",
+    "causative_agent_conceptId": "372516006"
+  },
+  {
+    "allergy_conceptId": "293658000",
+    "causative_agent_conceptId": "398669004"
+  },
+  {
+    "allergy_conceptId": "295003001",
+    "causative_agent_conceptId": "419451002"
+  },
+  {
+    "allergy_conceptId": "293629003",
+    "causative_agent_conceptId": "387153005"
+  },
+  {
+    "allergy_conceptId": "293763006",
+    "causative_agent_conceptId": "387101002"
+  },
+  {
+    "allergy_conceptId": "294509002",
+    "causative_agent_conceptId": "387545005"
+  },
+  {
+    "allergy_conceptId": "718535005",
+    "causative_agent_conceptId": "443586000"
+  },
+  {
+    "allergy_conceptId": "767015000",
+    "causative_agent_conceptId": "84746004"
+  },
+  {
+    "allergy_conceptId": "293696004",
+    "causative_agent_conceptId": "386985000"
+  },
+  {
+    "allergy_conceptId": "294183008",
+    "causative_agent_conceptId": "76575003"
+  },
+  {
+    "allergy_conceptId": "294528009",
+    "causative_agent_conceptId": "373224006"
+  },
+  {
+    "allergy_conceptId": "870730002",
+    "causative_agent_conceptId": "764146007"
+  },
+  {
+    "allergy_conceptId": "890231006",
+    "causative_agent_conceptId": "890230007"
+  },
+  {
+    "allergy_conceptId": "294530006",
+    "causative_agent_conceptId": "372824005"
+  },
+  {
+    "allergy_conceptId": "294406007",
+    "causative_agent_conceptId": "395837009"
+  },
+  {
+    "allergy_conceptId": "830165002",
+    "causative_agent_conceptId": "710808009"
+  },
+  {
+    "allergy_conceptId": "294998006",
+    "causative_agent_conceptId": "387492006"
+  },
+  {
+    "allergy_conceptId": "294273003",
+    "causative_agent_conceptId": "387527005"
+  },
+  {
+    "allergy_conceptId": "293991007",
+    "causative_agent_conceptId": "387433003"
+  },
+  {
+    "allergy_conceptId": "294841000",
+    "causative_agent_conceptId": "415137000"
+  },
+  {
+    "allergy_conceptId": "295008005",
+    "causative_agent_conceptId": "419615001"
+  },
+  {
+    "allergy_conceptId": "293900003",
+    "causative_agent_conceptId": "387417001"
+  },
+  {
+    "allergy_conceptId": "293981001",
+    "causative_agent_conceptId": "387436006"
+  },
+  {
+    "allergy_conceptId": "788164004",
+    "causative_agent_conceptId": "67296003"
+  },
+  {
+    "allergy_conceptId": "294973005",
+    "causative_agent_conceptId": "373566006"
+  },
+  {
+    "allergy_conceptId": "294707002",
+    "causative_agent_conceptId": "116601002"
+  },
+  {
+    "allergy_conceptId": "294682002",
+    "causative_agent_conceptId": "116602009"
+  },
+  {
+    "allergy_conceptId": "293997006",
+    "causative_agent_conceptId": "387288001"
+  },
+  {
+    "allergy_conceptId": "293721007",
+    "causative_agent_conceptId": "387107003"
+  },
+  {
+    "allergy_conceptId": "294391006",
+    "causative_agent_conceptId": "429663004"
+  },
+  {
+    "allergy_conceptId": "293727006",
+    "causative_agent_conceptId": "387238009"
+  },
+  {
+    "allergy_conceptId": "293866006",
+    "causative_agent_conceptId": "387256009"
+  },
+  {
+    "allergy_conceptId": "294982004",
+    "causative_agent_conceptId": "372589008"
+  },
+  {
+    "allergy_conceptId": "293782002",
+    "causative_agent_conceptId": "387474003"
+  },
+  {
+    "allergy_conceptId": "294217006",
+    "causative_agent_conceptId": "387365004"
+  },
+  {
+    "allergy_conceptId": "294745001",
+    "causative_agent_conceptId": "773603001"
+  },
+  {
+    "allergy_conceptId": "293940009",
+    "causative_agent_conceptId": "372853006"
+  },
+  {
+    "allergy_conceptId": "294089005",
+    "causative_agent_conceptId": "387247001"
+  },
+  {
+    "allergy_conceptId": "294957004",
+    "causative_agent_conceptId": "387178009"
+  },
+  {
+    "allergy_conceptId": "294748004",
+    "causative_agent_conceptId": "16683002"
+  },
+  {
+    "allergy_conceptId": "294396001",
+    "causative_agent_conceptId": "387094004"
+  },
+  {
+    "allergy_conceptId": "293956004",
+    "causative_agent_conceptId": "387576004"
+  },
+  {
+    "allergy_conceptId": "293937009",
+    "causative_agent_conceptId": "372741002"
+  },
+  {
+    "allergy_conceptId": "5361000122104",
+    "causative_agent_conceptId": "699187002"
+  },
+  {
+    "allergy_conceptId": "294983009",
+    "causative_agent_conceptId": "372910007"
+  },
+  {
+    "allergy_conceptId": "294126003",
+    "causative_agent_conceptId": "372871004"
+  },
+  {
+    "allergy_conceptId": "773505002",
+    "causative_agent_conceptId": "395996003"
+  },
+  {
+    "allergy_conceptId": "294676000",
+    "causative_agent_conceptId": "387203007"
+  },
+  {
+    "allergy_conceptId": "294249006",
+    "causative_agent_conceptId": "26351002"
+  },
+  {
+    "allergy_conceptId": "294278007",
+    "causative_agent_conceptId": "372630008"
+  },
+  {
+    "allergy_conceptId": "293982008",
+    "causative_agent_conceptId": "372772003"
+  },
+  {
+    "allergy_conceptId": "293697008",
+    "causative_agent_conceptId": "372721007"
+  },
+  {
+    "allergy_conceptId": "293708000",
+    "causative_agent_conceptId": "387423006"
+  },
+  {
+    "allergy_conceptId": "713296005",
+    "causative_agent_conceptId": "372528003"
+  },
+  {
+    "allergy_conceptId": "294721000",
+    "causative_agent_conceptId": "53235000"
+  },
+  {
+    "allergy_conceptId": "294829007",
+    "causative_agent_conceptId": "412495007"
+  },
+  {
+    "allergy_conceptId": "293834001",
+    "causative_agent_conceptId": "372760009"
+  },
+  {
+    "allergy_conceptId": "293728001",
+    "causative_agent_conceptId": "373465008"
+  },
+  {
+    "allergy_conceptId": "294452000",
+    "causative_agent_conceptId": "387193008"
+  },
+  {
+    "allergy_conceptId": "294105003",
+    "causative_agent_conceptId": "395849005"
+  },
+  {
+    "allergy_conceptId": "294023009",
+    "causative_agent_conceptId": "372900003"
+  },
+  {
+    "allergy_conceptId": "294388006",
+    "causative_agent_conceptId": "373769001"
+  },
+  {
+    "allergy_conceptId": "294016008",
+    "causative_agent_conceptId": "373344003"
+  },
+  {
+    "allergy_conceptId": "294607005",
+    "causative_agent_conceptId": "387076005"
+  },
+  {
+    "allergy_conceptId": "767479006",
+    "causative_agent_conceptId": "430469009"
+  },
+  {
+    "allergy_conceptId": "294442004",
+    "causative_agent_conceptId": "417926003"
+  },
+  {
+    "allergy_conceptId": "294440007",
+    "causative_agent_conceptId": "419963001"
+  },
+  {
+    "allergy_conceptId": "294801009",
+    "causative_agent_conceptId": "395850005"
+  },
+  {
+    "allergy_conceptId": "294436003",
+    "causative_agent_conceptId": "373698008"
+  },
+  {
+    "allergy_conceptId": "294787004",
+    "causative_agent_conceptId": "420164003"
+  },
+  {
+    "allergy_conceptId": "294398000",
+    "causative_agent_conceptId": "373497008"
+  },
+  {
+    "allergy_conceptId": "294788009",
+    "causative_agent_conceptId": "412287005"
+  },
+  {
+    "allergy_conceptId": "294978001",
+    "causative_agent_conceptId": "372697008"
+  },
+  {
+    "allergy_conceptId": "449414003",
+    "causative_agent_conceptId": "763001001"
+  },
+  {
+    "allergy_conceptId": "473078001",
+    "causative_agent_conceptId": "109029006"
+  },
+  {
+    "allergy_conceptId": "293653009",
+    "causative_agent_conceptId": "372755005"
+  },
+  {
+    "allergy_conceptId": "782592009",
+    "causative_agent_conceptId": "372887001"
+  },
+  {
+    "allergy_conceptId": "293783007",
+    "causative_agent_conceptId": "387518009"
+  },
+  {
+    "allergy_conceptId": "441992007",
+    "causative_agent_conceptId": "386839004"
+  },
+  {
+    "allergy_conceptId": "293950005",
+    "causative_agent_conceptId": "419361008"
+  },
+  {
+    "allergy_conceptId": "294041001",
+    "causative_agent_conceptId": "396465005"
+  },
+  {
+    "allergy_conceptId": "1300135006",
+    "causative_agent_conceptId": "386957002"
+  },
+  {
+    "allergy_conceptId": "713276002",
+    "causative_agent_conceptId": "372531002"
+  },
+  {
+    "allergy_conceptId": "294923007",
+    "causative_agent_conceptId": "82622003"
+  },
+  {
+    "allergy_conceptId": "294207001",
+    "causative_agent_conceptId": "372579009"
+  },
+  {
+    "allergy_conceptId": "294611004",
+    "causative_agent_conceptId": "387159009"
+  },
+  {
+    "allergy_conceptId": "294380004",
+    "causative_agent_conceptId": "387188005"
+  },
+  {
+    "allergy_conceptId": "294612006",
+    "causative_agent_conceptId": "386893001"
+  },
+  {
+    "allergy_conceptId": "294042008",
+    "causative_agent_conceptId": "396466006"
+  },
+  {
+    "allergy_conceptId": "293917005",
+    "causative_agent_conceptId": "386840002"
+  },
+  {
+    "allergy_conceptId": "294043003",
+    "causative_agent_conceptId": "372893009"
+  },
+  {
+    "allergy_conceptId": "293585002",
+    "causative_agent_conceptId": "255637000"
+  },
+  {
+    "allergy_conceptId": "294233009",
+    "causative_agent_conceptId": "372494005"
+  },
+  {
+    "allergy_conceptId": "718537002",
+    "causative_agent_conceptId": "700067006"
+  },
+  {
+    "allergy_conceptId": "767474001",
+    "causative_agent_conceptId": "387253001"
+  },
+  {
+    "allergy_conceptId": "294036009",
+    "causative_agent_conceptId": "372515005"
+  },
+  {
+    "allergy_conceptId": "293884008",
+    "causative_agent_conceptId": "372737001"
+  },
+  {
+    "allergy_conceptId": "293844004",
+    "causative_agent_conceptId": "373225007"
+  },
+  {
+    "allergy_conceptId": "293952002",
+    "causative_agent_conceptId": "372497003"
+  },
+  {
+    "allergy_conceptId": "293686008",
+    "causative_agent_conceptId": "387162007"
+  },
+  {
+    "allergy_conceptId": "293845003",
+    "causative_agent_conceptId": "372594008"
+  },
+  {
+    "allergy_conceptId": "294840004",
+    "causative_agent_conceptId": "127384006"
+  },
+  {
+    "allergy_conceptId": "441954006",
+    "causative_agent_conceptId": "386842005"
+  },
+  {
+    "allergy_conceptId": "294971007",
+    "causative_agent_conceptId": "387584000"
+  },
+  {
+    "allergy_conceptId": "293680002",
+    "causative_agent_conceptId": "395881001"
+  },
+  {
+    "allergy_conceptId": "294408008",
+    "causative_agent_conceptId": "387434009"
+  },
+  {
+    "allergy_conceptId": "294266008",
+    "causative_agent_conceptId": "10377000"
+  },
+  {
+    "allergy_conceptId": "294598001",
+    "causative_agent_conceptId": "419379007"
+  },
+  {
+    "allergy_conceptId": "294945008",
+    "causative_agent_conceptId": "387149008"
+  },
+  {
+    "allergy_conceptId": "294825001",
+    "causative_agent_conceptId": "395883003"
+  },
+  {
+    "allergy_conceptId": "830177007",
+    "causative_agent_conceptId": "69958001"
+  },
+  {
+    "allergy_conceptId": "295009002",
+    "causative_agent_conceptId": "387078006"
+  },
+  {
+    "allergy_conceptId": "293983003",
+    "causative_agent_conceptId": "372911006"
+  },
+  {
+    "allergy_conceptId": "295115000",
+    "causative_agent_conceptId": "418774007"
+  },
+  {
+    "allergy_conceptId": "295108008",
+    "causative_agent_conceptId": "395889004"
+  },
+  {
+    "allergy_conceptId": "294762006",
+    "causative_agent_conceptId": "126103004"
+  },
+  {
+    "allergy_conceptId": "294224007",
+    "causative_agent_conceptId": "372724004"
+  },
+  {
+    "allergy_conceptId": "294474006",
+    "causative_agent_conceptId": "372882007"
+  },
+  {
+    "allergy_conceptId": "293646000",
+    "causative_agent_conceptId": "387387008"
+  },
+  {
+    "allergy_conceptId": "294466005",
+    "causative_agent_conceptId": "387223008"
+  },
+  {
+    "allergy_conceptId": "441955007",
+    "causative_agent_conceptId": "49998007"
+  },
+  {
+    "allergy_conceptId": "294361001",
+    "causative_agent_conceptId": "373448004"
+  },
+  {
+    "allergy_conceptId": "294582008",
+    "causative_agent_conceptId": "372676007"
+  },
+  {
+    "allergy_conceptId": "294578006",
+    "causative_agent_conceptId": "419204001"
+  },
+  {
+    "allergy_conceptId": "294573002",
+    "causative_agent_conceptId": "74523009"
+  },
+  {
+    "allergy_conceptId": "294574008",
+    "causative_agent_conceptId": "387279005"
+  },
+  {
+    "allergy_conceptId": "294576005",
+    "causative_agent_conceptId": "372858002"
+  },
+  {
+    "allergy_conceptId": "294577001",
+    "causative_agent_conceptId": "387500006"
+  },
+  {
+    "allergy_conceptId": "294575009",
+    "causative_agent_conceptId": "40036000"
+  },
+  {
+    "allergy_conceptId": "294572007",
+    "causative_agent_conceptId": "395890008"
+  },
+  {
+    "allergy_conceptId": "294218001",
+    "causative_agent_conceptId": "387108008"
+  },
+  {
+    "allergy_conceptId": "429239002",
+    "causative_agent_conceptId": "372788003"
+  },
+  {
+    "allergy_conceptId": "293630008",
+    "causative_agent_conceptId": "387513000"
+  },
+  {
+    "allergy_conceptId": "293663001",
+    "causative_agent_conceptId": "387248006"
+  },
+  {
+    "allergy_conceptId": "419930008",
+    "causative_agent_conceptId": "43585000"
+  },
+  {
+    "allergy_conceptId": "293914003",
+    "causative_agent_conceptId": "395891007"
+  },
+  {
+    "allergy_conceptId": "294512004",
+    "causative_agent_conceptId": "387546006"
+  },
+  {
+    "allergy_conceptId": "294476008",
+    "causative_agent_conceptId": "387529008"
+  },
+  {
+    "allergy_conceptId": "293790002",
+    "causative_agent_conceptId": "373345002"
+  },
+  {
+    "allergy_conceptId": "293904007",
+    "causative_agent_conceptId": "387300007"
+  },
+  {
+    "allergy_conceptId": "294491005",
+    "causative_agent_conceptId": "387555009"
+  },
+  {
+    "allergy_conceptId": "294514003",
+    "causative_agent_conceptId": "387543003"
+  },
+  {
+    "allergy_conceptId": "1300136007",
+    "causative_agent_conceptId": "387066007"
+  },
+  {
+    "allergy_conceptId": "293631007",
+    "causative_agent_conceptId": "395898001"
+  },
+  {
+    "allergy_conceptId": "294342000",
+    "causative_agent_conceptId": "373450007"
+  },
+  {
+    "allergy_conceptId": "473077006",
+    "causative_agent_conceptId": "425438001"
+  },
+  {
+    "allergy_conceptId": "294809006",
+    "causative_agent_conceptId": "395899009"
+  },
+  {
+    "allergy_conceptId": "830178002",
+    "causative_agent_conceptId": "417479000"
+  },
+  {
+    "allergy_conceptId": "293992000",
+    "causative_agent_conceptId": "387068008"
+  },
+  {
+    "allergy_conceptId": "294044009",
+    "causative_agent_conceptId": "372745006"
+  },
+  {
+    "allergy_conceptId": "294776007",
+    "causative_agent_conceptId": "43688007"
+  },
+  {
+    "allergy_conceptId": "294638006",
+    "causative_agent_conceptId": "425682001"
+  },
+  {
+    "allergy_conceptId": "294592000",
+    "causative_agent_conceptId": "372809001"
+  },
+  {
+    "allergy_conceptId": "294813004",
+    "causative_agent_conceptId": "96363002"
+  },
+  {
+    "allergy_conceptId": "293918000",
+    "causative_agent_conceptId": "363581004"
+  },
+  {
+    "allergy_conceptId": "294160005",
+    "causative_agent_conceptId": "372810006"
+  },
+  {
+    "allergy_conceptId": "293725003",
+    "causative_agent_conceptId": "387309008"
+  },
+  {
+    "allergy_conceptId": "293933008",
+    "causative_agent_conceptId": "372719002"
+  },
+  {
+    "allergy_conceptId": "294460004",
+    "causative_agent_conceptId": "416624006"
+  },
+  {
+    "allergy_conceptId": "439954005",
+    "causative_agent_conceptId": "372568004"
+  },
+  {
+    "allergy_conceptId": "767478003",
+    "causative_agent_conceptId": "259659006"
+  },
+  {
+    "allergy_conceptId": "293709008",
+    "causative_agent_conceptId": "412605006"
+  },
+  {
+    "allergy_conceptId": "293773008",
+    "causative_agent_conceptId": "387407006"
+  },
+  {
+    "allergy_conceptId": "293938004",
+    "causative_agent_conceptId": "372706001"
+  },
+  {
+    "allergy_conceptId": "782596007",
+    "causative_agent_conceptId": "47826006"
+  },
+  {
+    "allergy_conceptId": "293745006",
+    "causative_agent_conceptId": "387508004"
+  },
+  {
+    "allergy_conceptId": "782595006",
+    "causative_agent_conceptId": "55358003"
+  },
+  {
+    "allergy_conceptId": "294886002",
+    "causative_agent_conceptId": "387124009"
+  },
+  {
+    "allergy_conceptId": "782597003",
+    "causative_agent_conceptId": "18220004"
+  },
+  {
+    "allergy_conceptId": "293942001",
+    "causative_agent_conceptId": "782544009"
+  },
+  {
+    "allergy_conceptId": "293632000",
+    "causative_agent_conceptId": "395902007"
+  },
+  {
+    "allergy_conceptId": "294828004",
+    "causative_agent_conceptId": "10534002"
+  },
+  {
+    "allergy_conceptId": "294830002",
+    "causative_agent_conceptId": "65428006"
+  },
+  {
+    "allergy_conceptId": "294517005",
+    "causative_agent_conceptId": "372577006"
+  },
+  {
+    "allergy_conceptId": "294804001",
+    "causative_agent_conceptId": "73187006"
+  },
+  {
+    "allergy_conceptId": "294568008",
+    "causative_agent_conceptId": "395907001"
+  },
+  {
+    "allergy_conceptId": "293984009",
+    "causative_agent_conceptId": "372880004"
+  },
+  {
+    "allergy_conceptId": "294758000",
+    "causative_agent_conceptId": "395903002"
+  },
+  {
+    "allergy_conceptId": "294875004",
+    "causative_agent_conceptId": "412608008"
+  },
+  {
+    "allergy_conceptId": "294358002",
+    "causative_agent_conceptId": "395909003"
+  },
+  {
+    "allergy_conceptId": "294984003",
+    "causative_agent_conceptId": "372479006"
+  },
+  {
+    "allergy_conceptId": "294470002",
+    "causative_agent_conceptId": "373548001"
+  },
+  {
+    "allergy_conceptId": "294737006",
+    "causative_agent_conceptId": "387186009"
+  },
+  {
+    "allergy_conceptId": "294738001",
+    "causative_agent_conceptId": "373481003"
+  },
+  {
+    "allergy_conceptId": "294344004",
+    "causative_agent_conceptId": "387204001"
+  },
+  {
+    "allergy_conceptId": "293839006",
+    "causative_agent_conceptId": "372891006"
+  },
+  {
+    "allergy_conceptId": "450767000",
+    "causative_agent_conceptId": "386858008"
+  },
+  {
+    "allergy_conceptId": "293633005",
+    "causative_agent_conceptId": "372748008"
+  },
+  {
+    "allergy_conceptId": "295004007",
+    "causative_agent_conceptId": "108476002"
+  },
+  {
+    "allergy_conceptId": "294887006",
+    "causative_agent_conceptId": "386960009"
+  },
+  {
+    "allergy_conceptId": "293855004",
+    "causative_agent_conceptId": "372829000"
+  },
+  {
+    "allergy_conceptId": "293743004",
+    "causative_agent_conceptId": "395912000"
+  },
+  {
+    "allergy_conceptId": "294210008",
+    "causative_agent_conceptId": "387305002"
+  },
+  {
+    "allergy_conceptId": "295006009",
+    "causative_agent_conceptId": "387053007"
+  },
+  {
+    "allergy_conceptId": "294711008",
+    "causative_agent_conceptId": "116594009"
+  },
+  {
+    "allergy_conceptId": "293891006",
+    "causative_agent_conceptId": "386984001"
+  },
+  {
+    "allergy_conceptId": "293716009",
+    "causative_agent_conceptId": "16808006"
+  },
+  {
+    "allergy_conceptId": "773484003",
+    "causative_agent_conceptId": "420762008"
+  },
+  {
+    "allergy_conceptId": "293941008",
+    "causative_agent_conceptId": "373524005"
+  },
+  {
+    "allergy_conceptId": "294381000",
+    "causative_agent_conceptId": "373512003"
+  },
+  {
+    "allergy_conceptId": "294417008",
+    "causative_agent_conceptId": "387054001"
+  },
+  {
+    "allergy_conceptId": "293921003",
+    "causative_agent_conceptId": "387301006"
+  },
+  {
+    "allergy_conceptId": "294477004",
+    "causative_agent_conceptId": "387179001"
+  },
+  {
+    "allergy_conceptId": "295048002",
+    "causative_agent_conceptId": "373771001"
+  },
+  {
+    "allergy_conceptId": "293827003",
+    "causative_agent_conceptId": "373550009"
+  },
+  {
+    "allergy_conceptId": "294077008",
+    "causative_agent_conceptId": "387120000"
+  },
+  {
+    "allergy_conceptId": "782598008",
+    "causative_agent_conceptId": "256106009"
+  },
+  {
+    "allergy_conceptId": "293789006",
+    "causative_agent_conceptId": "387134000"
+  },
+  {
+    "allergy_conceptId": "294819000",
+    "causative_agent_conceptId": "395915003"
+  },
+  {
+    "allergy_conceptId": "293645001",
+    "causative_agent_conceptId": "420020009"
+  },
+  {
+    "allergy_conceptId": "294073007",
+    "causative_agent_conceptId": "387526001"
+  },
+  {
+    "allergy_conceptId": "294045005",
+    "causative_agent_conceptId": "397178007"
+  },
+  {
+    "allergy_conceptId": "294231006",
+    "causative_agent_conceptId": "373486008"
+  },
+  {
+    "allergy_conceptId": "294093004",
+    "causative_agent_conceptId": "386931000"
+  },
+  {
+    "allergy_conceptId": "767473007",
+    "causative_agent_conceptId": "387092000"
+  },
+  {
+    "allergy_conceptId": "294374007",
+    "causative_agent_conceptId": "96098007"
+  },
+  {
+    "allergy_conceptId": "293701006",
+    "causative_agent_conceptId": "41143004"
+  },
+  {
+    "allergy_conceptId": "294232004",
+    "causative_agent_conceptId": "372883002"
+  },
+  {
+    "allergy_conceptId": "295109000",
+    "causative_agent_conceptId": "59082006"
+  },
+  {
+    "allergy_conceptId": "294475007",
+    "causative_agent_conceptId": "372735009"
+  },
+  {
+    "allergy_conceptId": "773485002",
+    "causative_agent_conceptId": "387080000"
+  },
+  {
+    "allergy_conceptId": "293843005",
+    "causative_agent_conceptId": "372490001"
+  },
+  {
+    "allergy_conceptId": "294639003",
+    "causative_agent_conceptId": "259858000"
+  },
+  {
+    "allergy_conceptId": "294005001",
+    "causative_agent_conceptId": "372754009"
+  },
+  {
+    "allergy_conceptId": "294383002",
+    "causative_agent_conceptId": "373759007"
+  },
+  {
+    "allergy_conceptId": "293868007",
+    "causative_agent_conceptId": "310283001"
+  },
+  {
+    "allergy_conceptId": "293856003",
+    "causative_agent_conceptId": "420070007"
+  },
+  {
+    "allergy_conceptId": "293793000",
+    "causative_agent_conceptId": "387051009"
+  },
+  {
+    "allergy_conceptId": "293794006",
+    "causative_agent_conceptId": "387126006"
+  },
+  {
+    "allergy_conceptId": "293792005",
+    "causative_agent_conceptId": "61864009"
+  },
+  {
+    "allergy_conceptId": "293795007",
+    "causative_agent_conceptId": "409198005"
+  },
+  {
+    "allergy_conceptId": "294881007",
+    "causative_agent_conceptId": "372756006"
+  },
+  {
+    "allergy_conceptId": "767475000",
+    "causative_agent_conceptId": "781584003"
+  },
+  {
+    "allergy_conceptId": "295027004",
+    "causative_agent_conceptId": "395923001"
+  },
+  {
+    "allergy_conceptId": "294064004",
+    "causative_agent_conceptId": "418668004"
+  },
+  {
+    "allergy_conceptId": "294925000",
+    "causative_agent_conceptId": "65183007"
+  },
+  {
+    "allergy_conceptId": "294031004",
+    "causative_agent_conceptId": "372841007"
+  },
+  {
+    "allergy_conceptId": "294924001",
+    "causative_agent_conceptId": "30178006"
+  },
+  {
+    "allergy_conceptId": "294373001",
+    "causative_agent_conceptId": "387187000"
+  },
+  {
+    "allergy_conceptId": "294369004",
+    "causative_agent_conceptId": "387151007"
+  },
+  {
+    "allergy_conceptId": "294717007",
+    "causative_agent_conceptId": "10329000"
+  },
+  {
+    "allergy_conceptId": "737144005",
+    "causative_agent_conceptId": "395926009"
+  },
+  {
+    "allergy_conceptId": "293874007",
+    "causative_agent_conceptId": "395929002"
+  },
+  {
+    "allergy_conceptId": "293875008",
+    "causative_agent_conceptId": "387569009"
+  },
+  {
+    "allergy_conceptId": "293946003",
+    "causative_agent_conceptId": "428715002"
+  }
+]

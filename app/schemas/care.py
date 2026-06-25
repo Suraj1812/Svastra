@@ -24,14 +24,23 @@ Notification = Literal["immediate", "daily_summary", "both", "none"]
 class DiagnosisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    conceptId: str = Field(
-        ...,
+    conceptId: Optional[str] = Field(
+        default=None,
         min_length=1,
         max_length=64,
         pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
     )
     term: str = Field(..., min_length=2, max_length=160)
     notes: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("conceptId", mode="before")
+    @classmethod
+    def blank_concept_id_is_optional(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str) and value.strip() == "":
+            return None
+        return value
 
 
 class CarePlanCreateRequest(BaseModel):

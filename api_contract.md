@@ -217,7 +217,7 @@ Registration dropdown values must be sent exactly as supplied by `data/svp_entry
 | `patient` | object | Patient `id` and `full_name`. |
 | `provider_id` | positive integer | Owning provider. |
 | `title` | string, 3–160 chars | Care-plan name. |
-| `diagnosis` | object, string, or null | Structured diagnosis `{conceptId, term, notes}` for Week 4 flows. Legacy string is still accepted for older local data. |
+| `diagnosis` | object, string, or null | Structured diagnosis `{term, notes, conceptId?}` for Week 4 flows. `conceptId` may be null for provider-entered diagnoses; legacy string is still accepted for older local data. |
 | `status` | enum | `DRAFT`, `ACTIVE`, or `INACTIVE` when archived. |
 | `archived_at` | ISO datetime or null | Archive time. |
 | `advisories` | Advisory array | Draft and published advisories. |
@@ -707,6 +707,8 @@ Minimum Friday data includes Paracetamol, Body Temperature, Blood Pressure, Walk
 
 The approved drug-catalog sample is also indexed. It currently adds Levaz 500 mg oral tablet and Loxof OZ 250 mg + 500 mg oral tablet. Search results expose only the human-readable term and category in the clinician UI; `conceptId` remains an API/storage binding and is never shown as clinical content.
 
+When the optional SVP terminology bundle is present at `svp_terminology_sqlitedb/svp_entry_terms.json` or the `SVASTRA_TERMINOLOGY_ENTRY_TERMS_PATH` override, provider terminology search can also use the bundle as a safe fallback for `investigation` terms. The fallback is used only when the normal approved table has no match, and it does not broaden medication authoring. Medication remains limited to the approved drug catalogue because dosing/allergy safety depends on drug-catalog metadata.
+
 ### GET /terminology/provider-terms/{concept_id}
 
 Authentication: provider. Returns the exact ProviderTerm or `404`.
@@ -771,9 +773,11 @@ Authentication: provider with an ACTIVE consent-backed link to the patient.
 | --- | --- | --- | --- |
 | `patient_id` | positive integer | Yes | Must be actively linked to provider. |
 | `title` | string | Yes | 3–160 chars. |
-| `diagnosis` | object, string, or null | No | Preferred Week 4 object: `{conceptId, term, notes}`. `conceptId` is 1–64 safe chars, `term` is 2–160 chars, `notes` is optional up to 500 chars. Legacy string remains accepted up to 255 chars. |
+| `diagnosis` | object, string, or null | No | Preferred Week 4 object: `{term, notes, conceptId?}`. `term` is 2–160 chars, `notes` is optional up to 500 chars, and `conceptId` is optional for imported/coded diagnosis data only. Legacy string remains accepted up to 255 chars. |
 
 Response: `201` CarePlan with `DRAFT` status.
+
+Provider-facing care plan creation never asks the provider to type a SNOMED or concept identifier. If an older/imported diagnosis already has a stored `conceptId`, the API keeps returning it. New provider-entered diagnoses may return `"conceptId": null`.
 
 ### GET /care-plans
 
@@ -795,7 +799,6 @@ Body:
 {
   "title": "Post-operative monitoring",
   "diagnosis": {
-    "conceptId": "54150009",
     "term": "Upper Respiratory Tract Infection",
     "notes": "Cough and fever monitoring"
   }

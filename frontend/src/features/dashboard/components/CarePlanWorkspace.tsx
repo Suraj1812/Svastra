@@ -132,7 +132,6 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
   const [patientId, setPatientId] = useState("");
   const [title, setTitle] = useState("");
   const [diagnosisTerm, setDiagnosisTerm] = useState("");
-  const [diagnosisConceptId, setDiagnosisConceptId] = useState("");
   const [diagnosisNotes, setDiagnosisNotes] = useState("");
 
   const [search, setSearch] = useState("");
@@ -270,8 +269,8 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       setError("Select a linked patient and enter a care-plan title of at least 3 characters.");
       return;
     }
-    if (diagnosisTerm.trim().length < 2 || diagnosisConceptId.trim().length < 1) {
-      setError("Enter the diagnosis name and SNOMED/concept ID.");
+    if (diagnosisTerm.trim().length < 2) {
+      setError("Enter the diagnosis name.");
       return;
     }
     setWorking(true);
@@ -283,7 +282,6 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
           patient_id: Number(patientId),
           title: title.trim(),
           diagnosis: {
-            conceptId: diagnosisConceptId.trim(),
             term: diagnosisTerm.trim(),
             notes: diagnosisNotes.trim() || null,
           },
@@ -293,7 +291,6 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
       setNotice("Care-plan draft created. Add a clinical advisory next.");
       setTitle("");
       setDiagnosisTerm("");
-      setDiagnosisConceptId("");
       setDiagnosisNotes("");
       await load();
       setSelectedPlanId(plan.id);
@@ -536,9 +533,6 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
                 <TextField fullWidth label="Diagnosis" value={diagnosisTerm} onChange={(event) => setDiagnosisTerm(event.target.value)} inputProps={{ maxLength: 160 }} />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField fullWidth label="SNOMED / concept ID" value={diagnosisConceptId} onChange={(event) => setDiagnosisConceptId(event.target.value)} inputProps={{ maxLength: 64 }} />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
                 <TextField fullWidth label="Notes (optional)" value={diagnosisNotes} onChange={(event) => setDiagnosisNotes(event.target.value)} inputProps={{ maxLength: 500 }} />
               </Grid>
             </Grid>
@@ -555,7 +549,7 @@ export function CarePlanWorkspace({ sessionToken }: Props) {
           {creatingPlan ? (
             <Stack direction="row" spacing={1}>
               <Button variant="contained" startIcon={<AddCircleOutlineIcon />} onClick={createDraft} disabled={working || activeRelationships.length === 0}>Create</Button>
-              {plans.length > 0 ? <Button onClick={() => { setCreatingPlan(false); setPatientId(""); setTitle(""); setDiagnosisTerm(""); setDiagnosisConceptId(""); setDiagnosisNotes(""); }}>Cancel</Button> : null}
+              {plans.length > 0 ? <Button onClick={() => { setCreatingPlan(false); setPatientId(""); setTitle(""); setDiagnosisTerm(""); setDiagnosisNotes(""); }}>Cancel</Button> : null}
             </Stack>
           ) : null}
         </Stack>

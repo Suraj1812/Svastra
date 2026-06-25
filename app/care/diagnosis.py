@@ -3,6 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 
+def _clean_optional(value: Any) -> str | None:
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    return cleaned or None
+
+
 def diagnosis_columns(diagnosis: Any):
     if diagnosis is None:
         return {
@@ -26,12 +33,12 @@ def diagnosis_columns(diagnosis: Any):
         concept_id = diagnosis.get("conceptId") or diagnosis.get("concept_id")
         term = diagnosis.get("term")
         notes = diagnosis.get("notes")
-    term = str(term).strip()
+    term = _clean_optional(term)
     return {
         "diagnosis": term,
-        "diagnosis_concept_id": str(concept_id).strip(),
+        "diagnosis_concept_id": _clean_optional(concept_id),
         "diagnosis_term": term,
-        "diagnosis_notes": str(notes).strip() if notes else None,
+        "diagnosis_notes": _clean_optional(notes),
     }
 
 

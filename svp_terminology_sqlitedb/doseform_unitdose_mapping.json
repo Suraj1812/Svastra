@@ -1,0 +1,239 @@
+[
+  {
+    "formConceptId": "732981002",
+    "formTerm": "Actuation",
+    "unitOptions": [
+      { "term": "Puff", "conceptId": "415215001" },
+      { "term": "Puffs", "conceptId": "415215001" },
+      { "term": "Inhalation", "conceptId": "422237004" }
+    ]
+  },
+  {
+    "formConceptId": "732978007",
+    "formTerm": "Ampoule/Ampule",
+    "unitOptions": [
+      { "term": "Ampoule", "conceptId": "413516001" },
+      { "term": "Ampule", "conceptId": "413516001" }
+    ]
+  },
+  {
+    "formConceptId": "732980001",
+    "formTerm": "Applicator",
+    "unitOptions": [
+      { "term": "Applicator", "conceptId": "1641000175108" },
+      { "term": "Applicatorful", "conceptId": "1651000175105" }
+    ]
+  },
+  {
+    "formConceptId": "732982009",
+    "formTerm": "Bag",
+    "unitOptions": [
+      { "term": "Bag", "conceptId": "428672001" }
+    ]
+  },
+  { "formConceptId": "732983004", "formTerm": "Barrel", "unitOptions": [] },
+  { "formConceptId": "732984005", "formTerm": "Blister", "unitOptions": [] },
+  { "formConceptId": "732985006", "formTerm": "Block", "unitOptions": [] },
+  {
+    "formConceptId": "732986007",
+    "formTerm": "Bottle",
+    "unitOptions": [
+      { "term": "Bottle", "conceptId": "419672006" },
+      { "term": "Bottles", "conceptId": "419672006" }
+    ]
+  },
+  { "formConceptId": "732987003", "formTerm": "Cachet", "unitOptions": [] },
+  {
+    "formConceptId": "732937005",
+    "formTerm": "Capsule",
+    "unitOptions": [
+      { "term": "Capsule", "conceptId": "428641000" }
+    ]
+  },
+  { "formConceptId": "732988008", "formTerm": "Cartridge", "unitOptions": [] },
+  { "formConceptId": "732989000", "formTerm": "Chewing gum", "unitOptions": [] },
+  {
+    "formConceptId": "732990009",
+    "formTerm": "Container",
+    "unitOptions": [
+      { "term": "Application", "conceptId": "413568008" }
+    ]
+  },
+  {
+    "formConceptId": "732991008",
+    "formTerm": "Cup",
+    "unitOptions": [
+      { "term": "Cup", "conceptId": "428178003" }
+    ]
+  },
+  {
+    "formConceptId": "732992001",
+    "formTerm": "Cylinder",
+    "unitOptions": [
+      { "term": "Inhalation", "conceptId": "422237004" }
+    ]
+  },
+  {
+    "formConceptId": "732993006",
+    "formTerm": "Dressing",
+    "unitOptions": [
+      { "term": "Application", "conceptId": "413568008" }
+    ]
+  },
+  {
+    "formConceptId": "732994000",
+    "formTerm": "Drop",
+    "unitOptions": [
+      { "term": "Drop", "conceptId": "404218003" },
+      { "term": "Dropperful", "conceptId": "421954001" },
+      { "term": "Drops", "conceptId": "404218003" }
+    ]
+  },
+  { "formConceptId": "732995004", "formTerm": "Film", "unitOptions": [] },
+  {
+    "formConceptId": "732996003",
+    "formTerm": "Implant",
+    "unitOptions": [
+      { "term": "Application", "conceptId": "413568008" }
+    ]
+  },
+  {
+    "formConceptId": "732997007",
+    "formTerm": "Inhaler",
+    "unitOptions": [
+      { "term": "Puff", "conceptId": "415215001" },
+      { "term": "Puffs", "conceptId": "415215001" },
+      { "term": "Inhalation", "conceptId": "422237004" }
+    ]
+  },
+  {
+    "formConceptId": "732998002",
+    "formTerm": "Insert",
+    "unitOptions": [
+      { "term": "Application", "conceptId": "413568008" }
+    ]
+  },
+  {
+    "formConceptId": "732999005",
+    "formTerm": "Jar",
+    "unitOptions": [
+      { "term": "Application", "conceptId": "413568008" }
+    ]
+  },
+  { "formConceptId": "733000006", "formTerm": "Lozenge", "unitOptions": [] },
+  { "formConceptId": "733001005", "formTerm": "Lyophilisate", "unitOptions": [] },
+  { "formConceptId": "733002003", "formTerm": "Matrix", "unitOptions": [] },
+  {
+    "formConceptId": "733003008",
+    "formTerm": "Pad",
+    "unitOptions": [
+      { "term": "Pad", "conceptId": "421823004" },
+      { "term": "Pads", "conceptId": "421823004" }
+    ]
+  },
+  { "formConceptId": "733004002", "formTerm": "Pastille", "unitOptions": [] },
+  {
+    "formConceptId": "733005001",
+    "formTerm": "Patch",
+    "unitOptions": [
+      { "term": "Patch", "conceptId": "419702001" },
+      { "term": "Patches", "conceptId": "419702001" },
+      { "term": "Disc", "conceptId": "427678004" },
+      { "term": "Disk", "conceptId": "427678004" }
+    ]
+  },
+  { "formConceptId": "733006000", "formTerm": "Pen", "unitOptions": [] },
+  {
+    "formConceptId": "733007009",
+    "formTerm": "Pessary",
+    "unitOptions": [
+      { "term": "Insert", "conceptId": "428639001" }
+    ]
+  },
+  { "formConceptId": "733008004", "formTerm": "Pillule", "unitOptions": [] },
+  { "formConceptId": "733009007", "formTerm": "Pipette", "unitOptions": [] },
+  { "formConceptId": "733010002", "formTerm": "Plaster", "unitOptions": [] },
+  { "formConceptId": "733011003", "formTerm": "Plug", "unitOptions": [] },
+  { "formConceptId": "733012005", "formTerm": "Pouch", "unitOptions": [] },
+  {
+    "formConceptId": "733013000",
+    "formTerm": "Sachet",
+    "unitOptions": [
+      { "term": "Dual dose sachet", "conceptId": "426198001" },
+      { "term": "Sachet", "conceptId": "426148002" }
+    ]
+  },
+  {
+    "formConceptId": "733014006",
+    "formTerm": "Sponge",
+    "unitOptions": [
+      { "term": "Sponge", "conceptId": "429671000" }
+    ]
+  },
+  {
+    "formConceptId": "733015007",
+    "formTerm": "Spoonful",
+    "unitOptions": [
+      { "term": "Tablespoonful", "conceptId": "415702006" },
+      { "term": "Tablespoon", "conceptId": "415702006" },
+      { "term": "Tbsp", "conceptId": "415702006" },
+      { "term": "Teaspoonful", "conceptId": "415703001" },
+      { "term": "Teaspoon", "conceptId": "415703001" },
+      { "term": "Tsp", "conceptId": "415703001" }
+    ]
+  },
+  { "formConceptId": "733016008", "formTerm": "Stick", "unitOptions": [] },
+  { "formConceptId": "733017004", "formTerm": "Straw", "unitOptions": [] },
+  {
+    "formConceptId": "733018009",
+    "formTerm": "Strip",
+    "unitOptions": [
+      { "term": "Strip", "conceptId": "1671000175104" }
+    ]
+  },
+  {
+    "formConceptId": "733019001",
+    "formTerm": "Suppository",
+    "unitOptions": [
+      { "term": "Suppository", "conceptId": "430293001" },
+      { "term": "Insert", "conceptId": "428639001" }
+    ]
+  },
+  { "formConceptId": "733020007", "formTerm": "Syringe", "unitOptions": [] },
+  { "formConceptId": "733021006", "formTerm": "System", "unitOptions": [] },
+  {
+    "formConceptId": "732936001",
+    "formTerm": "Tablet",
+    "unitOptions": [
+      { "term": "Tablet", "conceptId": "428673006" }
+    ]
+  },
+  {
+    "formConceptId": "733022004",
+    "formTerm": "Tampon",
+    "unitOptions": [
+      { "term": "Tampon - unit of product usage", "conceptId": "700477004" }
+    ]
+  },
+  { "formConceptId": "733023009", "formTerm": "Thread", "unitOptions": [] },
+  {
+    "formConceptId": "733024003",
+    "formTerm": "Tube",
+    "unitOptions": [
+      { "term": "Applicator", "conceptId": "1641000175108" },
+      { "term": "Applicatorful", "conceptId": "1651000175105" },
+      { "term": "Tube", "conceptId": "418530008" },
+      { "term": "Tubes", "conceptId": "418530008" }
+    ]
+  },
+  { "formConceptId": "733025002", "formTerm": "Vessel", "unitOptions": [] },
+  {
+    "formConceptId": "733026001",
+    "formTerm": "Vial",
+    "unitOptions": [
+      { "term": "Vial", "conceptId": "415818006" },
+      { "term": "Vials", "conceptId": "415818006" },
+      { "term": "Vil", "conceptId": "415818006" }
+    ]
+  }
+]

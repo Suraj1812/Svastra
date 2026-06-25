@@ -310,7 +310,7 @@ export type AdvisorySummary = {
 };
 
 export type DiagnosisSummary = {
-  conceptId: string;
+  conceptId: string | null;
   term: string;
   notes: string | null;
 };

@@ -1,0 +1,133 @@
+{
+  "bundle_name": "svastra_terminology_bundle",
+  "bundle_version": "v20260625",
+  "created_date": "2026-06-25",
+  "database_name": "svp_terminology.sqlite",
+  "description": "Local Svastra+ terminology database rebuild bundle for SNOMED-bound term selection, tag-based UI routing, medication ingredient lookup, drug allergy checks, substance ancestry checks, autocomplete/autosuggest, and dose-form/unit-dose source loading.",
+  "privacy_classification": {
+    "contains_phi": false,
+    "data_class": "reference_terminology",
+    "runtime_storage_model": "local_device_only",
+    "cloud_runtime_dependency": false,
+    "postoffice_role": "The PostOffice API is used for Canonical Event Payload exchange only. This terminology database is intended for local runtime use."
+  },
+  "build": {
+    "required_tool": "SQLite command-line shell with JSON1, FTS5, generated columns, and readfile() support",
+    "command": "sqlite3 svp_terminology.sqlite \".read 01_create_schema.sql\" \".read 02_load_json.sql\"",
+    "tested_output_database": {
+      "path": "svp_terminology.sqlite",
+      "bytes": 516825088,
+      "sha256": "36de6520b06679a2cab199db7286a0b80e7fe728371ee87c04897d049db5a80b"
+    }
+  },
+  "files_to_share": [
+    {
+      "path": "01_create_schema.sql",
+      "role": "schema_creation_script",
+      "bytes": 3511,
+      "sha256": "5aee4d5786b88fccf1be13ea257a1b6a22cbfb5be5f5a1b46b3748990f9f49b7"
+    },
+    {
+      "path": "02_load_json.sql",
+      "role": "json_load_and_index_script",
+      "bytes": 9634,
+      "sha256": "1f998ff8b026cbb8707910841910507b51d33b9a4efcb0595af8ea29f9e6e470"
+    },
+    {
+      "path": "03_query_examples.sql",
+      "role": "runtime_query_examples",
+      "bytes": 5324,
+      "sha256": "fdaf65c4509d4684a547d06bff4806f4bd2ff6d61b5378090a02a870d45c3fb4"
+    },
+    {
+      "path": "README.md",
+      "role": "developer_documentation",
+      "bytes": 6960,
+      "sha256": "abd855e367178646ce7b96949b597113a5aaa21259cb4fce8896b3a3aab4acc1"
+    },
+    {
+      "path": "MANIFEST.json",
+      "role": "bundle_manifest"
+    },
+    {
+      "path": "svp_entry_terms.json",
+      "role": "entry_terms_source_data",
+      "bytes": 100598612,
+      "sha256": "95524894c44675b7674d640a594f4dd2406125378d24c4dab5d9d36b75071854"
+    },
+    {
+      "path": "ide_drug_catalog_transformed.json",
+      "role": "drug_catalog_source_data",
+      "bytes": 48949815,
+      "sha256": "ad2be76a3ae64c391dfe1f27f3071bf5ce4cc5ffaa4a2f9a95291829322b8244"
+    },
+    {
+      "path": "doseform_unitdose_mapping.json",
+      "role": "doseform_unitdose_source_data",
+      "bytes": 7514,
+      "sha256": "c2d4290fee109e8147efcc862d10b3cc6abdefcae076826be7d114f9edaad052"
+    },
+    {
+      "path": "allergy_causative_pairs.json",
+      "role": "allergy_causative_agent_source_data",
+      "bytes": 99681,
+      "sha256": "fad4c3127fbe277ff9a675a5e9cb179d58d954bacc854794115c6954130d36be"
+    },
+    {
+      "path": "substance_ancestors.json",
+      "role": "substance_ancestry_source_data",
+      "bytes": 38056270,
+      "sha256": "31f52fad4e558ed5234bcab77b21335e246efd801156e06937ddf22141d14b56"
+    }
+  ],
+  "expected_counts": {
+    "source_files": 5,
+    "concepts": 345504,
+    "terms": 646849,
+    "tags": 24,
+    "concept_tags": 361692,
+    "term_tags": 678844,
+    "drug_catalog": 93603,
+    "drug_ingredients": 124110,
+    "dose_forms": 50,
+    "unit_doses": 41,
+    "doseform_unit_options": 52,
+    "allergy_causative_agents": 1039,
+    "substance_ancestors": 2053938,
+    "terms_fts": 646849
+  },
+  "tags": [
+    "addiction",
+    "allergy",
+    "diet_unit",
+    "diseases",
+    "dose_form",
+    "dose_unit",
+    "drug_allergies",
+    "drug_allergy",
+    "fam_hx",
+    "findings",
+    "frequencies",
+    "interpretation",
+    "investigation",
+    "medications",
+    "outcome",
+    "past_hx",
+    "priorities",
+    "severities",
+    "surgeries",
+    "temp_ranges",
+    "unit_of_measure",
+    "uoda",
+    "uom",
+    "uop"
+  ],
+  "known_caveats": [
+    {
+      "id": "doseform_unitdose_crosswalk_missing",
+      "severity": "data_contract_gap",
+      "detail": "drug_catalog.dose_form_concept_id has zero direct matches to dose_forms.form_concept_id from doseform_unitdose_mapping.json. Medication-to-unit-dose suggestions need either a drug-row field containing the matching formConceptId or a crosswalk from drug dose_form_conceptId to doseform_unitdose_mapping formConceptId."
+    }
+  ],
+  "recommended_archive_name": "svastra_terminology_bundle_v20260625.zip"
+}
