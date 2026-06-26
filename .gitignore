@@ -5,6 +5,10 @@
 ._*
 Thumbs.db
 Desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Python
 __pycache__/
@@ -20,7 +24,12 @@ htmlcov/
 # Local environment / secrets
 .env
 *.env
+.env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.crt
 
 # Local SQLite databases and generated journals
 *.db
