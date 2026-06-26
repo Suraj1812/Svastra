@@ -43,7 +43,7 @@ Provider sees returned task status and report
 
 | Requirement | Result | Evidence |
 | --- | --- | --- |
-| Diagnosis term, concept ID, notes | Done | `POST /care-plans` accepts structured `diagnosis: {conceptId, term, notes}` and returns it. |
+| Diagnosis term and notes | Done | `POST /care-plans` accepts structured `diagnosis: {term, notes, conceptId?}`. Provider-entered diagnosis no longer requires a concept ID. |
 | Diagnosis delivered to patient view | Done | `GET /me/advisories` includes diagnosis inside `care_plan`. |
 | Diagnosis in publish payload | Done | `advisory.publish` CEP contains structured diagnosis and dispatcher verifies it against stored care-plan state. |
 | Ready-to-send draft edit | Done | `PUT /care-plans/{care_plan_id}/advisories/{advisory_id}` updates DRAFT advisories only. |
@@ -56,7 +56,7 @@ Provider sees returned task status and report
 ## Backend validation gates
 
 - Provider authoring requires provider role and ACTIVE consent-backed relationship.
-- Care-plan diagnosis object rejects invalid concept IDs, short terms, long terms, long notes and extra fields.
+- Care-plan diagnosis object accepts concept ID when already coded/imported, treats blank concept ID as null, rejects malformed concept IDs when supplied, and rejects short terms, long terms, long notes and extra fields.
 - Draft advisory edit reuses the same terminology, type-specific configuration, allergy and duplicate validations as create.
 - Draft advisory delete checks provider ownership, non-archived plan state and DRAFT status.
 - Published advisories are immutable for edit/delete.
@@ -66,7 +66,7 @@ Provider sees returned task status and report
 
 ## Frontend behavior
 
-- New care-plan mode shows linked patient, care-plan name, diagnosis, SNOMED/concept ID and optional notes.
+- New care-plan mode shows linked patient, care-plan name, diagnosis and optional notes. It does not show a SNOMED/concept ID input.
 - Existing plan selector still shows `plan — patient — mobile`.
 - `Ready to send` cards show Edit/Delete.
 - `Published advisories` cards are read-only.

@@ -84,6 +84,27 @@ conn = sqlite3.connect(
 Use `immutable=1` only when the deployed database file will never be modified in
 place.
 
+## Current MVP integration note
+
+The current demonstrator/MVP-transition repository does not yet open the
+generated `svp_terminology.sqlite` database at runtime. It reads
+`svp_entry_terms.json` directly as an optional safe fallback for provider
+investigation-term autocomplete. This keeps Week 4 Friday terminology readiness
+visible without broadening medication authoring before the full Week 5 SQLite
+terminology implementation.
+
+Current runtime behaviour:
+
+- `SVASTRA_TERMINOLOGY_ENTRY_TERMS_PATH` can point to an alternate
+  `svp_entry_terms.json`.
+- Only `investigation` terms are exposed from this fallback.
+- Medication authoring remains restricted to the approved IDE drug-catalog
+  sample because medication dose, route and allergy checks require catalogue
+  metadata.
+- Provider-facing care-plan diagnosis does not ask for a SNOMED/concept ID.
+  Diagnosis concept IDs remain optional internal/imported data, while advisory
+  terms remain concept-driven.
+
 ## Application Contract
 
 Humans work with `term`.

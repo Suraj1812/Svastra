@@ -1,4 +1,4 @@
-# SVASTRA+ Week 3 MVP Foundation
+# SVASTRA+ Demonstrator Foundation and MVP Transition Baseline
 
 End-to-end identity, RBAC, patient-controlled consent, healthcare relationships,
 PostOffice CEP delivery, API Event Monitor, care-plan authoring, advisory publication,
@@ -9,6 +9,20 @@ bounded schedule generation, patient tasks, medication Taken/Missed responses,
 coded missed reasons, measurement values, investigation uploads, response CEPs,
 threshold/non-response/allergy alerts, execution-state aggregation, audit history,
 PostOffice acknowledgements, provider views and the patient task UI.
+
+## Week 4 Friday status
+
+Week 4 Friday closes the demonstrator phase and prepares the project for
+production-oriented MVP work. The current repository should be treated as a
+validated behavioural baseline: useful for workflows, API contracts, terminology
+readiness, UI learning and backend validation patterns. Week 5 implementation
+should still follow disciplined vertical delivery: schema, repository, service,
+engine, API, PostOffice integration, frontend hook, frontend screen and
+end-to-end test.
+
+See [docs/week4-friday-transition-readiness-report.md](./docs/week4-friday-transition-readiness-report.md)
+for the demonstrator closure, MVP transition checklist, backend/frontend reuse
+notes, SQLite/SVP terminology readiness, and the go/no-go summary.
 
 ## Backend
 
@@ -69,9 +83,29 @@ payload examples, responses, validation rules, and QA checks.
 See [docs/week4-monday-tuesday-compliance-report.md](./docs/week4-monday-tuesday-compliance-report.md)
 for the Week 4 Monday/Tuesday orchestration completion report.
 
+See [docs/week4-friday-transition-readiness-report.md](./docs/week4-friday-transition-readiness-report.md)
+for the Friday engineering reset and Week 5 readiness report.
+
 See [docs/api-event-monitor-operations.md](./docs/api-event-monitor-operations.md)
 for monitor architecture, privacy rules, filters, status interpretation,
 performance controls and incident checks.
+
+## Terminology and diagnosis notes
+
+- Provider-facing care-plan creation asks only for linked patient, care-plan
+  name, diagnosis and notes. Providers never manually type SNOMED/concept IDs
+  for diagnosis.
+- Diagnosis `conceptId` is optional and may return as `null` for
+  provider-entered diagnoses. Existing stored/imported diagnosis concept IDs
+  continue to load and return unchanged.
+- Advisory terminology is still concept-driven. The frontend displays readable
+  terms only, while the API sends the selected `concept_id`, `term` and `tag`.
+- The optional SVP terminology bundle in `svp_terminology_sqlitedb/` is used as
+  a safe fallback for investigation terms only. Medication authoring remains
+  restricted to the approved drug catalogue because dosing and allergy safety
+  require catalogue metadata.
+- The generated SQLite terminology database file is intentionally ignored by
+  Git. Rebuild it locally from `svp_terminology_sqlitedb/README.md` when needed.
 
 ## Main API Areas
 

@@ -65,7 +65,7 @@ The provider screen is intentionally short. Technical identifiers and routing se
 | Draft review and publish | One `Send care plan` action with confirmation; duplicate per-item send button removed |
 | Published advisory view | Separate published list with advisory status, created date, execution status and published date |
 
-Removed from the clinical form because it adds no user decision: a separate numbered `Choose a plan` section, permanently open create fields, repeated Provider and Draft boxes, editable catalog route/dose form, separate notification-routing dropdowns, and a second publish action. Week 4 reintroduced structured diagnosis during new care-plan creation because the Monday workflow explicitly requires diagnosis term, SNOMED/concept ID, and notes. Existing plan search and new-plan creation share one compact section. Provider ownership and Draft status remain mandatory server-derived fields.
+Removed from the clinical form because it adds no user decision: a separate numbered `Choose a plan` section, permanently open create fields, repeated Provider and Draft boxes, editable catalog route/dose form, separate notification-routing dropdowns, and a second publish action. Week 4 uses structured diagnosis during new care-plan creation, but the provider enters only diagnosis term and notes. Diagnosis concept IDs are optional internal/imported identifiers and are never manually typed by the provider. Existing plan search and new-plan creation share one compact section. Provider ownership and Draft status remain mandatory server-derived fields.
 
 ## Verification
 

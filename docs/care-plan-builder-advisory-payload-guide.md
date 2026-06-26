@@ -1,6 +1,6 @@
 # SVASTRA+ Care Plan Builder and Advisory API Payload Guide
 
-Updated: 23 June 2026
+Updated: 26 June 2026
 
 Purpose: this document explains how the Care Plan Builder works end to end, when each screen/API is used, what payload is sent, what response comes back, and what backend validations protect the flow.
 
@@ -29,11 +29,16 @@ The screen has only two modes.
 | Mode | UI fields/buttons | Backend source |
 | --- | --- | --- |
 | Existing plan | `Search or select care plan` dropdown, `New care plan` button. Dropdown label should be `care plan name — patient name — mobile`. | `GET /care-plans` and `GET /relationships/patients?status=ACTIVE&include_mobile=true` |
-| New care plan | `Linked patient`, `Care plan name`, `Diagnosis`, `SNOMED / concept ID`, optional `Notes`, `Create`, `Cancel`. Patient dropdown label should be `patient name — mobile`. | `POST /care-plans` |
+| New care plan | `Linked patient`, `Care plan name`, `Diagnosis`, optional `Notes`, `Create`, `Cancel`. Patient dropdown label should be `patient name — mobile`. | `POST /care-plans` |
 
 Do not show provider name as an editable/read-only field. The backend already knows the provider from `X-Session-Token`.
 
 Do not show or send `Draft` as an input. The backend creates new plans as `DRAFT`.
+
+Do not show a SNOMED/concept ID field for diagnosis. Diagnosis concept IDs are
+internal/imported identifiers and are optional in this flow. Existing stored
+diagnosis concept IDs still return from the API, but providers should never
+manually type them.
 
 ### Step 2: Add advice
 
@@ -222,7 +227,7 @@ Sample response:
         "provider_id": 2,
         "title": "Fever plan",
         "diagnosis": {
-          "conceptId": "54150009",
+          "conceptId": null,
           "term": "Upper Respiratory Tract Infection",
           "notes": "Cough and fever monitoring"
         },
@@ -254,9 +259,8 @@ Content-Type: application/json
   "patient_id": 10,
   "title": "Fever plan",
   "diagnosis": {
-    "conceptId": "54150009",
-    "term": "Upper Respiratory Tract Infection",
-    "notes": "Cough and fever monitoring"
+    "term": "Viral fever",
+    "notes": "Hydration and temperature watch"
   }
 }
 ```
@@ -267,9 +271,9 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- |
 | `patient_id` | integer | Yes | Greater than 0; patient must have ACTIVE provider-patient relationship with current provider. | Frontend from linked-patient dropdown. |
 | `title` | string | Yes | 3 to 160 characters. | Provider. |
-| `diagnosis` | object | Yes for Week 4 UI | `{conceptId, term, notes}`. `conceptId` is 1–64 safe chars, `term` is 2–160 chars, `notes` is optional up to 500 chars. | Provider. |
+| `diagnosis` | object | Yes for the current UI | `{term, notes, conceptId?}`. `term` is 2–160 chars, `notes` is optional up to 500 chars, and `conceptId` is optional/imported only. | Provider enters term and notes only. |
 
-Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `created_at`, or `updated_at`.
+Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `created_at`, `updated_at`, or manually typed diagnosis SNOMED IDs.
 
 ### Success response
 
@@ -285,9 +289,9 @@ Do not send `provider_id`, `provider_name`, `status`, `execution_status`, `creat
     "provider_id": 2,
     "title": "Fever plan",
     "diagnosis": {
-      "conceptId": "54150009",
-      "term": "Upper Respiratory Tract Infection",
-      "notes": "Cough and fever monitoring"
+      "conceptId": null,
+      "term": "Viral fever",
+      "notes": "Hydration and temperature watch"
     },
     "status": "DRAFT",
     "archived_at": null,
@@ -410,6 +414,11 @@ GET /terminology/provider-terms?query=temp&tag=measurement
 ```
 
 Medication search returns only approved drug-catalog medicines. Legacy/demo non-catalog medicines are not returned for new medication authoring.
+
+If the optional SVP terminology bundle is present, investigation search can also
+return real SVP investigation terms such as `Complete blood count`. This fallback
+does not broaden medication authoring; medicines still require the approved drug
+catalogue.
 
 Frontend should display `term` and friendly type label only. It should not show internal `conceptId` to normal users.
 
@@ -1582,7 +1591,7 @@ Do not send these from the Care Plan Builder:
 | --- | --- |
 | Provider with ACTIVE patient relationship opens builder | Patient dropdown shows `name — mobile`; care-plan dropdown shows `plan — name — mobile`. |
 | Provider without linked patients | Builder shows active relationship warning and create is disabled. |
-| New care plan sends only `patient_id`, `title`, structured `diagnosis` | Backend returns `DRAFT` plan with `{conceptId, term, notes}` diagnosis. |
+| New care plan sends only `patient_id`, `title`, structured `diagnosis` | Backend returns `DRAFT` plan with `{term, notes, conceptId}` diagnosis; `conceptId` can be `null`. |
 | Ready-to-send draft edit | Backend updates the draft advisory; audit has `advisory.updated`. |
 | Ready-to-send draft delete | Backend deletes the draft advisory; audit has `advisory.deleted`. |
 | Published advisory edit/delete | No UI buttons; direct API tampering returns `400 Published advisories are read-only`. |
@@ -1607,7 +1616,7 @@ Do not send these from the Care Plan Builder:
 1. On builder load, call linked patients and care plans together.
 2. If no plans exist, open new-plan mode.
 3. If plans exist, show existing plan selector and `New care plan`.
-4. On new plan create, send linked patient, care-plan name, and structured diagnosis, then reload plans and select the created plan.
+4. On new plan create, send linked patient, care-plan name, diagnosis term and optional notes, then reload plans and select the created plan.
 5. In Add advice, search only after 3 characters.
 6. After selecting a term, call advisory-options.
 7. Render only fields for that type.
